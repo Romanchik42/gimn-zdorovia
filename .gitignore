@@ -1,0 +1,4 @@
+# Local secrets
+secrets/*
+!secrets/README.md
+!secrets/.env.example
