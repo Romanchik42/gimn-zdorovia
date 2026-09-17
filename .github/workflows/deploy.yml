@@ -37,16 +37,12 @@ jobs:
       - name: Build
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: DEBUG list build output
+      # Страховка: если Next-роуты вдруг снова не попали в сборку,
+      # падаем здесь, а не выкатываем на прод пустую статику.
+      - name: Verify Next.js output
         run: |
-          echo "--- settings ---"
-          cat .vercel/project.json | head -40
-          echo "--- output tree (depth 4) ---"
-          find .vercel/output -maxdepth 4 | head -100
-          echo "--- total size ---"
-          du -sh .vercel/output
-          echo "--- index.html present? ---"
-          ls -la .vercel/output/static/index.html || echo "NO index.html"
+          test -f .vercel/output/static/index.html \
+            || { echo "::error::index.html отсутствует — framework определился не как nextjs"; exit 1; }
 
       - name: Deploy
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
