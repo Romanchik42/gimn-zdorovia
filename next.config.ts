@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
+  // Секреты не должны попадать в трассировку серверных бандлов ни при каких условиях.
+  outputFileTracingExcludes: {
+    "*": ["secrets/**", "**/*.env"],
+  },
+
   // GIF/картинки упражнений позже переедут в Supabase Storage.
   images: {
     remotePatterns: [
