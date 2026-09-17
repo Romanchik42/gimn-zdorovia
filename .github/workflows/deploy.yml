@@ -37,5 +37,16 @@ jobs:
       - name: Build
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
+      - name: DEBUG list build output
+        run: |
+          echo "--- settings ---"
+          cat .vercel/project.json | head -40
+          echo "--- output tree (depth 4) ---"
+          find .vercel/output -maxdepth 4 | head -100
+          echo "--- total size ---"
+          du -sh .vercel/output
+          echo "--- index.html present? ---"
+          ls -la .vercel/output/static/index.html || echo "NO index.html"
+
       - name: Deploy
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
