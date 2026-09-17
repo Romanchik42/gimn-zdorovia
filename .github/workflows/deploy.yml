@@ -41,6 +41,12 @@ jobs:
       # падаем здесь, а не выкатываем на прод пустую статику.
       - name: Verify Next.js output
         run: |
+          echo "--- pulled settings ---"
+          sed -e 's/"projectId".*/"projectId": "***",/' -e 's/"orgId".*/"orgId": "***",/' .vercel/project.json
+          echo "--- output tree ---"
+          find .vercel/output -maxdepth 3 | head -60
+          echo "--- builds.json ---"
+          cat .vercel/output/builds.json 2>/dev/null | head -40
           test -f .vercel/output/static/index.html \
             || { echo "::error::index.html отсутствует — framework определился не как nextjs"; exit 1; }
 
