@@ -1,0 +1,161 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ---------------------------------------------------------------------------
+   Гимн.здоровья — единый источник темизации (SPEC 4.2).
+   Три темы переключаются атрибутом data-theme на <html>.
+   Цвета НЕ дублируются по компонентам — только здесь.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --radius: 0.75rem;
+}
+
+/* B1 — Sage (по умолчанию): шалфейный, мягкий */
+:root,
+[data-theme="sage"] {
+  --primary: hsl(124 26% 54%); /* #7C9885 */
+  --primary-foreground: hsl(0 0% 100%);
+  --primary-hover: hsl(124 26% 45%);
+  --background: hsl(60 20% 98%); /* #FAFAF7 */
+  --foreground: hsl(130 15% 20%); /* #2D3E33 */
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(130 15% 20%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(130 15% 20%);
+  --muted: hsl(130 8% 92%);
+  --muted-foreground: hsl(130 8% 45%);
+  --secondary: hsl(130 8% 92%);
+  --secondary-foreground: hsl(130 15% 20%);
+  --accent: hsl(40 30% 55%); /* #C89858 — кнопка «Тяжело» */
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(5 40% 52%); /* #B85450 */
+  --destructive-foreground: hsl(0 0% 100%);
+  --success: hsl(130 20% 45%);
+  --success-foreground: hsl(0 0% 100%);
+  --border: hsl(130 8% 88%);
+  --input: hsl(130 8% 88%);
+  --ring: hsl(124 26% 54%);
+  --logo-primary: #7c9885;
+  --logo-accent: #c89858;
+}
+
+/* B2 — Terracotta: тёплый, живой */
+[data-theme="terracotta"] {
+  --primary: hsl(18 47% 57%); /* #C97B5C */
+  --primary-foreground: hsl(0 0% 100%);
+  --primary-hover: hsl(18 47% 48%);
+  --background: hsl(30 40% 97%); /* #FDF9F5 */
+  --foreground: hsl(18 20% 20%); /* #3A2D28 */
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(18 20% 20%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(18 20% 20%);
+  --muted: hsl(18 15% 92%);
+  --muted-foreground: hsl(18 15% 45%);
+  --secondary: hsl(18 15% 92%);
+  --secondary-foreground: hsl(18 20% 20%);
+  --accent: hsl(124 26% 54%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(10 55% 43%); /* #A64434 */
+  --destructive-foreground: hsl(0 0% 100%);
+  --success: hsl(124 26% 54%);
+  --success-foreground: hsl(0 0% 100%);
+  --border: hsl(18 15% 88%);
+  --input: hsl(18 15% 88%);
+  --ring: hsl(18 47% 57%);
+  --logo-primary: #c97b5c;
+  --logo-accent: #7c9885;
+}
+
+/* B3 — Ocean: доверие, медицина */
+[data-theme="ocean"] {
+  --primary: hsl(193 36% 46%); /* #4A8E9E */
+  --primary-foreground: hsl(0 0% 100%);
+  --primary-hover: hsl(193 36% 38%);
+  --background: hsl(200 33% 97%); /* #F7FAFB */
+  --foreground: hsl(200 40% 20%); /* #1F3A44 */
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(200 40% 20%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(200 40% 20%);
+  --muted: hsl(200 15% 92%);
+  --muted-foreground: hsl(200 10% 45%);
+  --secondary: hsl(200 15% 92%);
+  --secondary-foreground: hsl(200 40% 20%);
+  --accent: hsl(40 60% 58%); /* #D9974A */
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 45% 55%); /* #C05555 */
+  --destructive-foreground: hsl(0 0% 100%);
+  --success: hsl(155 35% 47%);
+  --success-foreground: hsl(0 0% 100%);
+  --border: hsl(200 15% 88%);
+  --input: hsl(200 15% 88%);
+  --ring: hsl(193 36% 46%);
+  --logo-primary: #4a8e9e;
+  --logo-accent: #d9974a;
+}
+
+/* Мост в Tailwind v4: inline — чтобы утилиты читали переменную в рантайме
+   и смена data-theme перекрашивала всё без пересборки. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Плавная смена темы (SPEC 4.2). Уважаем prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease,
+      border-color 0.3s ease;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Цель тапа не меньше 44px на интерактивных элементах (SPEC 4.8) */
+@media (pointer: coarse) {
+  button,
+  a[role="button"],
+  [role="tab"] {
+    min-height: 44px;
+  }
+}

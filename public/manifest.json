@@ -1,0 +1,33 @@
+{
+  "name": "Гимн.здоровья",
+  "short_name": "Гимн.здоровья",
+  "description": "Гимнастика для здоровья при болезни Бехтерева и для поддержания формы.",
+  "lang": "ru",
+  "dir": "ltr",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAFAF7",
+  "theme_color": "#7C9885",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
