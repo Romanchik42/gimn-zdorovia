@@ -41,14 +41,18 @@ jobs:
       # падаем здесь, а не выкатываем на прод пустую статику.
       - name: Verify Next.js output
         run: |
-          echo "--- pulled settings ---"
-          sed -e 's/"projectId".*/"projectId": "***",/' -e 's/"orgId".*/"orgId": "***",/' .vercel/project.json
-          echo "--- output tree ---"
-          find .vercel/output -maxdepth 3 | head -60
-          echo "--- builds.json ---"
-          cat .vercel/output/builds.json 2>/dev/null | head -40
-          test -f .vercel/output/static/index.html \
-            || { echo "::error::index.html отсутствует — framework определился не как nextjs"; exit 1; }
+          # Сборщик @vercel/next должен реально отработать. При framework=null
+          # Vercel публикует только public/ — прод тогда отдаёт 404 на всех роутах.
+          grep -q '"use": "@vercel/next"' .vercel/output/builds.json \
+            || { echo "::error::сборку делал не @vercel/next — проверь framework в vercel.json"; exit 1; }
+          # Роут «/» существует либо как статика, либо как функция (App Router).
+          if [ ! -f .vercel/output/static/index.html ] && [ ! -e .vercel/output/functions/index.func ] \
+             && [ ! -f .vercel/output/functions/index.prerender-fallback.html ]; then
+            echo "::error::корневой роут отсутствует в .vercel/output"
+            find .vercel/output -maxdepth 2 | head -40
+            exit 1
+          fi
+          echo "output OK"
 
       - name: Deploy
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
