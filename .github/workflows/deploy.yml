@@ -23,6 +23,11 @@ jobs:
         with:
           node-version: 24
 
+      # Vercel CLI сам зовёт pnpm по packageManager из package.json,
+      # а на раннере его нет — ставим ту же версию, что в lock-файле.
+      - name: Install pnpm
+        run: npm install --global pnpm@9.15.9
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
