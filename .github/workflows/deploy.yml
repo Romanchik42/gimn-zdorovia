@@ -54,5 +54,22 @@ jobs:
           fi
           echo "output OK"
 
+      # NEXT_PUBLIC_* не секреты (они и так уезжают в браузер).
+      # Печатаем, чтобы поймать классическую подмену URL дашборда вместо API.
+      - name: Check public Supabase config
+        run: |
+          F=$(ls .vercel/.env.production.local 2>/dev/null || true)
+          if [ -z "$F" ]; then echo "нет .env.production.local — пропускаем"; exit 0; fi
+          URL=$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' "$F" | cut -d= -f2- | tr -d '"' || true)
+          echo "NEXT_PUBLIC_SUPABASE_URL = ${URL:-<пусто>}"
+          case "$URL" in
+            *supabase.co*) echo "OK: похоже на API-хост" ;;
+            *dashboard*)   echo "::warning::это URL дашборда, а не API — Supabase работать не будет" ;;
+            "")            echo "::warning::NEXT_PUBLIC_SUPABASE_URL не задан в Vercel" ;;
+            *)             echo "::warning::неожиданный вид URL" ;;
+          esac
+          grep -qE '^NEXT_PUBLIC_SUPABASE_ANON_KEY=.+' "$F" \
+            && echo "OK: anon key задан" || echo "::warning::NEXT_PUBLIC_SUPABASE_ANON_KEY пуст"
+
       - name: Deploy
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
