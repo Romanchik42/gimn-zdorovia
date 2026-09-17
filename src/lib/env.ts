@@ -16,8 +16,26 @@ import { z } from "zod";
    process.env.NEXT_PUBLIC_X — поэтому здесь они перечислены буквально,
    без динамических ключей.
    --------------------------------------------------------------------------- */
+/**
+ * Приводит URL Supabase к API-хосту.
+ *
+ * В Vercel в NEXT_PUBLIC_SUPABASE_URL лежит ссылка на дашборд
+ * (https://supabase.com/dashboard/project/<ref>), а SDK нужен API-хост
+ * (https://<ref>.supabase.co). Ref в обеих ссылках один и тот же, поэтому
+ * чиним на лету — иначе каждый запрос к Supabase в проде уходит в никуда.
+ * Правильное значение переменной всё равно стоит проставить в Vercel.
+ */
+export function normalizeSupabaseUrl(raw: string): string {
+  if (!raw) return "";
+
+  const dashboard = raw.match(/supabase\.com\/dashboard\/project\/([a-z0-9]+)/i);
+  if (dashboard) return `https://${dashboard[1]}.supabase.co`;
+
+  return raw.replace(/\/+$/, "");
+}
+
 export const publicEnv = {
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  supabaseUrl: normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""),
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://gimn-zdorovia.vercel.app",
   authorSiteUrl: process.env.NEXT_PUBLIC_AUTHOR_SITE_URL ?? "https://ai-arhitektor.ru",

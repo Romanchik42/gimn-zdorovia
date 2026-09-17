@@ -63,10 +63,10 @@ jobs:
           URL=$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' "$F" | cut -d= -f2- | tr -d '"' || true)
           echo "NEXT_PUBLIC_SUPABASE_URL = ${URL:-<пусто>}"
           case "$URL" in
-            *supabase.co*) echo "OK: похоже на API-хост" ;;
-            *dashboard*)   echo "::warning::это URL дашборда, а не API — Supabase работать не будет" ;;
-            "")            echo "::warning::NEXT_PUBLIC_SUPABASE_URL не задан в Vercel" ;;
-            *)             echo "::warning::неожиданный вид URL" ;;
+            "")                 echo "::warning::NEXT_PUBLIC_SUPABASE_URL не задан в Vercel" ;;
+            *dashboard/project*) echo "::warning::в переменной URL дашборда, а не API. Приложение чинит это на лету (normalizeSupabaseUrl), но значение стоит поправить в Vercel на https://<ref>.supabase.co" ;;
+            https://*.supabase.co*) echo "OK: API-хост" ;;
+            *)                  echo "::warning::неожиданный вид URL: $URL" ;;
           esac
           grep -qE '^NEXT_PUBLIC_SUPABASE_ANON_KEY=.+' "$F" \
             && echo "OK: anon key задан" || echo "::warning::NEXT_PUBLIC_SUPABASE_ANON_KEY пуст"
