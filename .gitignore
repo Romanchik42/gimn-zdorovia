@@ -2,3 +2,5 @@
 secrets/*
 !secrets/README.md
 !secrets/.env.example
+.vercel
+.env*
