@@ -1,13 +1,46 @@
 import { redirect } from "next/navigation";
 
+import { TodayCard } from "@/components/app/today-card";
 import { createClient } from "@/lib/supabase/server";
+import { dayName, focusLabel, isoDayOfWeek } from "@/lib/workout-engine/weekly-cycle";
+import type { Mode, SequenceItem } from "@/lib/supabase/types";
+import { cn } from "cn";
 
 export const metadata = { title: "Сегодня — Гимн.здоровья" };
 
-/**
- * Главный экран. На Этапе 3 — минимальная версия: показывает, что онбординг
- * дошёл до конца. Полноценный экран с карточкой «Сегодня» собирается на Этапе 4.
- */
+/** Полоска регулярности за последние 7 дней. */
+async function loadStreak(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
+  const since = new Date();
+  since.setDate(since.getDate() - 6);
+  const sinceStr = since.toISOString().slice(0, 10);
+
+  const { data } = await supabase
+    .from("user_workouts")
+    .select("scheduled_date, status")
+    .eq("user_id", userId)
+    .gte("scheduled_date", sinceStr);
+
+  const doneDates = new Set(
+    (data ?? []).filter((w) => w.status === "completed").map((w) => w.scheduled_date),
+  );
+
+  const days: { label: string; done: boolean; isToday: boolean }[] = [];
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push({
+      label: dayName(isoDayOfWeek(d)),
+      done: doneDates.has(key),
+      isToday: key === todayStr,
+    });
+  }
+
+  return days;
+}
+
 export default async function AppHomePage() {
   const supabase = await createClient();
   const {
@@ -16,22 +49,111 @@ export default async function AppHomePage() {
 
   if (!user) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("name, mode")
-    .eq("id", user.id)
-    .maybeSingle();
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const dow = isoDayOfWeek(today);
+
+  const [{ data: profile }, { data: planDay }, { data: openWorkout }, streak] = await Promise.all([
+    supabase.from("users").select("name, mode").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("user_week_plan")
+      .select("focus, duration_min, is_rest_day")
+      .eq("user_id", user.id)
+      .eq("day_of_week", dow)
+      .maybeSingle(),
+    supabase
+      .from("user_workouts")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("scheduled_date", todayStr)
+      .in("status", ["planned", "in_progress"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    loadStreak(user.id, supabase),
+  ]);
+
+  // Профиля нет — пользователь не прошёл онбординг.
+  if (!profile) redirect("/onboarding/welcome");
+
+  const preview = await loadPreview(supabase, profile.mode, dow);
 
   return (
-    <main className="flex flex-1 flex-col items-center px-4 py-10">
-      <div className="w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Здравствуйте{profile?.name ? `, ${profile.name}` : ""}
-        </h1>
-        <p className="text-muted-foreground">
-          Настройка завершена. Программа тренировок появится здесь.
-        </p>
+    <main className="flex flex-1 flex-col px-4 py-6">
+      <div className="mx-auto w-full max-w-md space-y-6">
+        <header className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Здравствуйте{profile.name ? `, ${profile.name}` : ""}
+          </h1>
+          <p className="text-sm text-muted-foreground">{dayName(dow, true)}</p>
+        </header>
+
+        <TodayCard
+          focusLabel={focusLabel(planDay?.focus ?? "full_body")}
+          durationMin={planDay?.duration_min ?? 30}
+          isRestDay={planDay?.is_rest_day ?? false}
+          existingWorkoutId={openWorkout?.id ?? null}
+          preview={preview}
+        />
+
+        <section data-tour="streak" className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground">Регулярность за неделю</h2>
+          <ul className="flex gap-1.5">
+            {streak.map((d, i) => (
+              <li key={i} className="flex flex-1 flex-col items-center gap-1">
+                <span
+                  className={cn(
+                    "h-2 w-full rounded-full",
+                    d.done ? "bg-primary" : "bg-muted",
+                    d.isToday && !d.done && "ring-1 ring-primary/40",
+                  )}
+                />
+                <span className="text-[11px] text-muted-foreground">{d.label}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </main>
   );
+}
+
+/** Короткий состав дня — без записи в БД, только для показа. */
+async function loadPreview(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  mode: Mode,
+  dayOfWeek: number,
+) {
+  const { data: sequence } = await supabase
+    .from("workout_sequences")
+    .select("exercises_order")
+    .eq("mode", mode)
+    .eq("day_of_week", dayOfWeek)
+    .limit(1)
+    .maybeSingle();
+
+  const items = ((sequence?.exercises_order ?? []) as SequenceItem[])
+    .slice()
+    .sort((a, b) => a.order - b.order);
+
+  if (items.length === 0) return [];
+
+  const { data: exercises } = await supabase
+    .from("exercises")
+    .select("slug, name")
+    .in(
+      "slug",
+      items.map((i) => i.slug),
+    );
+
+  const names = new Map((exercises ?? []).map((e) => [e.slug, e.name]));
+
+  return items.map((item) => ({
+    name: names.get(item.slug) ?? item.slug,
+    meta: item.duration_sec
+      ? `${item.duration_sec} сек`
+      : item.repetitions
+        ? `${item.repetitions} раз`
+        : "",
+  }));
 }
