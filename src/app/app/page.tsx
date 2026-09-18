@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 
 import { TodayCard } from "@/components/app/today-card";
 import { MyWorkouts, type TemplateSummary } from "@/components/app/my-workouts";
+import { ShareButton } from "@/components/share/share-button";
+import { AppTour } from "@/components/tour/app-tour";
+import { publicEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { dayName, focusLabel, resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
 import { addDays, dayOfWeek, todayIso } from "@/lib/dates";
@@ -57,7 +60,11 @@ export default async function AppHomePage() {
     streak,
     { data: templates },
   ] = await Promise.all([
-    supabase.from("users").select("name, mode").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("users")
+      .select("name, mode, referral_code, tour_completed")
+      .eq("id", user.id)
+      .maybeSingle(),
     supabase
       .from("user_week_plan")
       .select("focus, duration_min, is_rest_day")
@@ -97,12 +104,17 @@ export default async function AppHomePage() {
   return (
     <main className="flex flex-1 flex-col px-4 py-6">
       <div className="mx-auto w-full max-w-md space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Здравствуйте{profile.name ? `, ${profile.name}` : ""}
-          </h1>
-          <p className="text-sm text-muted-foreground">{dayName(dow, true)}</p>
+        <header className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Здравствуйте{profile.name ? `, ${profile.name}` : ""}
+            </h1>
+            <p className="text-sm text-muted-foreground">{dayName(dow, true)}</p>
+          </div>
+          <ShareButton referralCode={profile.referral_code} appUrl={publicEnv.appUrl} />
         </header>
+
+        <AppTour autoStart={!profile.tour_completed} />
 
         <TodayCard
           focusLabel={focusLabel(planDay?.focus ?? "full_body")}

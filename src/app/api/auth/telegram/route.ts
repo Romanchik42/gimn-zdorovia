@@ -95,7 +95,9 @@ export async function POST(request: Request) {
       telegramId: payload.id,
       telegramUsername: payload.username ?? null,
       referralCode: payload.referral_code ?? null,
-      referralSource: "telegram",
+      // Источник — откуда пришло приглашение, а не чем вошли: вход через
+      // Telegram по ссылке из QR — это канал «qr».
+      referralSource: payload.referral_source ?? "telegram",
     });
   } catch (e) {
     console.error("telegram auth: provision failed", e);

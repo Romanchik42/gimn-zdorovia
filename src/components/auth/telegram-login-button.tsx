@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { REFERRAL_STORAGE_KEY } from "@/lib/referral/storage";
+import { clearReferralCode, readReferralCode, readReferralSource } from "@/lib/referral/storage";
 
 /**
  * Telegram Login Widget. Скрипт виджета грузится с telegram.org и вызывает
@@ -29,17 +29,14 @@ export function TelegramLoginButton({ botUsername }: { botUsername: string }) {
     window.onTelegramAuth = async (user) => {
       setPending(true);
       try {
-        let referralCode: string | null = null;
-        try {
-          referralCode = window.localStorage.getItem(REFERRAL_STORAGE_KEY);
-        } catch {
-          // хранилище заблокировано — просто войдём без реферала
-        }
-
         const res = await fetch("/api/auth/telegram", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...user, referral_code: referralCode ?? undefined }),
+          body: JSON.stringify({
+            ...user,
+            referral_code: readReferralCode() ?? undefined,
+            referral_source: readReferralSource() ?? undefined,
+          }),
         });
         const json = await res.json();
 
@@ -48,6 +45,7 @@ export function TelegramLoginButton({ botUsername }: { botUsername: string }) {
           return;
         }
 
+        if (json.data.is_new_user) clearReferralCode();
         router.replace(json.data.next_step === "app" ? "/app" : "/onboarding/welcome");
         router.refresh();
       } catch {

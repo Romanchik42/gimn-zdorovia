@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const parsed = await parseBody(request, registerSchema);
   if (parsed.error) return parsed.error;
 
-  const { name, email, password, referral_code } = parsed.data;
+  const { name, email, password, referral_code, referral_source } = parsed.data;
 
   if (!rateLimit(`register:${email.toLowerCase()}`, 5, 60_000)) {
     return fail("Слишком много попыток. Подождите минуту.", 429);
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       name,
       email,
       referralCode: referral_code ?? null,
-      referralSource: "link",
+      referralSource: referral_source ?? "link",
     });
 
     return ok({

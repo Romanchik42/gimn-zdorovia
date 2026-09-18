@@ -123,6 +123,7 @@ function FeedbackButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      data-tour={`feedback-${variant}`}
       className={cn(
         "flex min-h-14 w-full items-center justify-center gap-2.5 rounded-xl border text-base font-medium transition-colors",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50",

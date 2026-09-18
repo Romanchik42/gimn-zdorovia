@@ -38,10 +38,21 @@ export default async function WorkoutPage({ params }: PageProps<"/app/workout/[i
 
   const exercises = (workout.exercises_snapshot ?? []) as ExerciseSnapshot[];
 
+  const { data: profile } = await supabase
+    .from("users")
+    .select("workout_tour_completed")
+    .eq("id", user.id)
+    .maybeSingle();
+
   return (
     <main className="flex flex-1 flex-col px-4 py-6">
       <div className="mx-auto w-full max-w-md">
-        <WorkoutRunner workoutId={workout.id} exercises={exercises} initialMarks={initialMarks} />
+        <WorkoutRunner
+          workoutId={workout.id}
+          exercises={exercises}
+          initialMarks={initialMarks}
+          showTour={profile ? !profile.workout_tour_completed : false}
+        />
       </div>
     </main>
   );

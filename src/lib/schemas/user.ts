@@ -25,12 +25,16 @@ export const userSchema = z.object({
 
 export type UserData = z.infer<typeof userSchema>;
 
+/** Откуда пришёл приглашённый (SPEC 5.7) — для разбивки по каналам. */
+export const referralSourceSchema = z.enum(["link", "qr", "telegram", "share"]);
+
 /** Регистрация по email. */
 export const registerSchema = z.object({
   name: z.string().trim().min(2, "Имя от 2 символов").max(100),
   email: z.email("Некорректный email"),
   password: z.string().min(8, "Пароль от 8 символов").max(72, "Пароль до 72 символов"),
   referral_code: z.string().optional(),
+  referral_source: referralSourceSchema.optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -72,6 +76,7 @@ export const telegramLoginSchema = z.object({
   auth_date: z.number().int().positive(),
   hash: z.string().min(1),
   referral_code: z.string().optional(),
+  referral_source: referralSourceSchema.optional(),
 });
 
 export type TelegramLoginInput = z.infer<typeof telegramLoginSchema>;

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { createClient } from "@/lib/supabase/client";
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from "@/lib/schemas/user";
-import { clearReferralCode, readReferralCode } from "@/lib/referral/storage";
+import { clearReferralCode, readReferralCode, readReferralSource } from "@/lib/referral/storage";
 
 export function LoginForm() {
   const router = useRouter();
@@ -104,7 +104,11 @@ export function RegisterForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, referral_code: readReferralCode() ?? undefined }),
+        body: JSON.stringify({
+          ...values,
+          referral_code: readReferralCode() ?? undefined,
+          referral_source: readReferralSource() ?? undefined,
+        }),
       });
       const json = await res.json();
 

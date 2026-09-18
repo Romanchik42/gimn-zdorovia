@@ -12,6 +12,15 @@ import { ExerciseCard } from "@/components/exercise/exercise-card";
 import { SideEffectDialog } from "@/components/exercise/side-effect-dialog";
 import type { ExerciseSnapshot, FeedbackStatus } from "@/lib/supabase/types";
 import { enqueue, flushQueue } from "@/lib/offline-queue";
+import { useSound } from "@/components/layout/sound-provider";
+import { WorkoutTour } from "@/components/tour/workout-tour";
+import type { SoundEvent } from "@/lib/sound/sound-packs";
+
+const FEEDBACK_SOUND: Record<FeedbackStatus, SoundEvent> = {
+  done: "done",
+  difficult: "difficult",
+  skipped: "skip",
+};
 
 /** Пауза перед автопереходом к следующему упражнению (SPEC US-03). */
 const ADVANCE_DELAY_MS = 500;
@@ -20,12 +29,16 @@ export function WorkoutRunner({
   workoutId,
   exercises,
   initialMarks,
+  showTour = false,
 }: {
   workoutId: string;
   exercises: ExerciseSnapshot[];
   initialMarks: Record<string, FeedbackStatus>;
+  /** Первая тренировка: показать короткий тур по кнопкам (US-11). */
+  showTour?: boolean;
 }) {
   const router = useRouter();
+  const sound = useSound();
   const [marks, setMarks] = useState<Record<string, FeedbackStatus>>(initialMarks);
   const [index, setIndex] = useState(() => {
     const firstUnmarked = exercises.findIndex((e) => !initialMarks[e.exercise_id]);
@@ -63,13 +76,21 @@ export function WorkoutRunner({
 
   function advance() {
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setIndex((i) => i + 1), ADVANCE_DELAY_MS);
+    // Следующий индекс считаем здесь, а не в апдейтере setState: React может
+    // вызвать апдейтер дважды, и звук прозвучал бы два раза.
+    const next = index + 1;
+    timer.current = setTimeout(() => {
+      setIndex(next);
+      // Финал — победный аккорд; обычный шаг — почти неслышный переход.
+      sound.play(next >= total ? "complete" : "transition");
+    }, ADVANCE_DELAY_MS);
   }
 
   function handleFeedback(status: FeedbackStatus) {
     if (!current || busy) return;
 
     setBusy(true);
+    sound.play(FEEDBACK_SOUND[status]);
     setMarks((prev) => ({ ...prev, [current.exercise_id]: status }));
     void send(current.exercise_id, status).finally(() => setBusy(false));
 
@@ -125,6 +146,7 @@ export function WorkoutRunner({
       </div>
 
       <ExerciseCard exercise={current} onFeedback={handleFeedback} disabled={busy} />
+      <WorkoutTour autoStart={showTour && index === 0} />
 
       <SideEffectDialog
         open={symptomFor !== null}
