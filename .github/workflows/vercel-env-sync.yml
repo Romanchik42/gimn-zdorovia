@@ -1,0 +1,52 @@
+# Ручной запуск: перенос секретов из GitHub Secrets в переменные Vercel (production).
+#
+# Зачем отдельный workflow: локально у кота нет токена Vercel, а у Actions он
+# есть (secrets.VERCEL_TOKEN). deploy.yml при этом не трогается.
+# Значения нигде не печатаются: в лог попадают только имена переменных.
+#
+# Запуск: gh workflow run vercel-env-sync.yml   (или кнопка Run workflow в GitHub)
+# После — передеплой, чтобы сборка подхватила новые значения.
+
+name: Sync env to Vercel
+
+on:
+  workflow_dispatch:
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Push secrets to Vercel (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+        run: |
+          set -e
+          for NAME in CRON_SECRET TELEGRAM_WEBHOOK_SECRET; do
+            VALUE="${!NAME}"
+            if [ -z "$VALUE" ]; then
+              echo "::warning::$NAME пуст в GitHub Secrets — пропускаю"
+              continue
+            fi
+            # Переменная могла существовать — пересоздаём, чтобы значение совпало с GitHub.
+            vercel env rm "$NAME" production --yes --token="$VERCEL_TOKEN" >/dev/null 2>&1 || true
+            printf '%s' "$VALUE" | vercel env add "$NAME" production --token="$VERCEL_TOKEN" >/dev/null
+            echo "OK: $NAME"
+          done
+
+      - name: List variable names in Vercel (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel env ls production --token="$VERCEL_TOKEN" | sed -n '1,40p'
