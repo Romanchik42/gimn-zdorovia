@@ -42,6 +42,11 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/** Время напоминания: ЧЧ:ММ с шагом 15 минут (US-08) — крон ходит раз в 15 минут. */
+export const reminderTime = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):(00|15|30|45)$/, "Время с шагом 15 минут, например 07:15");
+
 /** Настройки пользователя (страница /app/settings). */
 export const userSettingsSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(),
@@ -50,14 +55,8 @@ export const userSettingsSchema = z.object({
   sounds_enabled: z.boolean().optional(),
   sound_pack: soundPackSchema.optional(),
   sound_volume: z.number().int().min(0).max(100).optional(),
-  morning_reminder_time: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Время в формате ЧЧ:ММ")
-    .optional(),
-  evening_reminder_time: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Время в формате ЧЧ:ММ")
-    .optional(),
+  morning_reminder_time: reminderTime.optional(),
+  evening_reminder_time: reminderTime.optional(),
   reminders_enabled: z.boolean().optional(),
 });
 

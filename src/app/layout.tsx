@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
+import { PwaRegistrar } from "@/components/layout/pwa-registrar";
 import { ThemeProvider, themeBootstrapScript } from "@/components/layout/theme-provider";
 import { DEFAULT_THEME } from "@/lib/themes";
 
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <ThemeProvider>{children}</ThemeProvider>
         <Toaster theme="light" richColors position="top-center" />
+        <PwaRegistrar />
       </body>
     </html>
   );

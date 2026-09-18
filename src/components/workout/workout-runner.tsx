@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { ExerciseCard } from "@/components/exercise/exercise-card";
 import { SideEffectDialog } from "@/components/exercise/side-effect-dialog";
 import type { ExerciseSnapshot, FeedbackStatus } from "@/lib/supabase/types";
+import { enqueue, flushQueue } from "@/lib/offline-queue";
 
 /** Пауза перед автопереходом к следующему упражнению (SPEC US-03). */
 const ADVANCE_DELAY_MS = 500;
@@ -41,22 +42,20 @@ export function WorkoutRunner({
 
   const send = useCallback(
     async (exerciseId: string, status: FeedbackStatus) => {
+      const body = { user_workout_id: workoutId, exercise_id: exerciseId, status };
       try {
         const res = await fetch("/api/workout/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_workout_id: workoutId,
-            exercise_id: exerciseId,
-            status,
-          }),
+          body: JSON.stringify(body),
         });
         const json = await res.json();
         if (!json.success) toast.error(json.error ?? "Отметка не сохранилась");
+        else void flushQueue();
       } catch {
-        // Не блокируем занятие из-за сети: отметка уже видна локально,
-        // пользователь продолжает, синхронизация — задача Этапа 7 (оффлайн).
-        toast.error("Отметка не ушла на сервер, но занятие продолжается");
+        // Нет сети: занятие не прерываем, отметку откладываем и дошлём позже.
+        enqueue("/api/workout/feedback", body);
+        toast.info("Нет сети — отметка сохранена и отправится, когда связь вернётся");
       }
     },
     [workoutId],

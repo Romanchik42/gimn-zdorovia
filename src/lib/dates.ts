@@ -58,3 +58,30 @@ export function datesFrom(startIso: string, count: number): string[] {
 export function daysBetween(a: string, b: string): number {
   return Math.round((parse(b).getTime() - parse(a).getTime()) / 86_400_000);
 }
+
+const timeFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: APP_TIMEZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Минуты от полуночи по времени приложения: 07:30 → 450. */
+export function nowMinutes(now: Date = new Date()): number {
+  const [h, m] = timeFormatter.format(now).split(":").map(Number);
+  return h * 60 + m;
+}
+
+/** «07:30» или «07:30:00» (как TIME из Postgres) → 450. */
+export function timeToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/**
+ * Начало сегодняшнего дня приложения в ISO (для фильтров по timestamptz).
+ * У Москвы с 2014 года фиксированный сдвиг +03:00 без перехода на летнее время.
+ */
+export function startOfTodayUtcIso(now: Date = new Date()): string {
+  return new Date(`${todayIso(now)}T00:00:00+03:00`).toISOString();
+}

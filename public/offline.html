@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Нет сети — Гимн.здоровья</title>
+    <style>
+      /* Тема по умолчанию (sage) инлайном: без сети стили приложения недоступны. */
+      :root { --bg: #fafaf7; --fg: #2d3e33; --muted: #6b7a70; --primary: #7c9885; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px;
+        background: var(--bg); color: var(--fg);
+        font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main { max-width: 360px; text-align: center; }
+      h1 { font-size: 22px; margin: 0 0 8px; }
+      p { margin: 0 0 16px; color: var(--muted); }
+      button {
+        min-height: 48px; padding: 0 20px; border: 0; border-radius: 12px;
+        background: var(--primary); color: #fff; font: inherit; font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Нет подключения к сети</h1>
+      <p>
+        Последняя открытая тренировка доступна и без сети — откройте её из истории браузера.
+        Отметки сохранятся на телефоне и отправятся, когда связь вернётся.
+      </p>
+      <button type="button" onclick="location.reload()">Попробовать снова</button>
+    </main>
+  </body>
+</html>
