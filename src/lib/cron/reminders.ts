@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SchemaMissingError, isSchemaMissing } from "@/lib/cron/errors";
 import { trySend } from "@/lib/telegram/bot";
 import { openAppButton, todayText } from "@/lib/telegram/messages";
 import { nowMinutes, startOfTodayUtcIso, timeToMinutes, todayIso } from "@/lib/dates";
@@ -32,6 +33,7 @@ export async function runReminders(kind: Kind, now: Date = new Date()): Promise<
     .eq("reminders_enabled", true)
     .not("telegram_id", "is", null);
 
+  if (isSchemaMissing(error)) throw new SchemaMissingError();
   if (error) throw new Error(`users query failed: ${error.message}`);
 
   const due = (users ?? []).filter((u) => {

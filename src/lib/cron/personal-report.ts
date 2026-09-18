@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SchemaMissingError, isSchemaMissing } from "@/lib/cron/errors";
 import { trySend } from "@/lib/telegram/bot";
 import { APP_LINKS, openAppButton } from "@/lib/telegram/messages";
 import { addDays, todayIso } from "@/lib/dates";
@@ -35,6 +36,7 @@ export async function runPersonalReports(now: Date = new Date()): Promise<Report
     .order("next_report_date")
     .limit(BATCH_LIMIT);
 
+  if (isSchemaMissing(error)) throw new SchemaMissingError();
   if (error) throw new Error(`users query failed: ${error.message}`);
 
   const run: ReportRun = { due: users?.length ?? 0, created: 0, sent: 0, skipped: 0, failed: 0 };

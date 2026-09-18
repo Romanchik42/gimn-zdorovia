@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { rejectUnlessCron } from "@/lib/cron/auth";
+import { SchemaMissingError } from "@/lib/cron/errors";
 import { runPersonalReports } from "@/lib/cron/personal-report";
 
 /**
@@ -18,6 +19,9 @@ async function handler(request: Request) {
     const result = await runPersonalReports();
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
+    if (e instanceof SchemaMissingError) {
+      return NextResponse.json({ ok: false, error: e.message }, { status: 503 });
+    }
     console.error("cron personal-report failed:", e);
     return NextResponse.json({ ok: false, error: "report run failed" }, { status: 500 });
   }
