@@ -1,11 +1,18 @@
 import { fail, ok, parseBody } from "@/lib/api";
 import { generateWorkoutSchema } from "@/lib/schemas/workout-feedback";
 import { createClient } from "@/lib/supabase/server";
-import { buildWorkout, applyAdjustment } from "@/lib/workout-engine/generator";
+import {
+  applyAdjustment,
+  buildWorkout,
+  estimateMinutes,
+  fitPlanWorkout,
+  targetMinutes,
+} from "@/lib/workout-engine/generator";
 import { resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
 import { dayOfWeek as dayOfWeekOf, todayIso } from "@/lib/dates";
 import type {
   ExerciseRow,
+  Level,
   SequenceIntensity,
   SequenceItem,
 } from "@/lib/supabase/types";
@@ -83,7 +90,7 @@ export async function POST(request: Request) {
 
   const { data: planDay } = await supabase
     .from("user_week_plan")
-    .select("focus, intensity, is_rest_day")
+    .select("focus, intensity, is_rest_day, duration_min")
     .eq("user_id", user.id)
     .eq("day_of_week", dayOfWeek)
     .maybeSingle();
@@ -130,12 +137,12 @@ export async function POST(request: Request) {
   }
 
   const items = (sequence.exercises_order ?? []) as SequenceItem[];
-  const slugs = items.map((i) => i.slug);
 
-  const { data: exercises } = await supabase
-    .from("exercises")
-    .select("*")
-    .in("slug", slugs);
+  // Весь справочник (50 строк): из него же добираем упражнения до длительности дня.
+  const [{ data: exercises }, { data: generalProfile }] = await Promise.all([
+    supabase.from("exercises").select("*"),
+    supabase.from("user_profiles_general").select("difficulty").eq("user_id", user.id).maybeSingle(),
+  ]);
 
   const bySlug = new Map<string, ExerciseRow>(
     ((exercises ?? []) as ExerciseRow[]).map((e) => [e.slug, e]),
@@ -170,6 +177,25 @@ export async function POST(request: Request) {
     return fail("Не удалось собрать тренировку: все упражнения отфильтрованы", 409);
   }
 
+  const snapshot = fitPlanWorkout(built.exercises, {
+    pool: (exercises ?? []) as ExerciseRow[],
+    mode,
+    focus: planDay?.focus ?? sequence.focus_joint,
+    targetMin: targetMinutes(
+      planDay?.duration_min,
+      sequence.total_duration_min,
+      planIntensity ?? baseIntensity,
+      intensity,
+    ),
+    intensity,
+    difficulty: (generalProfile?.difficulty as Level | undefined) ?? null,
+    isRestDay: planDay?.is_rest_day ?? false,
+    painAreas: (diagnostics?.pain_areas as string[] | undefined) ?? [],
+    bloodPressureOk: diagnostics?.blood_pressure_ok ?? null,
+    excludeExerciseIds,
+    excludeJoints,
+  });
+
   const { data: created, error } = await supabase
     .from("user_workouts")
     .insert({
@@ -178,7 +204,7 @@ export async function POST(request: Request) {
       status: "planned",
       generated_from_sequence_id: sequence.id,
       source: "plan",
-      exercises_snapshot: built.exercises,
+      exercises_snapshot: snapshot,
     })
     .select("id")
     .single();
@@ -190,8 +216,8 @@ export async function POST(request: Request) {
 
   return ok({
     workout_id: created.id,
-    exercises: built.exercises,
-    total_duration_min: built.totalDurationMin,
+    exercises: snapshot,
+    total_duration_min: estimateMinutes(snapshot),
     focus: planDay?.focus ?? sequence.focus_joint,
     intensity,
     is_rest_day: planDay?.is_rest_day ?? false,

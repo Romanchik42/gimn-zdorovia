@@ -27,7 +27,7 @@ const TIME_SPLIT: { type: ExerciseType; share: number }[] = [
 ];
 
 /** Какие target_joint считаются подходящими под фокус из UI. */
-const FOCUS_JOINTS: Record<string, string[]> = {
+export const FOCUS_JOINTS: Record<string, string[]> = {
   spine: ["spine", "core"],
   spine_thoracic: ["spine"],
   spine_lumbar: ["spine", "core", "hips"],
@@ -42,7 +42,7 @@ const FOCUS_JOINTS: Record<string, string[]> = {
   full_body: ["full_body", "spine", "legs", "shoulder", "core", "hips"],
 };
 
-const LEVEL_RANK: Record<Level, number> = { beginner: 1, intermediate: 2, advanced: 3 };
+export const LEVEL_RANK: Record<Level, number> = { beginner: 1, intermediate: 2, advanced: 3 };
 
 /** Потолок сложности: для Бехтерева — по интенсивности, для общей формы — по анкете. */
 function maxLevel(mode: Mode, intensity: Intensity, difficulty: Level | null): number {

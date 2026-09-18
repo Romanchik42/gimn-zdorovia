@@ -3,10 +3,18 @@ import "server-only";
 import type {
   ExerciseRow,
   ExerciseSnapshot,
+  Level,
+  Mode,
   SequenceIntensity,
   SequenceItem,
 } from "@/lib/supabase/types";
 import { estimateMinutes } from "@/lib/workout-engine/duration";
+import {
+  FOCUS_JOINTS,
+  LEVEL_RANK,
+  exerciseCount,
+  fitToDuration,
+} from "@/lib/workout-engine/custom-builder";
 
 /**
  * Сборка тренировки из шаблона последовательности (SPEC 3.3).
@@ -159,6 +167,157 @@ function warningFor(exercise: ExerciseRow, blocked: string[]): string | null {
 
   const names = risky.map((c) => labels[c] ?? c);
   return `Осторожно при ${names.join(", ")}`;
+}
+
+/* ------------------------ подгонка под длительность ------------------------ */
+
+/** Место части в занятии: новое упражнение встаёт в конец своей части. */
+const PART_RANK: Record<string, number> = { breathing: 0, warmup: 1, massage: 1, main: 2, stretch: 3 };
+
+export type FitPlanArgs = {
+  /** Весь справочник упражнений — из него добираем недостающее. */
+  pool: ExerciseRow[];
+  mode: Mode;
+  focus: string | null;
+  targetMin: number;
+  intensity: SequenceIntensity;
+  difficulty: Level | null;
+  isRestDay: boolean;
+  painAreas?: string[];
+  bloodPressureOk?: boolean | null;
+  excludeExerciseIds?: string[];
+  excludeJoints?: string[];
+};
+
+/**
+ * Доводит тренировку дня до длительности из плана (SPEC 3.1: ±10%).
+ *
+ * Шаблон задаёт костяк и порядок по методике, но в нём 7-8 упражнений — это
+ * ~10 минут, а в плане стоит 40. Сначала добираем упражнения из справочника
+ * по фокусу дня (с теми же фильтрами, что и для шаблона: противопоказания,
+ * исключения после побочек, потолок сложности), потом подгоняем дозировку
+ * и отдых так же, как в конструкторе. В день отдыха добираем только дыхание
+ * и растяжку.
+ */
+export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs): ExerciseSnapshot[] {
+  if (exercises.length === 0 || args.targetMin <= 0) return exercises;
+
+  const blocked = contraindicationsFor(args.painAreas ?? [], args.bloodPressureOk);
+  const exclude = new Set(args.excludeExerciseIds ?? []);
+  const excludeJoints = new Set(args.excludeJoints ?? []);
+  const inWorkout = new Set(exercises.map((e) => e.exercise_id));
+  const joints = FOCUS_JOINTS[args.focus ?? ""] ?? [];
+
+  // Потолок сложности: Бехтерева — только щадящее, выше лишь на полной нагрузке.
+  const levelCap =
+    args.mode === "behtereva" ? (args.intensity === "normal" ? 2 : 1) : LEVEL_RANK[args.difficulty ?? "beginner"];
+
+  const allowed = (e: ExerciseRow) =>
+    !inWorkout.has(e.id) &&
+      !exclude.has(e.id) &&
+      !isContraindicated(e, blocked) &&
+    !(excludeJoints.has(e.target_joint) && e.type !== "breathing" && e.type !== "stretch");
+  const inMode = (e: ExerciseRow) => e.mode === args.mode || e.mode === "both";
+  const safe = args.pool.filter((e) => allowed(e) && inMode(e) && LEVEL_RANK[e.level] <= levelCap);
+  // Запас, как в конструкторе: щадящее из соседнего режима. Для Бехтерева —
+  // только дыхание, разминка и растяжка, силовое общего режима туда не берём.
+  const cross = args.pool.filter(
+    (e) =>
+      allowed(e) &&
+      !inMode(e) &&
+      e.level === "beginner" &&
+      (args.mode === "general" || e.type !== "main"),
+  );
+
+  // Очередь кандидатов по убыванию уместности, без повторов.
+  const onFocus = (e: ExerciseRow) => joints.includes(e.target_joint);
+  const tiers: ExerciseRow[][] = args.isRestDay
+    ? [safe, cross].map((l) => l.filter((e) => e.type === "stretch" || e.type === "breathing"))
+    : [
+        safe.filter((e) => e.type === "main" && onFocus(e)),
+        safe.filter((e) => e.type === "stretch" && onFocus(e)),
+        safe.filter((e) => (e.type === "warmup" || e.type === "massage") && onFocus(e)),
+        safe.filter((e) => e.type === "stretch" || e.type === "warmup" || e.type === "massage"),
+        safe.filter((e) => e.type === "main"),
+        cross.filter((e) => onFocus(e)),
+        cross.filter((e) => e.type !== "main"),
+      ];
+  const seen = new Set<string>();
+  const queue = tiers.flat().filter((e) => !seen.has(e.id) && seen.add(e.id));
+
+  const factor = INTENSITY_FACTOR[args.intensity];
+  const list = [...exercises];
+
+  const add = (e: ExerciseRow) => {
+    const rank = PART_RANK[e.type] ?? 2;
+    // После последнего упражнения той же или более ранней части, но до
+    // финального дыхания: заминка по методике остаётся последней.
+    let at = 0;
+    for (let i = 0; i < list.length; i++) {
+      const trailingBreath = list[i].type === "breathing" && i > 0 && i === list.length - 1;
+      if ((PART_RANK[list[i].type] ?? 2) <= rank && !trailingBreath) at = i + 1;
+    }
+    list.splice(at, 0, {
+      exercise_id: e.id,
+      slug: e.slug,
+      name: e.name,
+      type: e.type,
+      target_joint: e.target_joint,
+      description: e.description,
+      technique: e.technique,
+      gif_url: e.gif_url,
+      duration_sec: scale(e.duration_sec, factor, 15),
+      repetitions: scale(e.repetitions, factor, 4),
+      order: 0,
+      warning: warningFor(e, blocked),
+    });
+  };
+
+  // Убираем с конца основной части, потом разминки; каждая часть остаётся хотя бы с одним.
+  const removeOne = (): boolean => {
+    for (const types of [["main"], ["warmup", "massage"], ["stretch"]]) {
+      const idx = list.map((e, i) => (types.includes(e.type) ? i : -1)).filter((i) => i >= 0);
+      if (idx.length > 1) {
+        list.splice(idx[idx.length - 1], 1);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const fit = () => fitToDuration(list.map((e, i) => ({ ...e, order: i + 1 })), args.targetMin);
+
+  // Стартуем с разумного числа упражнений, дальше — по одному, пока не попадём в ±10%.
+  while (list.length < exerciseCount(args.targetMin) && queue.length > 0) add(queue.shift()!);
+
+  let result = fit();
+  for (let guard = 0; guard < 20; guard++) {
+    const minutes = estimateMinutes(result);
+    if (minutes > args.targetMin * 1.1) {
+      if (!removeOne()) break;
+    } else if (minutes < args.targetMin * 0.9) {
+      const next = queue.shift();
+      if (!next) break;
+      add(next);
+    } else break;
+    result = fit();
+  }
+  return result;
+}
+
+/**
+ * Сколько минут ставить на день: из плана, но облегчённая интенсивность
+ * (диагностика или поправка после побочки) делает занятие и короче.
+ */
+export function targetMinutes(
+  planMin: number | null | undefined,
+  fallbackMin: number,
+  planIntensity: SequenceIntensity | null,
+  intensity: SequenceIntensity,
+): number {
+  const base = planMin ?? fallbackMin;
+  const ratio = planIntensity ? INTENSITY_FACTOR[intensity] / INTENSITY_FACTOR[planIntensity] : 1;
+  return Math.max(10, Math.round(base * Math.min(1, ratio)));
 }
 
 // Оценка длительности живёт в общем модуле — она нужна и клиенту (конструктор).
