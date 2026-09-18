@@ -119,8 +119,8 @@ export function RegisterForm() {
 
       clearReferralCode();
 
-      if (json.data.next_step === "confirm_email") {
-        toast.success("Мы отправили письмо для подтверждения почты.");
+      if (json.data.next_step === "login") {
+        toast.success("Аккаунт создан. Войдите с этим паролем.");
         router.replace("/auth/login");
         return;
       }
