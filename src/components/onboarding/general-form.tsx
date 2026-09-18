@@ -30,7 +30,7 @@ import {
 import { DAY_NAMES } from "@/lib/workout-engine/weekly-cycle";
 import { cn } from "cn";
 
-export function GeneralForm() {
+export function GeneralForm({ keepMode = false }: { keepMode?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -54,7 +54,7 @@ export function GeneralForm() {
       const res = await fetch("/api/onboarding/general", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, keep_mode: keepMode }),
       });
       const json = await res.json();
 
@@ -64,7 +64,9 @@ export function GeneralForm() {
       }
 
       toast.success(`Ваша норма: ${json.data.target_calories} ккал в день`);
-      router.push("/onboarding/theme");
+      // Пришли из «Питания» — возвращаем туда: меню пересоберётся под новую норму.
+      router.push(keepMode ? "/app/nutrition" : "/onboarding/theme");
+      router.refresh();
     } catch {
       toast.error("Сеть недоступна. Попробуйте ещё раз.");
     } finally {

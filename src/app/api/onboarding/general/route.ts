@@ -52,28 +52,31 @@ export async function POST(request: Request) {
     return fail("Не удалось сохранить анкету", 500);
   }
 
-  // Пол и возраст живут в users — они нужны и вне анкеты.
+  // Пол и возраст живут в users — они нужны и вне анкеты. Точная дата
+  // рождения не спрашивается, поэтому храним 1 января года рождения.
   const birthYear = new Date().getFullYear() - input.age_years;
   const admin = createAdminClient();
   await admin
     .from("users")
     .update({
-      mode: "general",
+      ...(input.keep_mode ? {} : { mode: "general" as const }),
       gender: input.gender,
       birth_date: `${birthYear}-01-01`,
     })
     .eq("id", user.id);
 
-  try {
-    await createDefaultWeekPlan(user.id, "general");
-  } catch (e) {
-    console.error("week plan creation failed:", e);
+  if (!input.keep_mode) {
+    try {
+      await createDefaultWeekPlan(user.id, "general");
+    } catch (e) {
+      console.error("week plan creation failed:", e);
+    }
   }
 
   return ok({
     bmr,
     tdee,
     target_calories: target,
-    next_step: "theme",
+    next_step: input.keep_mode ? "nutrition" : "theme",
   });
 }

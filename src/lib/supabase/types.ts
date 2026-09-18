@@ -265,6 +265,8 @@ export type UserMealRow = {
   meal_type: MealType;
   meal_id: string;
   consumed: boolean;
+  /** Множитель порции (0.5-2.5), миграция 0010. */
+  portion: number;
   created_at: string;
 };
 

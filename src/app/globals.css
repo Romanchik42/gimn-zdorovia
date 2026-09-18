@@ -38,6 +38,10 @@
   --ring: hsl(124 26% 54%);
   --logo-primary: #7c9885;
   --logo-accent: #c89858;
+  /* Цвет данных на графиках: тон primary, но с хромой ≥0.1 — приглушённый
+     брендовый шалфей на графике читался бы как ещё одна серая линия сетки.
+     Проверено validate_palette.js: светлота, хрома, контраст ≥3:1 к карточке. */
+  --chart-1: #3f8752;
 }
 
 /* B2 — Terracotta: тёплый, живой */
@@ -66,6 +70,7 @@
   --ring: hsl(18 47% 57%);
   --logo-primary: #c97b5c;
   --logo-accent: #7c9885;
+  --chart-1: #c97b5c; /* primary терракоты сам проходит все проверки */
 }
 
 /* B3 — Ocean: доверие, медицина */
@@ -94,6 +99,7 @@
   --ring: hsl(193 36% 46%);
   --logo-primary: #4a8e9e;
   --logo-accent: #d9974a;
+  --chart-1: #1f8faf;
 }
 
 /* Мост в Tailwind v4: inline — чтобы утилиты читали переменную в рантайме
@@ -121,6 +127,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
 
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), monospace;

@@ -52,12 +52,6 @@ export function dayName(dayOfWeek: number, full = false): string {
   return full ? DAY_NAMES_FULL[idx] : DAY_NAMES[idx];
 }
 
-/** Понедельник = 1 … воскресенье = 7 (в JS getDay() воскресенье = 0). */
-export function isoDayOfWeek(date: Date): number {
-  const js = date.getDay();
-  return js === 0 ? 7 : js;
-}
-
 const BEHTEREVA: WeekPlanDay[] = [
   { day_of_week: 1, focus: "spine", duration_min: 45, intensity: "medium", is_rest_day: false },
   { day_of_week: 2, focus: "shoulder", duration_min: 40, intensity: "medium", is_rest_day: false },

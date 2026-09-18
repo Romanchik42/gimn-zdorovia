@@ -31,7 +31,8 @@ export const generateNutritionSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Дата в формате ГГГГ-ММ-ДД")
     .optional(),
-  days: z.number().int().min(1).max(7).default(7),
+  /** true — собрать заново, даже если меню на неделю уже есть. */
+  regenerate: z.boolean().default(false),
 });
 
 export type GenerateNutritionInput = z.infer<typeof generateNutritionSchema>;

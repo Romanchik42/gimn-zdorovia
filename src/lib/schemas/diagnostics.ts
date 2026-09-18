@@ -74,6 +74,12 @@ export const generalProfileSchema = z.object({
     .array(z.number().int().min(1).max(7))
     .min(1, "Выберите хотя бы один день")
     .max(7),
+  /**
+   * true — анкету заполняют ради меню, режим и план не трогаем.
+   * Иначе пользователь Бехтерева, открыв анкету из «Питания», незаметно
+   * переключился бы в общий режим и потерял свой недельный план.
+   */
+  keep_mode: z.boolean().optional(),
 });
 
 export type GeneralProfileInput = z.infer<typeof generalProfileSchema>;

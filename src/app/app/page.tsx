@@ -3,12 +3,8 @@ import { redirect } from "next/navigation";
 import { TodayCard } from "@/components/app/today-card";
 import { MyWorkouts, type TemplateSummary } from "@/components/app/my-workouts";
 import { createClient } from "@/lib/supabase/server";
-import {
-  dayName,
-  focusLabel,
-  isoDayOfWeek,
-  resolveSequenceSlug,
-} from "@/lib/workout-engine/weekly-cycle";
+import { dayName, focusLabel, resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
+import { addDays, dayOfWeek, todayIso } from "@/lib/dates";
 import type { Mode, SequenceItem } from "@/lib/supabase/types";
 import { cn } from "cn";
 
@@ -16,9 +12,8 @@ export const metadata = { title: "Сегодня — Гимн.здоровья" 
 
 /** Полоска регулярности за последние 7 дней. */
 async function loadStreak(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
-  const since = new Date();
-  since.setDate(since.getDate() - 6);
-  const sinceStr = since.toISOString().slice(0, 10);
+  const todayStr = todayIso();
+  const sinceStr = addDays(todayStr, -6);
 
   const { data } = await supabase
     .from("user_workouts")
@@ -31,14 +26,11 @@ async function loadStreak(userId: string, supabase: Awaited<ReturnType<typeof cr
   );
 
   const days: { label: string; done: boolean; isToday: boolean }[] = [];
-  const todayStr = new Date().toISOString().slice(0, 10);
 
   for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
+    const key = addDays(todayStr, -i);
     days.push({
-      label: dayName(isoDayOfWeek(d)),
+      label: dayName(dayOfWeek(key)),
       done: doneDates.has(key),
       isToday: key === todayStr,
     });
@@ -55,9 +47,8 @@ export default async function AppHomePage() {
 
   if (!user) redirect("/auth/login");
 
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const dow = isoDayOfWeek(today);
+  const todayStr = todayIso();
+  const dow = dayOfWeek(todayStr);
 
   const [
     { data: profile },

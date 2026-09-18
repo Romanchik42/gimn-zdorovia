@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { snapshotFrom } from "@/lib/workout-engine/custom-builder";
 import { estimateMinutes } from "@/lib/workout-engine/generator";
 import { loadTrainingContext } from "@/lib/workout-engine/user-context";
+import { todayIso } from "@/lib/dates";
 import type { ExerciseRow } from "@/lib/supabase/types";
 
 /**
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
     .from("user_workouts")
     .insert({
       user_id: user.id,
-      scheduled_date: new Date().toISOString().slice(0, 10),
+      scheduled_date: todayIso(),
       status: "planned",
       source: templateId ? "template" : "custom",
       custom_workout_id: templateId,

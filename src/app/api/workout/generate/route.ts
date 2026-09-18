@@ -2,7 +2,8 @@ import { fail, ok, parseBody } from "@/lib/api";
 import { generateWorkoutSchema } from "@/lib/schemas/workout-feedback";
 import { createClient } from "@/lib/supabase/server";
 import { buildWorkout, applyAdjustment } from "@/lib/workout-engine/generator";
-import { isoDayOfWeek, resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
+import { resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
+import { dayOfWeek as dayOfWeekOf, todayIso } from "@/lib/dates";
 import type {
   ExerciseRow,
   SequenceIntensity,
@@ -41,9 +42,8 @@ export async function POST(request: Request) {
 
   if (!user) return fail("Нужно войти", 401);
 
-  const dateStr = parsed.data.date ?? new Date().toISOString().slice(0, 10);
-  const date = new Date(`${dateStr}T00:00:00`);
-  const dayOfWeek = isoDayOfWeek(date);
+  const dateStr = parsed.data.date ?? todayIso();
+  const dayOfWeek = dayOfWeekOf(dateStr);
 
   const existing = await supabase
     .from("user_workouts")
