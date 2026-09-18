@@ -6,6 +6,7 @@ import type {
   SequenceIntensity,
   SequenceItem,
 } from "@/lib/supabase/types";
+import { estimateMinutes } from "@/lib/workout-engine/duration";
 
 /**
  * Сборка тренировки из шаблона последовательности (SPEC 3.3).
@@ -68,6 +69,8 @@ export type BuildArgs = {
   bloodPressureOk?: boolean | null;
   /** Упражнения, исключённые Decision Tree после побочек. */
   excludeExerciseIds?: string[];
+  /** Зоны, исключённые после побочки (skip_joint). */
+  excludeJoints?: string[];
 };
 
 export type BuildResult = {
@@ -80,6 +83,7 @@ export function buildWorkout(args: BuildArgs): BuildResult {
   const blocked = contraindicationsFor(args.painAreas ?? [], args.bloodPressureOk);
   const factor = INTENSITY_FACTOR[args.intensity];
   const exclude = new Set(args.excludeExerciseIds ?? []);
+  const excludeJoints = new Set(args.excludeJoints ?? []);
 
   const exercises: ExerciseSnapshot[] = [];
   const skipped: { slug: string; reason: string }[] = [];
@@ -96,6 +100,16 @@ export function buildWorkout(args: BuildArgs): BuildResult {
 
     if (exclude.has(exercise.id)) {
       skipped.push({ slug: item.slug, reason: "исключено после побочного эффекта" });
+      continue;
+    }
+
+    // Дыхание и растяжку не трогаем: они щадящие и держат структуру занятия.
+    if (
+      excludeJoints.has(exercise.target_joint) &&
+      exercise.type !== "breathing" &&
+      exercise.type !== "stretch"
+    ) {
+      skipped.push({ slug: item.slug, reason: "зона исключена после побочного эффекта" });
       continue;
     }
 
@@ -147,14 +161,8 @@ function warningFor(exercise: ExerciseRow, blocked: string[]): string | null {
   return `Осторожно при ${names.join(", ")}`;
 }
 
-/** Оценка длительности: время + ~4 секунды на повтор + пауза между упражнениями. */
-export function estimateMinutes(exercises: ExerciseSnapshot[]): number {
-  const seconds = exercises.reduce((total, e) => {
-    const own = e.duration_sec ?? (e.repetitions ?? 0) * 4;
-    return total + own + 15;
-  }, 0);
-  return Math.max(1, Math.round(seconds / 60));
-}
+// Оценка длительности живёт в общем модуле — она нужна и клиенту (конструктор).
+export { DEFAULT_REST_SEC, estimateMinutes } from "@/lib/workout-engine/duration";
 
 /** Сдвиг интенсивности после побочек (SPEC 5.2). */
 export function applyAdjustment(

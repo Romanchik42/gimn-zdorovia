@@ -1,8 +1,14 @@
 import { redirect } from "next/navigation";
 
 import { TodayCard } from "@/components/app/today-card";
+import { MyWorkouts, type TemplateSummary } from "@/components/app/my-workouts";
 import { createClient } from "@/lib/supabase/server";
-import { dayName, focusLabel, isoDayOfWeek } from "@/lib/workout-engine/weekly-cycle";
+import {
+  dayName,
+  focusLabel,
+  isoDayOfWeek,
+  resolveSequenceSlug,
+} from "@/lib/workout-engine/weekly-cycle";
 import type { Mode, SequenceItem } from "@/lib/supabase/types";
 import { cn } from "cn";
 
@@ -53,7 +59,13 @@ export default async function AppHomePage() {
   const todayStr = today.toISOString().slice(0, 10);
   const dow = isoDayOfWeek(today);
 
-  const [{ data: profile }, { data: planDay }, { data: openWorkout }, streak] = await Promise.all([
+  const [
+    { data: profile },
+    { data: planDay },
+    { data: openWorkout },
+    streak,
+    { data: templates },
+  ] = await Promise.all([
     supabase.from("users").select("name, mode").eq("id", user.id).maybeSingle(),
     supabase
       .from("user_week_plan")
@@ -66,17 +78,30 @@ export default async function AppHomePage() {
       .select("id")
       .eq("user_id", user.id)
       .eq("scheduled_date", todayStr)
+      .eq("source", "plan")
       .in("status", ["planned", "in_progress"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
     loadStreak(user.id, supabase),
+    supabase
+      .from("user_custom_workouts")
+      .select("id, name, duration_min, exercises_order")
+      .eq("user_id", user.id)
+      .order("last_used_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
   // Профиля нет — пользователь не прошёл онбординг.
   if (!profile) redirect("/onboarding/welcome");
 
-  const preview = await loadPreview(supabase, profile.mode, dow);
+  const preview = await loadPreview(
+    supabase,
+    profile.mode,
+    dow,
+    resolveSequenceSlug(profile.mode, planDay?.focus, planDay?.is_rest_day ?? false),
+  );
 
   return (
     <main className="flex flex-1 flex-col px-4 py-6">
@@ -95,6 +120,8 @@ export default async function AppHomePage() {
           existingWorkoutId={openWorkout?.id ?? null}
           preview={preview}
         />
+
+        <MyWorkouts templates={(templates ?? []) as TemplateSummary[]} />
 
         <section data-tour="streak" className="space-y-2">
           <h2 className="text-sm font-medium text-muted-foreground">Регулярность за неделю</h2>
@@ -123,12 +150,14 @@ async function loadPreview(
   supabase: Awaited<ReturnType<typeof createClient>>,
   mode: Mode,
   dayOfWeek: number,
+  planSlug: string | null,
 ) {
-  const { data: sequence } = await supabase
-    .from("workout_sequences")
-    .select("exercises_order")
-    .eq("mode", mode)
-    .eq("day_of_week", dayOfWeek)
+  // Та же логика выбора шаблона, что в /api/workout/generate.
+  const query = supabase.from("workout_sequences").select("exercises_order").eq("mode", mode);
+  const { data: sequence } = await (planSlug
+    ? query.eq("slug", planSlug)
+    : query.eq("day_of_week", dayOfWeek)
+  )
     .limit(1)
     .maybeSingle();
 

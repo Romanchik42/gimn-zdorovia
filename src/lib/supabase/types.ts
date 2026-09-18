@@ -156,6 +156,7 @@ export type CustomExerciseItem = {
   order: number;
   duration_sec?: number | null;
   repetitions?: number | null;
+  rest_sec?: number | null;
 };
 
 export type UserCustomWorkoutRow = {
@@ -186,6 +187,8 @@ export type ExerciseSnapshot = {
   repetitions: number | null;
   order: number;
   warning?: string | null;
+  /** Отдых после упражнения. Нет поля — стандартные 15 секунд. */
+  rest_sec?: number | null;
 };
 
 export type UserWorkoutRow = {

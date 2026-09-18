@@ -7,6 +7,7 @@ import { CheckIcon, TriangleAlertIcon, XIcon, ActivityIcon } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "cn";
 import type { ExerciseSnapshot, FeedbackStatus } from "@/lib/supabase/types";
+import { exerciseMeta } from "@/lib/exercise-labels";
 
 /**
  * Универсальная карточка упражнения (SPEC 4.3).
@@ -14,28 +15,6 @@ import type { ExerciseSnapshot, FeedbackStatus } from "@/lib/supabase/types";
  * Порядок кнопок ✅ → ⚠️ → ❌ фиксирован, высота ≥ 56px,
  * цвета только из переменных темы.
  */
-
-const TYPE_LABELS: Record<string, string> = {
-  breathing: "Дыхание",
-  warmup: "Разминка",
-  main: "Основное",
-  stretch: "Растяжка",
-  massage: "Самомассаж",
-};
-
-function metaLine(exercise: ExerciseSnapshot): string {
-  const type = TYPE_LABELS[exercise.type] ?? exercise.type;
-  if (exercise.duration_sec) return `${type} · ${formatSeconds(exercise.duration_sec)}`;
-  if (exercise.repetitions) return `${type} · ${exercise.repetitions} повторов`;
-  return type;
-}
-
-function formatSeconds(sec: number): string {
-  if (sec < 60) return `${sec} секунд`;
-  const min = Math.floor(sec / 60);
-  const rest = sec % 60;
-  return rest ? `${min} мин ${rest} сек` : `${min} мин`;
-}
 
 export function ExerciseCard({
   exercise,
@@ -52,7 +31,7 @@ export function ExerciseCard({
 
       <header className="space-y-1">
         <h2 className="text-[22px] leading-tight font-semibold tracking-tight">{exercise.name}</h2>
-        <p className="text-sm text-muted-foreground">{metaLine(exercise)}</p>
+        <p className="text-sm text-muted-foreground">{exerciseMeta(exercise)}</p>
       </header>
 
       <p className="text-base leading-relaxed whitespace-pre-line text-foreground">

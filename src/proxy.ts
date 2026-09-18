@@ -12,7 +12,7 @@ import { publicEnv } from "@/lib/env";
 const PROTECTED_PREFIXES = ["/app", "/onboarding", "/admin"];
 const GUEST_ONLY = ["/auth/login", "/auth/register"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   // Без конфигурации Supabase не трогаем запрос вообще — иначе вся страница ляжет в 500.
@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Всё, кроме статики и картинок: middleware должен обновлять токен
+     * Всё, кроме статики и картинок: proxy должен обновлять токен
      * на обычных навигациях, но не тратиться на ассеты.
      */
     "/((?!_next/static|_next/image|favicon.ico|icons/|marketing/|sounds/|manifest.json|sw.js|.*\\.(?:png|jpg|jpeg|gif|svg|webp|mp3|ico)$).*)",
