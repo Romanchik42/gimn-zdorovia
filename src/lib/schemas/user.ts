@@ -80,3 +80,10 @@ export const telegramLoginSchema = z.object({
 });
 
 export type TelegramLoginInput = z.infer<typeof telegramLoginSchema>;
+
+/** Вход из приложения, открытого кнопкой бота: сырая строка initData от Telegram. */
+export const telegramWebAppSchema = z.object({
+  init_data: z.string().min(1).max(4096),
+  referral_code: z.string().optional(),
+  referral_source: referralSourceSchema.optional(),
+});

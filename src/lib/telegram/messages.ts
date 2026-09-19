@@ -18,16 +18,25 @@ import type { MealType } from "@/lib/supabase/types";
 
 type Admin = ReturnType<typeof createAdminClient>;
 
+/** Обычные ссылки — для пересылки тем, у кого нашего бота нет. */
 export const APP_LINKS = {
-  app: () => `${publicEnv.appUrl}/app`,
-  nutrition: () => `${publicEnv.appUrl}/app/nutrition`,
-  progress: () => `${publicEnv.appUrl}/app/progress`,
-  register: () => `${publicEnv.appUrl}/auth/register`,
   invite: (code: string) => `${publicEnv.appUrl}/i/${code}`,
 };
 
-export function openAppButton(text = "Открыть приложение", url = APP_LINKS.app()): InlineButton[][] {
-  return [[{ text, url }]];
+/**
+ * Адрес приложения для Web App. Всё идёт через /tg: там сессия открывается
+ * по подписанному initData, и только потом — переход на нужный экран.
+ * ref — код приглашения, если человек пришёл по ссылке друга.
+ */
+export function webAppUrl(path = "/app", ref?: string): string {
+  const query = new URLSearchParams({ next: path });
+  if (ref) query.set("ref", ref);
+  return `${publicEnv.appUrl}/tg?${query}`;
+}
+
+/** Кнопка открывает приложение внутри Telegram (Web App), вход — автоматически. */
+export function openAppButton(text = "Открыть приложение", url = webAppUrl()): InlineButton[][] {
+  return [[{ text, web_app: { url } }]];
 }
 
 function longDate(iso: string): string {
@@ -46,7 +55,20 @@ export const HELP_TEXT = [
 ].join("\n");
 
 export const NOT_REGISTERED_TEXT =
-  "Похоже, вы ещё не зарегистрированы. Откройте приложение, войдите через Telegram — и бот начнёт присылать тренировки и меню.";
+  "Похоже, вы ещё не зарегистрированы. Откройте приложение — вход через Telegram произойдёт сам.";
+
+/**
+ * «Домашнее» сообщение — единственное, что бот держит в чате после /start.
+ * Коротко и с одной кнопкой: всё остальное — внутри приложения.
+ */
+export const HOME_TEXT = {
+  guest: "Гимн.здоровья — гимнастика для здоровья. Откройте приложение: вход через Telegram произойдёт сам.",
+  user: (name: string) => `${name}, тренировка и меню на сегодня — в приложении.`,
+  linked: "Telegram привязан. Сюда будут приходить только напоминания и отчёты.",
+  linkedElsewhere: "Этот Telegram уже привязан к другому аккаунту Гимн.здоровья.",
+  linkFailed: "Не удалось привязать Telegram. Попробуйте ещё раз из настроек приложения.",
+  invited: "Вас пригласили в Гимн.здоровья — гимнастику для здоровья.",
+};
 
 export async function todayText(admin: Admin, userId: string): Promise<string> {
   const today = todayIso();

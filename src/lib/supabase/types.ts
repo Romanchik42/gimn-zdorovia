@@ -339,6 +339,13 @@ export type NotificationLogRow = {
   sent_at: string;
 };
 
+/** Одно «домашнее» сообщение бота на чат (0012). */
+export type TelegramChatRow = {
+  chat_id: number;
+  home_message_id: number | null;
+  updated_at: string;
+};
+
 /**
  * Почти у всех колонок есть DEFAULT в БД, поэтому при вставке обязателен
  * лишь небольшой набор. Req перечисляет именно его — список выведен
@@ -410,6 +417,7 @@ export type Database = {
       >;
       referral_clicks: TableDef<ReferralClickRow, "referral_code">;
       notifications_log: TableDef<NotificationLogRow, "user_id" | "type" | "status">;
+      telegram_chats: TableDef<TelegramChatRow, "chat_id">;
     };
     Views: Record<never, never>;
     Functions: {

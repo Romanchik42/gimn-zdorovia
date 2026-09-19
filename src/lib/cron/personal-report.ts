@@ -6,7 +6,7 @@ import { ru } from "date-fns/locale";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SchemaMissingError, isSchemaMissing } from "@/lib/cron/errors";
 import { trySend } from "@/lib/telegram/bot";
-import { APP_LINKS, openAppButton } from "@/lib/telegram/messages";
+import { openAppButton, webAppUrl } from "@/lib/telegram/messages";
 import { addDays, todayIso } from "@/lib/dates";
 import { decide, type Adjustment, type PeriodStats } from "@/lib/workout-engine/adaptation";
 import { PLAN_FOCUSES, focusLabel } from "@/lib/workout-engine/weekly-cycle";
@@ -186,7 +186,7 @@ async function reportFor(
 
   if (u.telegram_id) {
     const text = reportText(periodNumber, stats, verdict.recommendation, next);
-    const result = await trySend(u.telegram_id, text, openAppButton("Открыть прогресс", APP_LINKS.progress()));
+    const result = await trySend(u.telegram_id, text, openAppButton("Открыть прогресс", webAppUrl("/app/progress")));
 
     await admin.from("notifications_log").insert({
       user_id: u.id,
