@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CheckIcon, Loader2Icon, PipetteIcon, RotateCcwIcon, SquareIcon, TriangleAlertIcon } from "lucide-react";
@@ -22,6 +22,24 @@ import {
 } from "@/lib/appearance";
 import type { CustomTheme, InfoCardTint } from "@/lib/supabase/types";
 import { cn } from "cn";
+
+/**
+ * Цвета текущей темы как строка «bg|text|card» — внешнее хранилище для
+ * useSyncExternalStore: снимок стабилен, на сервере отдаём цвета Шалфея,
+ * чтобы разметка совпала и не мигала при гидрации.
+ */
+const THEME_EVENT = "gz:theme-change";
+const SERVER_COLORS = "#FAFAF7|#2D3E33|#FFFFFF";
+
+function subscribeTheme(onChange: () => void): () => void {
+  window.addEventListener(THEME_EVENT, onChange);
+  return () => window.removeEventListener(THEME_EVENT, onChange);
+}
+
+function themeColorsSnapshot(): string {
+  const c = currentThemeColors();
+  return `${c.bg}|${c.text}|${c.card}`;
+}
 
 /** Текущие цвета темы — стартовая точка «Своего выбора». */
 function currentThemeColors(): Pick<CustomTheme, "bg" | "text" | "card"> {
@@ -52,10 +70,13 @@ export function CustomColorsSection({ initial }: { initial: CustomTheme | null }
   const [saved, setSaved] = useState<CustomTheme | null>(initial);
   const [draft, setDraft] = useState<CustomTheme | null>(initial);
   const [pending, setPending] = useState(false);
+  const themeColors = useSyncExternalStore(subscribeTheme, themeColorsSnapshot, () => SERVER_COLORS).split("|");
+  // Пока человек ничего не менял, пипетки показывают цвета выбранной темы.
+  const shown = { bg: themeColors[0], text: themeColors[1], card: themeColors[2] };
 
   function edit(patch: Partial<CustomTheme>) {
     // Первое касание — стартуем от цветов текущей темы.
-    const base: CustomTheme = draft ?? { ...currentThemeColors(), glow: false, glow_strength: 40 };
+    const base: CustomTheme = draft ?? { ...shown, glow: false, glow_strength: 40 };
     const next = { ...base, ...patch };
     setDraft(next);
     applyCustomTheme(next); // живой предпросмотр
@@ -110,7 +131,7 @@ export function CustomColorsSection({ initial }: { initial: CustomTheme | null }
           <label key={key} className="flex flex-col items-center gap-1.5 text-center text-xs">
             <input
               type="color"
-              value={draft?.[key] ?? "#FFFFFF"}
+              value={draft?.[key] ?? shown[key]}
               onChange={(e) => edit({ [key]: e.target.value.toUpperCase() })}
               className="h-12 w-full cursor-pointer rounded-lg border border-border bg-card p-1"
               aria-label={label}
