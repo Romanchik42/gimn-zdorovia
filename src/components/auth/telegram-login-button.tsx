@@ -3,13 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { SendIcon } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { clearReferralCode, readReferralCode, readReferralSource } from "@/lib/referral/storage";
 
 /**
  * Telegram Login Widget. Скрипт виджета грузится с telegram.org и вызывает
  * глобальный колбэк — поэтому он вешается на window, а не передаётся внутрь.
+ *
+ * Если telegram.org недоступен или виджет не отрисовался за WIDGET_TIMEOUT_MS,
+ * вместо пустого места показываем кнопку «Войти через Telegram» — она
+ * открывает бота, а там кнопка приложения входит сама (GIMN-010).
  */
 declare global {
   interface Window {
@@ -17,10 +23,13 @@ declare global {
   }
 }
 
+const WIDGET_TIMEOUT_MS = 5000;
+
 export function TelegramLoginButton({ botUsername }: { botUsername: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [widgetFailed, setWidgetFailed] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -63,13 +72,32 @@ export function TelegramLoginButton({ botUsername }: { botUsername: string }) {
     script.setAttribute("data-radius", "12");
     script.setAttribute("data-onauth", "onTelegramAuth(user)");
     script.setAttribute("data-request-access", "write");
+    script.onerror = () => setWidgetFailed(true);
     container.appendChild(script);
 
+    // Виджет — это iframe; не появился вовремя — считаем, что telegram.org недоступен.
+    const timer = setTimeout(() => {
+      if (!container.querySelector("iframe")) setWidgetFailed(true);
+    }, WIDGET_TIMEOUT_MS);
+
     return () => {
+      clearTimeout(timer);
       container.replaceChildren();
       delete window.onTelegramAuth;
     };
   }, [botUsername, router]);
+
+  if (widgetFailed) {
+    const code = readReferralCode();
+    return (
+      <Button asChild size="lg" className="h-12 w-full">
+        <a href={`https://t.me/${botUsername}${code ? `?start=${code}` : ""}`} target="_blank" rel="noopener noreferrer">
+          <SendIcon className="size-4" aria-hidden />
+          Войти через Telegram
+        </a>
+      </Button>
+    );
+  }
 
   return (
     <div className="flex min-h-[48px] items-center justify-center">
