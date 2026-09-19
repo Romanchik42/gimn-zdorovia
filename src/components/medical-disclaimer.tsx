@@ -24,7 +24,8 @@ export function MedicalDisclaimer({
   return (
     <aside
       className={cn(
-        "rounded-lg border border-border bg-muted/50 p-4 text-left text-muted-foreground",
+        // Тон таблички выбирается в настройках (GIMN-011, --info-* в globals.css).
+        "rounded-lg border border-info-border bg-info p-4 text-left text-info-foreground",
         compact ? "text-xs" : "text-sm",
         className,
       )}

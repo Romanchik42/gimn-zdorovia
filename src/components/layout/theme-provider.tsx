@@ -66,12 +66,3 @@ export function useTheme(): ThemeContextValue {
   if (!ctx) throw new Error("useTheme должен вызываться внутри <ThemeProvider>");
   return ctx;
 }
-
-/**
- * Ставит сохранённую тему до первой отрисовки, чтобы не мигало дефолтом.
- * Инлайнится в <head>; строка собрана из констант, пользовательских данных нет.
- */
-export const themeBootstrapScript = `
-(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
-if(t==="sage"||t==="terracotta"||t==="ocean"){document.documentElement.dataset.theme=t;}}catch(e){}})();
-`;

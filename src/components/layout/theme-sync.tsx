@@ -4,6 +4,8 @@ import { useEffect } from "react";
 
 import { useTheme } from "@/components/layout/theme-provider";
 import { isTheme, type Theme } from "@/lib/themes";
+import { applyCustomTheme, applyInfoTint, customThemeSchema, rememberAppearance } from "@/lib/appearance";
+import type { CustomTheme, InfoCardTint } from "@/lib/supabase/types";
 
 /** Утро и день — Sage, вечер — Terracotta (US-10). Границы по местному времени устройства. */
 export function themeForHour(hour: number): Theme {
@@ -16,8 +18,31 @@ const RECHECK_MS = 10 * 60 * 1000;
  * Синхронизирует тему с профилем: выбор, сделанный на телефоне, приезжает
  * на компьютер (US-10). При включённой авто-смене тема следует за часами.
  */
-export function ThemeSync({ dbTheme, autoTheme }: { dbTheme: string | null; autoTheme: boolean }) {
+export function ThemeSync({
+  dbTheme,
+  autoTheme,
+  customTheme = null,
+  infoTint = "neutral",
+}: {
+  dbTheme: string | null;
+  autoTheme: boolean;
+  customTheme?: CustomTheme | null;
+  infoTint?: InfoCardTint;
+}) {
   const { theme, setTheme } = useTheme();
+
+  // Своя палитра и тон табличек — из профиля (GIMN-011); запоминаем на
+  // устройстве, чтобы в следующий раз они встали до первой отрисовки.
+  const customKey = JSON.stringify(customTheme);
+  useEffect(() => {
+    const parsed = customThemeSchema.safeParse(customTheme);
+    const custom = parsed.success ? parsed.data : null;
+    applyCustomTheme(custom);
+    applyInfoTint(infoTint);
+    rememberAppearance(custom, infoTint);
+    // customTheme сравниваем по содержимому, а не по ссылке
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customKey, infoTint]);
 
   useEffect(() => {
     if (autoTheme) {

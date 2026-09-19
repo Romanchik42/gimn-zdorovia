@@ -232,7 +232,11 @@ export function WorkoutRunner({
       {current.replaced ? (
         <p className="flex items-start gap-2 text-xs text-muted-foreground" role="note">
           <RefreshCwIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          Полегче вместо «{current.replaced}» — на прошлой неделе оно давалось тяжело.
+          {current.replaced_reason === "position"
+            ? `Вместо «${current.replaced}» — в удобном для вас положении.`
+            : current.replaced_reason === "gentle"
+              ? `Щадящий вариант вместо «${current.replaced}» — мягко развиваем подвижность.`
+              : `Полегче вместо «${current.replaced}» — на прошлой неделе оно давалось тяжело.`}
         </p>
       ) : null}
 

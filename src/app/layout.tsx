@@ -3,7 +3,8 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 import { PwaRegistrar } from "@/components/layout/pwa-registrar";
-import { ThemeProvider, themeBootstrapScript } from "@/components/layout/theme-provider";
+import { ThemeProvider } from "@/components/layout/theme-provider";
+import { appearanceBootstrapScript } from "@/lib/appearance";
 import { DEFAULT_THEME } from "@/lib/themes";
 
 import "./globals.css";
@@ -52,12 +53,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="ru"
       data-theme={DEFAULT_THEME}
+      data-info-tint="neutral"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
         {/* до первой отрисовки поднимаем сохранённую тему — иначе мигает дефолтом */}
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+        <script dangerouslySetInnerHTML={{ __html: appearanceBootstrapScript }} />
       </head>
       <body className="flex min-h-full flex-col">
         <ThemeProvider>{children}</ThemeProvider>

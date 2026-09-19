@@ -32,11 +32,11 @@ export function TelegramAuthScreen({ title, subtitle }: { title: string; subtitl
           <TelegramBotLink botUsername={botUsername} />
         </div>
 
-        <section className="space-y-2 rounded-xl bg-card p-4 text-sm ring-1 ring-foreground/10" aria-label="О приложении">
+        <section className="space-y-2 rounded-xl border border-info-border bg-info p-4 text-sm text-info-foreground" aria-label="О приложении">
           <p className="font-medium">
             Гимн.здоровья — гимнастика для здоровья при болезни Бехтерева и для формы.
           </p>
-          <p className="text-muted-foreground">
+          <p>
             Персональная программа на каждый день: упражнения с понятной техникой, меню и
             прогресс. Программа подстраивается под самочувствие — около 30 минут в день.
           </p>

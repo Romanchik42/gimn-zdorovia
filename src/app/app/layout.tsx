@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
   const { data: profile } = user
     ? await supabase
         .from("users")
-        .select("theme, auto_theme, sounds_enabled, sound_pack, sound_volume")
+        .select("theme, auto_theme, sounds_enabled, sound_pack, sound_volume, custom_theme, info_card_tint")
         .eq("id", user.id)
         .maybeSingle()
     : { data: null };
@@ -34,7 +34,12 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
 
   return (
     <SoundProvider initial={sound}>
-      <ThemeSync dbTheme={profile?.theme ?? null} autoTheme={profile?.auto_theme ?? false} />
+      <ThemeSync
+        dbTheme={profile?.theme ?? null}
+        autoTheme={profile?.auto_theme ?? false}
+        customTheme={profile?.custom_theme ?? null}
+        infoTint={profile?.info_card_tint ?? "neutral"}
+      />
       {/* Внутри Telegram даёт «Отправить» через выбор чата; в браузере ничего не делает. */}
       <Script src="https://telegram.org/js/telegram-web-app.js" strategy="lazyOnload" />
       <div className="flex min-h-full flex-1 flex-col">

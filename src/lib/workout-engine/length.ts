@@ -57,15 +57,24 @@ export function cutToLength(exercises: ExerciseSnapshot[], length: WorkoutLength
   const chosen = new Set<number>();
   if (closingIndex >= 0 && quota.closing > 0) chosen.add(closingIndex);
 
+  // Два прохода: сначала приоритетные (щадящие для ограниченных зон по
+  // углублённой диагностике), потом остальные — порядок в занятии не меняется.
   const taken: Record<Part, number> = { breathing: 0, warmup: 0, main: 0, stretch: 0 };
-  exercises.forEach((e, i) => {
-    if (i === closingIndex) return;
-    const part = partOf(e);
-    if (taken[part] < quota[part]) {
-      taken[part]++;
-      chosen.add(i);
-    }
-  });
+  for (const wantPriority of [true, false]) {
+    exercises.forEach((e, i) => {
+      if (i === closingIndex || chosen.has(i) || Boolean(e.priority) !== wantPriority) return;
+      const part = partOf(e);
+      if (taken[part] < quota[part]) {
+        taken[part]++;
+        chosen.add(i);
+      } else if (wantPriority && part !== "main" && taken.main < quota.main - 1) {
+        // Щадящему для ограниченной зоны не хватило места в своей части —
+        // отдаём ему место основной: для этой зоны оно и есть основная работа.
+        taken.main++;
+        chosen.add(i);
+      }
+    });
+  }
 
   // В шаблоне дыхание бывает только заминкой в конце — тогда оно и есть
   // дыхательная часть: без него структура занятия неполная.

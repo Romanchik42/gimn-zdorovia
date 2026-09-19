@@ -3,7 +3,7 @@
 
 /* ---------------------------------------------------------------------------
    Гимн.здоровья — единый источник темизации (SPEC 4.2).
-   Три темы переключаются атрибутом data-theme на <html>.
+   Семь тем переключаются атрибутом data-theme на <html>.
    Цвета НЕ дублируются по компонентам — только здесь.
    --------------------------------------------------------------------------- */
 
@@ -102,6 +102,149 @@
   --chart-1: #1f8faf;
 }
 
+/* Лаванда — мягкий сиреневый, спокойный вечерний (GIMN-011). Контраст пар ≥ 5.1:1. */
+[data-theme="lavender"] {
+  --primary: #6E5A9E;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #5D4B8A;
+  --background: #F8F6FB;
+  --foreground: #2E2840;
+  --card: #FFFFFF;
+  --card-foreground: #2E2840;
+  --popover: #FFFFFF;
+  --popover-foreground: #2E2840;
+  --muted: #EFEBF5;
+  --muted-foreground: #5F5775;
+  --secondary: #EFEBF5;
+  --secondary-foreground: #2E2840;
+  --accent: #9A6128;
+  --accent-foreground: #FFFFFF;
+  --destructive: #B0413E;
+  --destructive-foreground: #FFFFFF;
+  --success: #6E5A9E;
+  --success-foreground: #FFFFFF;
+  --border: #E3DDEC;
+  --input: #E3DDEC;
+  --ring: #6E5A9E;
+  --logo-primary: #6E5A9E;
+  --logo-accent: #9A6128;
+  --chart-1: #6E5A9E;
+}
+
+/* Песок — тёплый бежевый. Контраст пар ≥ 5.0:1. */
+[data-theme="sand"] {
+  --primary: #8C6239;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #76512F;
+  --background: #FBF7F0;
+  --foreground: #3A2E22;
+  --card: #FFFFFF;
+  --card-foreground: #3A2E22;
+  --popover: #FFFFFF;
+  --popover-foreground: #3A2E22;
+  --muted: #F2EBDF;
+  --muted-foreground: #6B5B47;
+  --secondary: #F2EBDF;
+  --secondary-foreground: #3A2E22;
+  --accent: #3F7A66;
+  --accent-foreground: #FFFFFF;
+  --destructive: #A8433A;
+  --destructive-foreground: #FFFFFF;
+  --success: #8C6239;
+  --success-foreground: #FFFFFF;
+  --border: #E8DECF;
+  --input: #E8DECF;
+  --ring: #8C6239;
+  --logo-primary: #8C6239;
+  --logo-accent: #3F7A66;
+  --chart-1: #8C6239;
+}
+
+/* Мята — свежий зелёно-бирюзовый. Контраст пар ≥ 4.66:1. */
+[data-theme="mint"] {
+  --primary: #2F7D69;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #256858;
+  --background: #F3FAF7;
+  --foreground: #1D3A33;
+  --card: #FFFFFF;
+  --card-foreground: #1D3A33;
+  --popover: #FFFFFF;
+  --popover-foreground: #1D3A33;
+  --muted: #E4F1EC;
+  --muted-foreground: #4F6B63;
+  --secondary: #E4F1EC;
+  --secondary-foreground: #1D3A33;
+  --accent: #9C6A2A;
+  --accent-foreground: #FFFFFF;
+  --destructive: #B0413E;
+  --destructive-foreground: #FFFFFF;
+  --success: #2F7D69;
+  --success-foreground: #FFFFFF;
+  --border: #D6E8E1;
+  --input: #D6E8E1;
+  --ring: #2F7D69;
+  --logo-primary: #2F7D69;
+  --logo-accent: #9C6A2A;
+  --chart-1: #2F7D69;
+}
+
+/* Графит — тёмная тема для вечера, без чистого чёрного. Контраст пар ≥ 5.2:1. */
+[data-theme="graphite"] {
+  --primary: #8CC4A6;
+  --primary-foreground: #0F2219;
+  --primary-hover: #A3D2B8;
+  --background: #1C1F23;
+  --foreground: #E9ECEF;
+  --card: #262A30;
+  --card-foreground: #E9ECEF;
+  --popover: #262A30;
+  --popover-foreground: #E9ECEF;
+  --muted: #30353C;
+  --muted-foreground: #AAB2BC;
+  --secondary: #30353C;
+  --secondary-foreground: #E9ECEF;
+  --accent: #E0B070;
+  --accent-foreground: #231704;
+  --destructive: #E0807A;
+  --destructive-foreground: #1C0B0A;
+  --success: #8CC4A6;
+  --success-foreground: #0F2219;
+  --border: #3A4048;
+  --input: #3A4048;
+  --ring: #8CC4A6;
+  --logo-primary: #8CC4A6;
+  --logo-accent: #E0B070;
+  --chart-1: #8CC4A6;
+}
+
+/* ---------------------------------------------------------------------------
+   Тон инфо-табличек («Важно о здоровье» и т.п.) — выбор в настройках
+   (GIMN-011, users.info_card_tint). Оттенок подмешивается к цвету карточки
+   текущей темы, текст — обычный цвет темы: читаемо в любой теме, и в тёмной.
+   --------------------------------------------------------------------------- */
+:root {
+  --info-tint: var(--muted-foreground);
+  --info-bg: color-mix(in oklab, var(--muted) 60%, var(--card));
+  --info-border: var(--border);
+  --info-fg: var(--foreground);
+}
+[data-info-tint="blue"] { --info-tint: #3f7fb8; }
+[data-info-tint="sage"] { --info-tint: #6f8a78; }
+[data-info-tint="coral"] { --info-tint: #d0704f; }
+[data-info-tint="sand"] { --info-tint: #b8904f; }
+[data-info-tint="lavender"] { --info-tint: #8570b8; }
+[data-info-tint]:not([data-info-tint="neutral"]) {
+  --info-bg: color-mix(in oklab, var(--info-tint) 14%, var(--card));
+  --info-border: color-mix(in oklab, var(--info-tint) 40%, var(--card));
+}
+
+/* Свечение карточек — «Свой выбор» в оформлении. Сила 0-100 задаёт радиус. */
+[data-card-glow="on"] .bg-card {
+  box-shadow: 0 0 calc(4px + var(--card-glow-strength, 50) * 0.24px)
+    color-mix(in oklab, var(--primary) calc(20% + var(--card-glow-strength, 50) * 0.5%), transparent);
+}
+
 /* Мост в Tailwind v4: inline — чтобы утилиты читали переменную в рантайме
    и смена data-theme перекрашивала всё без пересборки. */
 @theme inline {
@@ -128,6 +271,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
+  --color-info: var(--info-bg);
+  --color-info-border: var(--info-border);
+  --color-info-foreground: var(--info-fg);
 
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), monospace;

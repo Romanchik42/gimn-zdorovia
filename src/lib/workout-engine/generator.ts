@@ -11,6 +11,7 @@ import type {
 } from "@/lib/supabase/types";
 import { estimateMinutes } from "@/lib/workout-engine/duration";
 import { cutToLength } from "@/lib/workout-engine/length";
+import { NO_RESTRICTIONS, type Restrictions } from "@/lib/diagnostics/extended";
 import {
   FOCUS_JOINTS,
   LEVEL_RANK,
@@ -193,6 +194,8 @@ export type FitPlanArgs = {
   length?: WorkoutLength;
   /** Часто пропускаемые или тяжёлые за прошлую неделю — меняем на лёгкие аналоги. */
   struggling?: string[];
+  /** Выводы углублённой диагностики: недоступные положения, ограниченные зоны. */
+  restrictions?: Restrictions;
 };
 
 /**
@@ -215,6 +218,12 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
   // Трудные упражнения тоже считаем «занятыми» — чтобы добор не вернул их обратно.
   const inWorkout = new Set([...exercises.map((e) => e.exercise_id), ...struggling]);
   const joints = FOCUS_JOINTS[args.focus ?? ""] ?? [];
+  const restrictions = args.restrictions ?? NO_RESTRICTIONS;
+  const blockedPositions = new Set<string>(restrictions.blockedPositions);
+  const limitedZones = new Set<string>(restrictions.limitedZones);
+  // Нагрузочные упражнения ограниченной зоны в добор не берём: ей — только щадящие.
+  const tooHardForZone = (e: ExerciseRow) =>
+    limitedZones.has(e.target_joint) && !e.gentle && (e.type === "main" || e.type === "warmup");
 
   // Потолок сложности: Бехтерева — только щадящее, выше лишь на полной нагрузке.
   const levelCap =
@@ -224,6 +233,8 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
     !inWorkout.has(e.id) &&
       !exclude.has(e.id) &&
       !isContraindicated(e, blocked) &&
+      !blockedPositions.has(e.position) &&
+      !tooHardForZone(e) &&
     !(excludeJoints.has(e.target_joint) && e.type !== "breathing" && e.type !== "stretch");
   const inMode = (e: ExerciseRow) => e.mode === args.mode || e.mode === "both";
   const safe = args.pool.filter((e) => allowed(e) && inMode(e) && LEVEL_RANK[e.level] <= levelCap);
@@ -253,12 +264,83 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
     warning: warningFor(e, blocked),
   });
 
-  // Недельная адаптация (GIMN-010): упражнение, которое на прошлой неделе
-  // часто пропускали или отмечали «тяжело», меняем на аналог той же зоны
-  // и той же части занятия — не сложнее исходного. Число упражнений то же.
   const list = [...exercises];
   const byId = new Map(args.pool.map((e) => [e.id, e]));
   const partKey = (type: string) => (type === "massage" ? "warmup" : type);
+  const candidates = [...safe, ...cross];
+
+  const add = (e: ExerciseRow, extra?: Partial<ExerciseSnapshot>) => {
+    const rank = PART_RANK[e.type] ?? 2;
+    // После последнего упражнения той же или более ранней части, но до
+    // финального дыхания: заминка по методике остаётся последней.
+    let at = 0;
+    for (let i = 0; i < list.length; i++) {
+      const trailingBreath = list[i].type === "breathing" && i > 0 && i === list.length - 1;
+      if ((PART_RANK[list[i].type] ?? 2) <= rank && !trailingBreath) at = i + 1;
+    }
+    list.splice(at, 0, { ...snapshotOf(e), ...extra });
+  };
+
+  // Углублённая диагностика (GIMN-011), 1: положение тела. Упражнение из
+  // недоступного положения меняем на аналог той же зоны и части занятия;
+  // аналога нет — убираем, количество восполнит добор ниже.
+  for (let i = list.length - 1; i >= 0; i--) {
+    const original = byId.get(list[i].exercise_id);
+    if (!original || !blockedPositions.has(original.position)) continue;
+    const alternative = candidates
+      .filter((e) => !inWorkout.has(e.id) && e.target_joint === original.target_joint && partKey(e.type) === partKey(original.type))
+      .sort((a, b) => Number(b.gentle) - Number(a.gentle) || LEVEL_RANK[a.level] - LEVEL_RANK[b.level])[0];
+    if (alternative) {
+      inWorkout.add(alternative.id);
+      list[i] = { ...snapshotOf(alternative), order: list[i].order, replaced: original.name, replaced_reason: "position" };
+    } else {
+      list.splice(i, 1);
+    }
+  }
+
+  // 2: зона с ограничением подвижности НЕ убирается — ей самые щадящие
+  // упражнения (микроамплитуда, изометрика): мягко развивать, а не забрасывать.
+  // Нагрузочное упражнение зоны меняем на щадящее той же зоны (или соседней —
+  // ноги↔таз, спина↔корпус); замены нет — убираем, добор восполнит количество.
+  const SIBLING: Record<string, string> = { legs: "hips", hips: "legs", spine: "core", core: "spine" };
+  for (const zone of restrictions.limitedZones) {
+    const gentleIn = (z: string) => (e: ExerciseRow) => e.gentle && e.target_joint === z && !inWorkout.has(e.id);
+    for (let i = list.length - 1; i >= 0; i--) {
+      const original = byId.get(list[i].exercise_id);
+      if (!original || original.target_joint !== zone || !tooHardForZone(original)) continue;
+      const alternative =
+        candidates.find((e) => gentleIn(zone)(e) && partKey(e.type) === partKey(original.type)) ??
+        candidates.find(gentleIn(zone)) ??
+        (SIBLING[zone] ? candidates.find(gentleIn(SIBLING[zone])) : undefined);
+      if (alternative) {
+        inWorkout.add(alternative.id);
+        list[i] = {
+          ...snapshotOf(alternative),
+          order: list[i].order,
+          replaced: original.name,
+          replaced_reason: "gentle",
+        };
+      } else {
+        list.splice(i, 1);
+      }
+    }
+    // Минимум щадящих этой зоны; шее — два (микроповороты и изометрия).
+    // Основные — вперёд: разминочная часть коротка и уже занята.
+    const need = zone === "neck" ? 2 : 1;
+    let have = list.filter((e) => byId.get(e.exercise_id)?.gentle && e.target_joint === zone).length;
+    const pool = candidates.filter(gentleIn(zone)).sort((x, y) => Number(y.type === "main") - Number(x.type === "main"));
+    for (const pick of pool) {
+      if (have >= need) break;
+      if (inWorkout.has(pick.id)) continue;
+      inWorkout.add(pick.id);
+      add(pick);
+      have++;
+    }
+  }
+
+  // Недельная адаптация (GIMN-010): упражнение, которое на прошлой неделе
+  // часто пропускали или отмечали «тяжело», меняем на аналог той же зоны
+  // и той же части занятия — не сложнее исходного. Число упражнений то же.
   for (let i = 0; i < list.length; i++) {
     const original = byId.get(list[i].exercise_id);
     if (!original || !struggling.has(original.id)) continue;
@@ -273,7 +355,7 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
       .sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level])[0];
     if (!alternative) continue;
     inWorkout.add(alternative.id);
-    list[i] = { ...snapshotOf(alternative), order: list[i].order, replaced: original.name };
+    list[i] = { ...snapshotOf(alternative), order: list[i].order, replaced: original.name, replaced_reason: "weekly" };
   }
 
   // Дыхание — обязательная часть занятия в любой длине (GIMN-010). Шаблоны
@@ -301,18 +383,6 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
       ];
   const seen = new Set<string>();
   const queue = tiers.flat().filter((e) => !inWorkout.has(e.id) && !seen.has(e.id) && seen.add(e.id));
-
-  const add = (e: ExerciseRow) => {
-    const rank = PART_RANK[e.type] ?? 2;
-    // После последнего упражнения той же или более ранней части, но до
-    // финального дыхания: заминка по методике остаётся последней.
-    let at = 0;
-    for (let i = 0; i < list.length; i++) {
-      const trailingBreath = list[i].type === "breathing" && i > 0 && i === list.length - 1;
-      if ((PART_RANK[list[i].type] ?? 2) <= rank && !trailingBreath) at = i + 1;
-    }
-    list.splice(at, 0, snapshotOf(e));
-  };
 
   // Убираем с конца основной части, потом разминки; каждая часть остаётся хотя бы с одним.
   const removeOne = (): boolean => {
@@ -347,10 +417,16 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
   // Стартуем с разумного числа упражнений, дальше — по одному, пока не попадём в ±10%.
   while (list.length < exerciseCount(args.targetMin) && queue.length > 0) add(queue.shift()!);
 
+  // Щадящие упражнения ограниченных зон — в приоритете: короткое занятие их не отрезает.
+  for (let i = 0; i < list.length; i++) {
+    const ex = byId.get(list[i].exercise_id);
+    if (ex?.gentle && limitedZones.has(ex.target_joint)) list[i] = { ...list[i], priority: true };
+  }
+
   // Короткое и среднее — меньше упражнений в обычной дозировке, без подгонки
   // под минуты плана: иначе отдых раздулся бы до потолка.
   const length = args.length ?? "full";
-  if (length !== "full") return cutToLength(list.map((e, i) => ({ ...e, order: i + 1 })), length);
+  if (length !== "full") return annotate(cutToLength(list.map((e, i) => ({ ...e, order: i + 1 })), length), restrictions);
 
   let result = fit();
   for (let guard = 0; guard < 20; guard++) {
@@ -364,7 +440,33 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
     } else break;
     result = fit();
   }
-  return result;
+  return annotate(result, restrictions);
+}
+
+/**
+ * Пометки по углублённой диагностике: слабая рука — нагрузку на неё снижаем,
+ * но не убираем; растяжки почти нет — старт с минимальной амплитуды
+ * и укороченное удержание.
+ */
+function annotate(list: ExerciseSnapshot[], r: Restrictions): ExerciseSnapshot[] {
+  const note = (e: ExerciseSnapshot, text: string): ExerciseSnapshot => ({
+    ...e,
+    warning: e.warning ? `${e.warning}. ${text}` : text,
+  });
+  return list.map((e) => {
+    let out = e;
+    if (r.weakArm && e.target_joint === "shoulder") {
+      out = note(out, `${r.weakArm === "left" ? "Левой" : "Правой"} рукой — меньше амплитуда и повторов, без боли`);
+    }
+    if (r.limitedZones.includes(e.target_joint as never) && e.type !== "breathing" && !e.priority) {
+      out = note(out, "Зона с ограничением — двигайтесь с минимальной амплитудой, без боли");
+    }
+    if (r.lowFlexibility && e.type === "stretch") {
+      out = note(out, "Начните с минимальной амплитуды — только до лёгкого натяжения");
+      if (out.duration_sec) out = { ...out, duration_sec: Math.max(15, Math.round((out.duration_sec * 0.7) / 5) * 5) };
+    }
+    return out;
+  });
 }
 
 /**

@@ -10,7 +10,12 @@
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 export type Mode = "behtereva" | "general";
-export type ThemeName = "sage" | "terracotta" | "ocean";
+export type ThemeName = "sage" | "terracotta" | "ocean" | "lavender" | "sand" | "mint" | "graphite";
+/** Своя палитра поверх темы (0014). */
+export type CustomTheme = { bg: string; text: string; card: string; glow: boolean; glow_strength: number };
+export type InfoCardTint = "neutral" | "blue" | "sage" | "coral" | "sand" | "lavender";
+export type MealCategory = "porridge" | "meat" | "fish" | "vegetables" | "dairy" | "soup" | "eggs" | "fruit";
+export type FeedbackType = "review" | "bug" | "idea";
 export type SoundPack = "soft" | "energetic" | "minimal" | "none";
 export type Intensity = "low" | "medium" | "high";
 export type SequenceIntensity = "low" | "medium" | "normal";
@@ -49,6 +54,9 @@ export type UserRow = {
   phone: string | null;
   avatar: string | null;
   workout_length: WorkoutLength | null;
+  custom_theme: CustomTheme | null;
+  info_card_tint: InfoCardTint;
+  avatar_url: string | null;
   name: string;
   gender: "male" | "female" | null;
   birth_date: string | null;
@@ -86,6 +94,9 @@ export type UserDiagnosticsRow = {
   blood_pressure_ok: boolean | null;
   calculated_intensity: SequenceIntensity;
   calculated_focus: string[];
+  /** Углублённая диагностика (0014): ключ вопроса → вариант. См. lib/diagnostics/extended.ts. */
+  extended_answers: Record<string, string> | null;
+  extended_completed_at: string | null;
   created_at: string;
 };
 
@@ -120,6 +131,10 @@ export type ExerciseRow = {
   level: Level;
   contraindications: string[];
   side_effects: { trigger: string; action: string }[];
+  /** Положение тела (0014): any | standing | standing_free | sitting | sitting_floor | kneeling | quadruped | supine | prone | side. */
+  position: string;
+  /** Щадящее: микроамплитуда или изометрика (0014). */
+  gentle: boolean;
   created_at: string;
 };
 
@@ -194,8 +209,12 @@ export type ExerciseSnapshot = {
   warning?: string | null;
   /** Отдых после упражнения. Нет поля — стандартные 15 секунд. */
   rest_sec?: number | null;
-  /** Недельная адаптация: название упражнения, которое это заменило. */
+  /** Название упражнения, которое это заменило. */
   replaced?: string | null;
+  /** Почему заменили: weekly — тяжело на прошлой неделе, position — недоступное положение, gentle — щадящее для ограниченной зоны. */
+  replaced_reason?: "weekly" | "position" | "gentle" | null;
+  /** Щадящее для ограниченной зоны — короткое занятие его не отрезает. */
+  priority?: boolean;
 };
 
 export type UserWorkoutRow = {
@@ -263,6 +282,15 @@ export type MealRow = {
   cook_time_min: number;
   recipe: string;
   contraindications: string[];
+  category: MealCategory | null;
+  created_at: string;
+};
+
+export type FeedbackRow = {
+  id: string;
+  user_id: string;
+  type: FeedbackType;
+  text: string;
   created_at: string;
 };
 
@@ -427,6 +455,7 @@ export type Database = {
       referral_clicks: TableDef<ReferralClickRow, "referral_code">;
       notifications_log: TableDef<NotificationLogRow, "user_id" | "type" | "status">;
       telegram_chats: TableDef<TelegramChatRow, "chat_id">;
+      feedback: TableDef<FeedbackRow, "user_id" | "type" | "text">;
     };
     Views: Record<never, never>;
     Functions: {

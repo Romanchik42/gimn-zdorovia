@@ -5,17 +5,12 @@ import { TelegramWebAppEntry } from "@/components/auth/telegram-webapp-entry";
 import { createClient } from "@/lib/supabase/server";
 import { clearWorkoutMessages } from "@/lib/telegram/chat";
 import { isValidReferralCode, normalizeReferralCode } from "@/lib/referral/code-generator";
+import { safeNext } from "@/lib/navigation/safe-next";
 
 export const metadata: Metadata = {
   title: "Гимн.здоровья",
   robots: { index: false, follow: false },
 };
-
-/** Только свои пути: «//evil.com» или полный URL увели бы человека с сайта. */
-function safeNext(value: string | string[] | undefined): string {
-  const next = typeof value === "string" ? value : "";
-  return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/app";
-}
 
 /**
  * /tg — вход для всех кнопок бота (Telegram Web App).

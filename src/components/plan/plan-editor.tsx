@@ -3,10 +3,18 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2Icon, RotateCcwIcon, TriangleAlertIcon } from "lucide-react";
+import { ChevronLeftIcon, Loader2Icon, RotateCcwIcon, TriangleAlertIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { INTENSITIES, INTENSITY_LABELS } from "@/lib/schemas/workout";
 import {
@@ -33,6 +41,7 @@ export function PlanEditor({ mode, initial }: { mode: Mode; initial: PlanDay[] }
   const [days, setDays] = useState<PlanDay[]>(initial);
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [askSave, setAskSave] = useState(false);
 
   const warnings = useMemo(() => validateWeekPlan(days), [days]);
   const dirty = useMemo(() => JSON.stringify(days) !== JSON.stringify(initial), [days, initial]);
@@ -41,7 +50,13 @@ export function PlanEditor({ mode, initial }: { mode: Mode; initial: PlanDay[] }
     setDays((prev) => prev.map((d) => (d.day_of_week === day ? { ...d, ...next } : d)));
   }
 
-  async function save() {
+  /** Назад — туда, откуда пришли; при прямом заходе — на главный экран. */
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push("/app");
+  }
+
+  async function save({ thenBack = false } = {}) {
     setSaving(true);
     try {
       const res = await fetch("/api/plan/update", {
@@ -64,6 +79,7 @@ export function PlanEditor({ mode, initial }: { mode: Mode; initial: PlanDay[] }
       }
       toast.success("План сохранён. Изменения применятся со следующей тренировки.");
       router.refresh();
+      if (thenBack) goBack();
     } catch {
       toast.error("Сеть недоступна. Попробуйте ещё раз.");
     } finally {
@@ -92,6 +108,55 @@ export function PlanEditor({ mode, initial }: { mode: Mode; initial: PlanDay[] }
 
   return (
     <div className="space-y-4">
+      {/* Полоса действий сверху: сохранить и уйти — или уйти без изменений (GIMN-011). */}
+      <div className="sticky top-0 z-10 -mx-1 grid grid-cols-2 gap-2 bg-background/90 px-1 py-2 backdrop-blur">
+        <Button
+          variant="outline"
+          className="h-11"
+          onClick={() => (dirty ? setAskSave(true) : goBack())}
+          disabled={saving}
+        >
+          <ChevronLeftIcon className="size-4" aria-hidden />
+          Назад
+        </Button>
+        <Button className="h-11" onClick={() => void save({ thenBack: true })} disabled={saving}>
+          {saving ? <Loader2Icon className="size-4 animate-spin" aria-hidden /> : null}
+          Сохранить
+        </Button>
+      </div>
+
+      <Dialog open={askSave} onOpenChange={(v) => !saving && setAskSave(v)}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Сохранить изменения плана?</DialogTitle>
+            <DialogDescription>Вы поменяли план, но ещё не сохранили.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              className="h-11"
+              onClick={() => {
+                setAskSave(false);
+                goBack();
+              }}
+              disabled={saving}
+            >
+              Выйти без сохранения
+            </Button>
+            <Button
+              className="h-11"
+              onClick={() => {
+                setAskSave(false);
+                void save({ thenBack: true });
+              }}
+              disabled={saving}
+            >
+              Сохранить и выйти
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {warnings.length > 0 ? (
         <div className="space-y-1.5 rounded-xl bg-accent/12 p-3" role="status">
           {warnings.map((w) => (
@@ -187,7 +252,7 @@ export function PlanEditor({ mode, initial }: { mode: Mode; initial: PlanDay[] }
       </ul>
 
       <div className="sticky bottom-16 space-y-2 bg-background/90 py-2 backdrop-blur">
-        <Button size="lg" className="h-12 w-full" onClick={save} disabled={saving || !dirty}>
+        <Button size="lg" className="h-12 w-full" onClick={() => void save()} disabled={saving || !dirty}>
           {saving ? <Loader2Icon className="size-4 animate-spin" /> : null}
           Сохранить план
         </Button>

@@ -11,6 +11,7 @@ import {
 import { resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
 import { addDays, dayOfWeek as dayOfWeekOf, todayIso, weekStartOf } from "@/lib/dates";
 import { resolveWorkoutLength } from "@/lib/workout-engine/length";
+import { deriveRestrictions, type ExtendedAnswers } from "@/lib/diagnostics/extended";
 import type {
   ExerciseRow,
   Level,
@@ -118,11 +119,16 @@ export async function POST(request: Request) {
 
   const { data: diagnostics } = await supabase
     .from("user_diagnostics")
-    .select("calculated_intensity, pain_areas, blood_pressure_ok")
+    .select("calculated_intensity, pain_areas, blood_pressure_ok, extended_answers")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  // Углублённая диагностика (GIMN-011): недоступные положения, ограниченные
+  // зоны; «давление скачет при нагрузке» — как давление не в норме.
+  const restrictions = deriveRestrictions(diagnostics?.extended_answers as ExtendedAnswers | null | undefined);
+  const bloodPressureOk = restrictions.bpRisk ? false : (diagnostics?.blood_pressure_ok ?? null);
 
   const { data: planDay } = await supabase
     .from("user_week_plan")
@@ -204,7 +210,7 @@ export async function POST(request: Request) {
     exercisesBySlug: bySlug,
     intensity,
     painAreas: (diagnostics?.pain_areas as string[] | undefined) ?? [],
-    bloodPressureOk: diagnostics?.blood_pressure_ok ?? null,
+    bloodPressureOk,
     excludeExerciseIds,
     excludeJoints,
   });
@@ -232,11 +238,12 @@ export async function POST(request: Request) {
     difficulty: (generalProfile?.difficulty as Level | undefined) ?? null,
     isRestDay: planDay?.is_rest_day ?? false,
     painAreas: (diagnostics?.pain_areas as string[] | undefined) ?? [],
-    bloodPressureOk: diagnostics?.blood_pressure_ok ?? null,
+    bloodPressureOk,
     excludeExerciseIds,
     excludeJoints,
     length,
     struggling,
+    restrictions,
   });
 
   const { data: created, error } = await supabase

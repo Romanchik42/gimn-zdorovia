@@ -71,6 +71,8 @@ const serverEnvSchema = z.object({
   TELEGRAM_WEBHOOK_SECRET: z.string().min(1).optional(),
   ADMIN_USER_ID: z.string().uuid().optional().or(z.literal("")),
   CRON_SECRET: z.string().min(1).optional(),
+  /** Куда слать отзывы из приложения, если админ не отмечен в БД (GIMN-011). */
+  TELEGRAM_ADMIN_CHAT_ID: z.coerce.number().int().optional().or(z.literal("")),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

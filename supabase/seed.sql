@@ -834,3 +834,112 @@ WHERE slug IN (
   'main-heel-raises',
   'warmup-pelvic-tilt'
 );
+-- ---------------------------------------------------------------------------
+-- ЩАДЯЩИЕ УПРАЖНЕНИЯ (GIMN-011): микроамплитуда и изометрика — напряжение
+-- без движения. Их получают зоны с ограниченной подвижностью по углублённой
+-- диагностике: ограничение — повод мягко развивать, а не убирать зону.
+-- Составлено по общим принципам ASAS/EULAR (регулярность, без боли, малая
+-- амплитуда при обострении). Существующие тексты не менялись.
+-- ---------------------------------------------------------------------------
+INSERT INTO exercises (slug, name, type, target_joint, mode, description, technique, duration_sec, repetitions, level, contraindications, side_effects, position, gentle) VALUES
+
+('neck-micro-turns', 'Микроповороты головы', 'warmup', 'neck', 'both',
+ 'Бережно будит подвижность шеи, когда повороты даются с трудом.',
+ E'1. Сядьте прямо, плечи опущены, взгляд вперёд.\n2. Очень медленно поверните голову вправо на 10-15 градусов — как начало движения «нет».\n3. Вернитесь в центр, затем так же влево.\n4. Амплитуда маленькая, до первого натяжения, без боли.',
+ NULL, 8, 'beginner', '[]'::jsonb, '[{"trigger":"dizziness","action":"stop"}]'::jsonb, 'sitting', TRUE),
+
+('neck-micro-nods', 'Микрокивки', 'warmup', 'neck', 'both',
+ 'Мягко разрабатывает наклон головы вперёд и назад малой амплитудой.',
+ E'1. Сядьте прямо, макушка тянется вверх.\n2. Медленно кивните — подбородок опускается на 2-3 см, как «да».\n3. Вернитесь в исходное положение, голову назад не запрокидывайте.\n4. Дышите ровно, движение без рывков.',
+ NULL, 8, 'beginner', '[]'::jsonb, '[{"trigger":"dizziness","action":"stop"}]'::jsonb, 'sitting', TRUE),
+
+('neck-chin-tuck', 'Втягивание подбородка', 'main', 'neck', 'both',
+ 'Укрепляет глубокие мышцы шеи и выравнивает положение головы.',
+ E'1. Сядьте прямо, плечи опущены, взгляд вперёд.\n2. Мягко отведите подбородок назад, как будто делаете «двойной подбородок». Голова не наклоняется.\n3. Задержитесь на 3 секунды, вернитесь.\n4. Движение маленькое, напряжение лёгкое.',
+ NULL, 8, 'beginner', '[]'::jsonb, '[]'::jsonb, 'sitting', TRUE),
+
+('neck-iso-front', 'Изометрия шеи вперёд', 'main', 'neck', 'both',
+ 'Укрепляет мышцы шеи без движения — подходит, когда шея почти не двигается.',
+ E'1. Сядьте прямо, положите ладонь на лоб.\n2. Мягко давите лбом в ладонь, ладонь не пускает — голова остаётся на месте.\n3. Сила — примерно треть от возможной, держите 5 секунд.\n4. Расслабьтесь на 5 секунд. Дыхание не задерживайте.',
+ NULL, 5, 'beginner', '["high_blood_pressure"]'::jsonb, '[{"trigger":"headache","action":"reduce_intensity"}]'::jsonb, 'sitting', TRUE),
+
+('neck-iso-side', 'Изометрия шеи вбок', 'main', 'neck', 'both',
+ 'Укрепляет боковые мышцы шеи без наклона головы.',
+ E'1. Сядьте прямо, ладонь правой руки — на правый висок.\n2. Мягко давите головой в ладонь, голова не наклоняется.\n3. Треть силы, 5 секунд, затем отдых 5 секунд.\n4. Повторите в другую сторону.',
+ NULL, 5, 'beginner', '["high_blood_pressure"]'::jsonb, '[{"trigger":"headache","action":"reduce_intensity"}]'::jsonb, 'sitting', TRUE),
+
+('neck-iso-rotation', 'Изометрия шеи на поворот', 'main', 'neck', 'both',
+ 'Готовит мышцы к поворотам головы, не поворачивая её.',
+ E'1. Сядьте прямо, ладонь правой руки — на правую скулу.\n2. Попробуйте повернуть голову вправо, ладонь не даёт — голова на месте.\n3. Треть силы, 5 секунд, отдых 5 секунд.\n4. Повторите в другую сторону.',
+ NULL, 5, 'beginner', '["high_blood_pressure"]'::jsonb, '[{"trigger":"headache","action":"reduce_intensity"}]'::jsonb, 'sitting', TRUE),
+
+('shoulder-iso-wall', 'Изометрия плеча у стены', 'main', 'shoulder', 'both',
+ 'Укрепляет плечо, когда рука поднимается плохо: мышца работает без движения.',
+ E'1. Встаньте боком к стене, рука согнута в локте под прямым углом.\n2. Тыльной стороной кисти мягко давите в стену, как будто отводите руку в сторону.\n3. Рука не двигается, треть силы, 5 секунд, отдых 5 секунд.\n4. Слабой рукой — чуть меньше силы и повторов.',
+ NULL, 5, 'beginner', '[]'::jsonb, '[]'::jsonb, 'standing', TRUE),
+
+('spine-iso-chair', 'Прижатие спины к стулу', 'main', 'spine', 'both',
+ 'Включает мышцы спины без наклонов и прогибов.',
+ E'1. Сядьте на стул со спинкой, стопы на полу.\n2. Мягко прижмите лопатки и верх спины к спинке стула.\n3. Держите 5 секунд, спина не прогибается, дыхание ровное.\n4. Расслабьтесь на 5 секунд.',
+ NULL, 6, 'beginner', '[]'::jsonb, '[]'::jsonb, 'sitting', TRUE),
+
+('spine-micro-rotation', 'Микроповороты корпуса сидя', 'main', 'spine', 'both',
+ 'Бережно возвращает повороты грудного отдела малой амплитудой.',
+ E'1. Сядьте прямо, руки скрещены на груди.\n2. Медленно поверните корпус вправо на 10-15 градусов, таз неподвижен.\n3. Вернитесь в центр, затем влево.\n4. Только до первого натяжения, без боли.',
+ NULL, 8, 'beginner', '[]'::jsonb, '[]'::jsonb, 'sitting', TRUE),
+
+('legs-quad-set', 'Напряжение бедра сидя', 'main', 'legs', 'both',
+ 'Укрепляет переднюю поверхность бедра без нагрузки на суставы.',
+ E'1. Сядьте на стул, одну ногу вытяните вперёд, пятка на полу.\n2. Напрягите бедро, прижимая колено вниз, носок на себя.\n3. Держите 5 секунд, расслабьтесь.\n4. Повторите на другой ноге.',
+ NULL, 8, 'beginner', '[]'::jsonb, '[]'::jsonb, 'sitting', TRUE),
+
+('hips-iso-squeeze', 'Сжатие полотенца коленями', 'main', 'hips', 'both',
+ 'Включает мышцы таза без разведения ног.',
+ E'1. Сядьте на стул, между коленями — свёрнутое полотенце или мягкий мяч.\n2. Мягко сожмите его коленями, держите 5 секунд.\n3. Расслабьтесь на 5 секунд.\n4. Спина прямая, дыхание не задерживайте.',
+ NULL, 8, 'beginner', '[]'::jsonb, '[]'::jsonb, 'sitting', TRUE)
+
+ON CONFLICT (slug) DO NOTHING;
+
+-- Положение тела у существующих упражнений (по первой строке техники).
+UPDATE exercises SET position = 'prone'
+  WHERE slug IN ('gen-superman', 'main-prone-extension', 'main-swimmer');
+UPDATE exercises SET position = 'quadruped'
+  WHERE slug IN ('main-bird-dog', 'main-cat-cow', 'main-thoracic-rotation', 'gen-plank', 'gen-pushup', 'gen-mountain-climbers');
+UPDATE exercises SET position = 'supine'
+  WHERE slug IN ('breath-cooldown', 'breath-diaphragm', 'gen-crunch', 'gen-glute-bridge', 'main-bridge', 'main-dead-bug',
+                 'main-hamstring-stretch', 'main-knee-to-chest', 'stretch-full-body', 'stretch-piriformis',
+                 'stretch-supine-twist', 'warmup-pelvic-tilt');
+UPDATE exercises SET position = 'side' WHERE slug IN ('gen-side-plank', 'main-hip-abduction');
+UPDATE exercises SET position = 'kneeling' WHERE slug IN ('main-hip-flexor-stretch', 'stretch-child-pose');
+UPDATE exercises SET position = 'sitting' WHERE slug IN ('breath-chest-expand', 'warmup-neck-tilts', 'massage-glutes-ball');
+UPDATE exercises SET position = 'standing_free' WHERE slug IN ('gen-jumping-jacks', 'gen-lunges', 'gen-step-touch', 'gen-squat');
+UPDATE exercises SET position = 'standing'
+  WHERE slug IN ('gen-arm-swings', 'gen-row-band', 'gen-stretch-quads', 'main-arm-circles', 'main-chest-opener-doorway',
+                 'main-heel-raises', 'main-mini-squat', 'main-shoulder-external', 'main-shoulder-wall-slide',
+                 'main-side-bend-standing', 'main-wall-posture', 'massage-paravertebral', 'gen-stretch-full');
+
+-- Щадящие среди существующих: дыхание, мягкие разминочные движения, самомассаж.
+UPDATE exercises SET gentle = TRUE
+  WHERE type = 'breathing'
+     OR slug IN ('warmup-pelvic-tilt', 'warmup-neck-tilts', 'warmup-neck-turns', 'warmup-shoulder-rolls',
+                 'massage-suboccipital', 'main-scapula-squeeze', 'main-wall-posture');
+
+-- Категория блюда — для иконки в меню (GIMN-011).
+UPDATE meals SET category = 'porridge'
+  WHERE slug IN ('br-oatmeal-banana', 'br-oatmeal-berries', 'br-rice-milk-porridge', 'br-kefir-oat-jar', 'br-buckwheat-egg');
+UPDATE meals SET category = 'dairy'
+  WHERE slug IN ('br-cottage-cheese-apple', 'br-cottage-pancakes', 'dn-cottage-veg', 'dn-kefir-cottage',
+                 'sn-cottage-berries', 'sn-cottage-cucumber', 'sn-yogurt-nuts');
+UPDATE meals SET category = 'eggs'
+  WHERE slug IN ('br-scrambled-eggs-veg', 'br-omelet-cheese-veg', 'br-eggs-toast-veg', 'dn-omelet-spinach',
+                 'dn-eggs-veg-stew', 'sn-boiled-eggs');
+UPDATE meals SET category = 'meat'
+  WHERE slug IN ('ln-chicken-buckwheat', 'ln-beef-rice-veg', 'ln-turkey-pasta', 'ln-chicken-thigh-rice',
+                 'ln-chicken-potato-bake', 'ln-turkey-buckwheat', 'ln-chicken-pasta-broccoli', 'dn-chicken-salad',
+                 'dn-turkey-cabbage', 'dn-chicken-zucchini');
+UPDATE meals SET category = 'fish'
+  WHERE slug IN ('ln-cod-potato', 'ln-hake-buckwheat', 'ln-pollock-veg', 'dn-cod-veg', 'dn-hake-salad', 'dn-pollock-cauliflower');
+UPDATE meals SET category = 'soup' WHERE slug IN ('ln-lentil-soup');
+UPDATE meals SET category = 'vegetables' WHERE slug IN ('ln-beans-veg-stew');
+UPDATE meals SET category = 'fruit'
+  WHERE slug IN ('sn-kefir-apple', 'sn-banana-nuts', 'sn-orange-yogurt', 'sn-pear-kefir');

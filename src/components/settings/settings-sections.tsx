@@ -10,6 +10,7 @@ import {
   PlayIcon,
   RotateCcwIcon,
   TimerIcon,
+  UploadIcon,
   UserIcon,
   Volume2Icon,
 } from "lucide-react";
@@ -36,7 +37,7 @@ import {
 import { cn } from "cn";
 
 /** Частичное сохранение настроек; возвращает true при успехе. */
-async function saveSettings(patch: Record<string, unknown>): Promise<boolean> {
+export async function saveSettings(patch: Record<string, unknown>): Promise<boolean> {
   try {
     const res = await fetch("/api/settings", {
       method: "POST",
@@ -55,7 +56,7 @@ async function saveSettings(patch: Record<string, unknown>): Promise<boolean> {
   }
 }
 
-function Section({
+export function Section({
   icon,
   title,
   children,
@@ -418,12 +419,101 @@ export function WorkoutLengthSection({ value, isDefault }: { value: WorkoutLengt
 
 /* -------------------------------- аватар -------------------------------- */
 
-export function AvatarPicker({ value, name }: { value: string | null; name: string }) {
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const PHOTO_SIDE = 512;
+
+/** Квадратная обрезка по центру и сжатие до 512×512 WebP — чтобы не грузить мегабайты. */
+async function squareWebp(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = PHOTO_SIDE;
+  canvas.height = PHOTO_SIDE;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas недоступен");
+  ctx.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, PHOTO_SIDE, PHOTO_SIDE);
+  bitmap.close();
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("не удалось сжать"))), "image/webp", 0.9),
+  );
+}
+
+export function AvatarPicker({
+  value,
+  name,
+  photoUrl,
+}: {
+  value: string | null;
+  name: string;
+  photoUrl: string | null;
+}) {
   const router = useRouter();
   const [current, setCurrent] = useState<AvatarId | null>(
     value && (AVATARS as readonly string[]).includes(value) ? (value as AvatarId) : null,
   );
   const [open, setOpen] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(photoUrl);
+  const [preview, setPreview] = useState<{ url: string; blob: Blob } | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function choosePhoto(file: File) {
+    if (file.size > MAX_PHOTO_BYTES) {
+      toast.error("Файл больше 5 МБ — выберите поменьше");
+      return;
+    }
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      toast.error("Подойдёт JPG, PNG или WebP");
+      return;
+    }
+    try {
+      const blob = await squareWebp(file);
+      setPreview({ url: URL.createObjectURL(blob), blob });
+    } catch {
+      toast.error("Не удалось обработать картинку");
+    }
+  }
+
+  async function uploadPhoto() {
+    if (!preview) return;
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", new File([preview.blob], "avatar.webp", { type: "image/webp" }));
+      const res = await fetch("/api/profile/avatar", { method: "POST", body });
+      const json = await res.json();
+      if (!json.success) {
+        toast.error(json.error ?? "Не удалось загрузить фото");
+        return;
+      }
+      setPhoto(json.data.avatar_url);
+      setPreview(null);
+      toast.success("Фото сохранено");
+      router.refresh();
+    } catch {
+      toast.error("Сеть недоступна. Попробуйте ещё раз.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removePhoto() {
+    setUploading(true);
+    try {
+      const res = await fetch("/api/profile/avatar", { method: "DELETE" });
+      const json = await res.json();
+      if (!json.success) {
+        toast.error(json.error ?? "Не удалось убрать фото");
+        return;
+      }
+      setPhoto(null);
+      toast.success("Фото убрано — остался выбранный аватар");
+      router.refresh();
+    } catch {
+      toast.error("Сеть недоступна. Попробуйте ещё раз.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function pick(next: AvatarId | null) {
     const prev = current;
@@ -433,15 +523,16 @@ export function AvatarPicker({ value, name }: { value: string | null; name: stri
     else setCurrent(prev);
   }
 
-  const src = avatarSrc(current);
+  // Фото важнее готового аватара: человек выбрал своё.
+  const src = photo ?? avatarSrc(current);
   const initial = name.trim().charAt(0).toUpperCase() || "?";
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element -- маленький локальный SVG, оптимизатор не нужен
-          <img src={src} alt="" width={56} height={56} className="size-14 rounded-full" />
+          // eslint-disable-next-line @next/next/no-img-element -- маленький SVG или фото из хранилища
+          <img src={src} alt="" width={56} height={56} className="size-14 rounded-full object-cover" />
         ) : (
           <span
             aria-hidden
@@ -450,10 +541,57 @@ export function AvatarPicker({ value, name }: { value: string | null; name: stri
             {initial}
           </span>
         )}
-        <Button variant="outline" className="h-11" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-          {open ? "Скрыть" : "Выбрать аватар"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="h-11" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+            {open ? "Скрыть" : "Выбрать аватар"}
+          </Button>
+          <Button variant="outline" className="h-11" asChild>
+            <label className="cursor-pointer">
+              <UploadIcon className="size-4" aria-hidden />
+              Загрузить фото
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void choosePhoto(file);
+                }}
+              />
+            </label>
+          </Button>
+          {photo ? (
+            <Button variant="ghost" className="h-11" onClick={() => void removePhoto()} disabled={uploading}>
+              Убрать фото
+            </Button>
+          ) : null}
+        </div>
       </div>
+
+      {preview ? (
+        <div className="flex items-center gap-3 rounded-xl border border-border p-3">
+          {/* eslint-disable-next-line @next/next/no-img-element -- превью из памяти браузера */}
+          <img src={preview.url} alt="Предпросмотр фото" width={72} height={72} className="size-18 rounded-full object-cover" />
+          <div className="flex flex-1 flex-wrap gap-2">
+            <Button className="h-11 flex-1" onClick={() => void uploadPhoto()} disabled={uploading}>
+              {uploading ? <Loader2Icon className="size-4 animate-spin" aria-hidden /> : null}
+              Сохранить фото
+            </Button>
+            <Button
+              variant="ghost"
+              className="h-11"
+              onClick={() => {
+                URL.revokeObjectURL(preview.url);
+                setPreview(null);
+              }}
+              disabled={uploading}
+            >
+              Отмена
+            </Button>
+          </div>
+        </div>
+      ) : null}
       {open ? (
         <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Аватар">
           {AVATARS.map((id) => (

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { CheckIcon, ChevronDownIcon, ClockIcon, Loader2Icon, RefreshCwIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { mealIcon } from "@/lib/nutrition/meal-icons";
 import { MEAL_TIME_HINTS, MEAL_TYPE_LABELS } from "@/lib/schemas/nutrition";
 import { dayName } from "@/lib/workout-engine/weekly-cycle";
 import { dayOfWeek } from "@/lib/dates";
@@ -35,7 +35,15 @@ function portionLabel(portion: number): string | null {
   return Math.abs(portion - 1) < 0.01 ? null : `порция ×${portion.toFixed(2).replace(/0$/, "").replace(".", ",")}`;
 }
 
-/** Меню: вкладки «Сегодня» / «Неделя» / «Покупки» (US-07). */
+const VIEWS = [
+  ["today", "Сегодня"],
+  ["shopping", "Покупки"],
+  ["week", "Неделя"],
+] as const;
+
+type View = (typeof VIEWS)[number][0];
+
+/** Меню: три кнопки «Сегодня» / «Покупки» / «Неделя» (US-07, раскладка GIMN-011). */
 export function NutritionView({
   today,
   weekStart,
@@ -58,6 +66,7 @@ export function NutritionView({
   const [bought, setBought] = useState<Record<string, boolean>>(
     Object.fromEntries(shopping.map((i) => [i.product, i.purchased])),
   );
+  const [view, setView] = useState<View>("today");
   const [regenerating, setRegenerating] = useState(false);
 
   const todays = entries.filter((e) => e.date === today);
@@ -139,14 +148,23 @@ export function NutritionView({
         </p>
       ) : null}
 
-      <Tabs defaultValue="today">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="today">Сегодня</TabsTrigger>
-          <TabsTrigger value="week">Неделя</TabsTrigger>
-          <TabsTrigger value="shopping">Покупки</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-3 gap-2" role="tablist" aria-label="Разделы меню">
+        {VIEWS.map(([value, label]) => (
+          <Button
+            key={value}
+            role="tab"
+            aria-selected={view === value}
+            variant={view === value ? "default" : "outline"}
+            className="h-11"
+            onClick={() => setView(value)}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
 
-        <TabsContent value="today" className="space-y-3 pt-3">
+      {view === "today" ? (
+        <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Итого{" "}
             <span className="font-mono font-medium text-foreground">{Math.round(todayKcal)}</span> из{" "}
@@ -160,9 +178,11 @@ export function NutritionView({
               onToggle={() => toggleMeal(e.id)}
             />
           ))}
-        </TabsContent>
+        </div>
+      ) : null}
 
-        <TabsContent value="week" className="space-y-2 pt-3">
+      {view === "week" ? (
+        <div className="space-y-2">
           {days.map((date) => {
             const list = entries.filter((e) => e.date === date);
             const total = list.reduce((t, e) => t + e.meal.total_kcal * e.portion, 0);
@@ -192,9 +212,11 @@ export function NutritionView({
               </section>
             );
           })}
-        </TabsContent>
+        </div>
+      ) : null}
 
-        <TabsContent value="shopping" className="space-y-2 pt-3">
+      {view === "shopping" ? (
+        <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
             На неделю, с учётом порций. Отмечайте купленное.
           </p>
@@ -227,8 +249,8 @@ export function NutritionView({
               );
             })}
           </ul>
-        </TabsContent>
-      </Tabs>
+        </div>
+      ) : null}
 
       <Button variant="ghost" className="h-11 w-full" onClick={regenerate} disabled={regenerating}>
         {regenerating ? (
@@ -254,10 +276,19 @@ function MealCard({
   const [open, setOpen] = useState(false);
   const { meal, portion } = entry;
   const portionText = portionLabel(portion);
+  const icon = mealIcon(meal.category, entry.meal_type);
 
   return (
     <article className={cn("rounded-xl bg-card ring-1 ring-foreground/10", consumed && "opacity-70")}>
       <div className="flex items-start gap-3 p-4">
+        <span
+          aria-hidden
+          title={icon.label}
+          className="mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-2xl leading-none"
+        >
+          {icon.emoji}
+        </span>
+
         <button
           type="button"
           role="checkbox"

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { workoutLengthSchema } from "@/lib/schemas/workout";
 import { THEMES } from "@/lib/themes";
 import { AVATARS } from "@/lib/avatars";
+import { customThemeSchema, infoTintSchema } from "@/lib/appearance";
 
 /**
  * Единая Zod-схема пользователя — одна на клиент и сервер (SPEC 3.8).
@@ -68,6 +69,8 @@ export const userSettingsSchema = z.object({
   reminders_enabled: z.boolean().optional(),
   workout_length: workoutLengthSchema.optional(),
   avatar: z.enum(AVATARS).nullable().optional(),
+  custom_theme: customThemeSchema.nullable().optional(),
+  info_card_tint: infoTintSchema.optional(),
   ...profileContactsSchema.shape,
 });
 

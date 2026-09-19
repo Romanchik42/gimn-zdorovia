@@ -50,6 +50,7 @@ export function BehterevaWizard() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>(EMPTY);
   const [pending, setPending] = useState(false);
+  const [offer, setOffer] = useState(false);
 
   function patch(next: Partial<Answers>) {
     setAnswers((prev) => ({ ...prev, ...next }));
@@ -85,7 +86,8 @@ export function BehterevaWizard() {
         return;
       }
 
-      router.push("/onboarding/theme");
+      // Базовая диагностика сохранена — предлагаем уточнить подбор (GIMN-011).
+      setOffer(true);
     } catch {
       toast.error("Сеть недоступна. Попробуйте ещё раз.");
     } finally {
@@ -106,6 +108,29 @@ export function BehterevaWizard() {
         ? prev.pain_areas.filter((a) => a !== area)
         : [...prev.pain_areas, area],
     }));
+  }
+
+  if (offer) {
+    return (
+      <div className="space-y-6">
+        <header className="space-y-2">
+          <h1 className="text-xl font-semibold tracking-tight">Подобрать занятия точнее?</h1>
+          <p className="text-muted-foreground">
+            Ответьте ещё на несколько вопросов о положениях тела и подвижности — это 2-3 минуты.
+            Мы уберём неудобные позы и дадим бережные упражнения туда, где движения даются трудно.
+          </p>
+        </header>
+        <div className="space-y-2">
+          <Button size="lg" className="h-12 w-full" onClick={() => router.push("/onboarding/extended?next=/onboarding/theme")}>
+            Да, ответить
+          </Button>
+          <Button variant="outline" className="h-12 w-full" onClick={() => router.push("/onboarding/theme")}>
+            Позже
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">Пройти можно в любой момент в настройках.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
