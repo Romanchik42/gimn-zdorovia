@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeftIcon, Loader2Icon, PartyPopperIcon, RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
@@ -43,7 +43,7 @@ export function WorkoutRunner({
   /** Длина занятия по плану; null — своя тренировка, длину не меняем. */
   length?: WorkoutLength | null;
   /** exercise_id → «что было в прошлый раз»: предупреждение показывается один раз. */
-  reminders?: Record<string, string>;
+  reminders?: Record<string, { text: string; eventIds: string[] }>;
 }) {
   const router = useRouter();
   const sound = useSound();
@@ -55,6 +55,7 @@ export function WorkoutRunner({
   const [busy, setBusy] = useState(false);
   const [symptomFor, setSymptomFor] = useState<string | null>(null);
   const [changingTo, setChangingTo] = useState<WorkoutLength | null>(null);
+  const remindedRef = useRef(new Set<string>());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const total = exercises.length;
@@ -135,6 +136,19 @@ export function WorkoutRunner({
     }
   }
 
+  // Напоминание на экране — отмечаем показанным (один раз за занятие; сеть
+  // упала — не страшно, покажется ещё раз в следующий раз).
+  const reminder = current ? reminders[current.exercise_id] : undefined;
+  useEffect(() => {
+    if (!reminder || !current || remindedRef.current.has(current.exercise_id)) return;
+    remindedRef.current.add(current.exercise_id);
+    void fetch("/api/workout/reminded", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_ids: reminder.eventIds }),
+    }).catch(() => {});
+  }, [reminder, current]);
+
   function goBack() {
     if (timer.current) clearTimeout(timer.current);
     setIndex((i) => Math.max(0, i - 1));
@@ -206,11 +220,11 @@ export function WorkoutRunner({
         </div>
       ) : null}
 
-      {reminders[current.exercise_id] ? (
+      {reminder ? (
         <p className="flex items-start gap-2 rounded-xl bg-accent/15 p-3 text-sm" role="note">
           <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
           <span>
-            В прошлый раз здесь было: {reminders[current.exercise_id]}. Будьте осторожнее.
+            В прошлый раз здесь было: {reminder.text}. Будьте осторожнее.
           </span>
         </p>
       ) : null}

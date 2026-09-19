@@ -65,18 +65,22 @@ export default async function WorkoutPage({ params }: PageProps<"/app/workout/[i
   }
 
   // Одно напоминание на упражнение — по последнему случаю. Текст — тот, что
-  // выбрал сам человек; для «Другое» — его собственное описание.
-  const reminders: Record<string, string> = {};
+  // выбрал сам человек; для «Другое» — его собственное описание. Отметку
+  // «показано» ставит клиент, когда карточка реально на экране: иначе
+  // напоминание о пятом упражнении сгорело бы, если человек ушёл на втором.
+  const reminders: Record<string, { text: string; eventIds: string[] }> = {};
   for (const event of pastEvents ?? []) {
-    if (!event.exercise_id || reminders[event.exercise_id]) continue;
+    if (!event.exercise_id) continue;
+    const existing = reminders[event.exercise_id];
+    if (existing) {
+      existing.eventIds.push(event.id);
+      continue;
+    }
     const symptom = event.symptom as Symptom;
-    reminders[event.exercise_id] =
-      symptom === "other" && event.description ? event.description : lowerFirst(SYMPTOM_LABELS[symptom] ?? "");
-  }
-  // Показываем один раз: отмечаем сразу все прошлые случаи по этим упражнениям.
-  const shownIds = (pastEvents ?? []).map((e) => e.id);
-  if (shownIds.length) {
-    await supabase.from("side_effect_events").update({ reminded_at: new Date().toISOString() }).in("id", shownIds);
+    reminders[event.exercise_id] = {
+      text: symptom === "other" && event.description ? event.description : lowerFirst(SYMPTOM_LABELS[symptom] ?? ""),
+      eventIds: [event.id],
+    };
   }
 
   const length =

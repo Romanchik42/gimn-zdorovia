@@ -54,3 +54,8 @@ export const generateWorkoutSchema = z.object({
 });
 
 export type GenerateWorkoutInput = z.infer<typeof generateWorkoutSchema>;
+
+/** Напоминание «в прошлый раз здесь было…» показано — больше не повторять. */
+export const reminderShownSchema = z.object({
+  event_ids: z.array(z.uuid()).min(1).max(20),
+});
