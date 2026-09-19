@@ -21,6 +21,8 @@ export type FeedbackStatus = "done" | "difficult" | "skipped";
 export type WorkoutStatus = "planned" | "in_progress" | "completed" | "skipped";
 export type WorkoutSource = "plan" | "custom" | "template";
 export type MealType = "breakfast" | "lunch" | "snack" | "dinner";
+/** Длина занятия (0013): short — 4-5 упр., medium — 7-8, full — весь план. */
+export type WorkoutLength = "short" | "medium" | "full";
 export type Symptom =
   | "pressure_up"
   | "headache"
@@ -44,6 +46,9 @@ export type UserRow = {
   telegram_id: number | null;
   telegram_username: string | null;
   email: string | null;
+  phone: string | null;
+  avatar: string | null;
+  workout_length: WorkoutLength | null;
   name: string;
   gender: "male" | "female" | null;
   birth_date: string | null;
@@ -189,6 +194,8 @@ export type ExerciseSnapshot = {
   warning?: string | null;
   /** Отдых после упражнения. Нет поля — стандартные 15 секунд. */
   rest_sec?: number | null;
+  /** Недельная адаптация: название упражнения, которое это заменило. */
+  replaced?: string | null;
 };
 
 export type UserWorkoutRow = {
@@ -225,6 +232,7 @@ export type SideEffectEventRow = {
   description: string | null;
   action_taken: "continued" | "paused" | "stopped";
   applied_adjustment: string | null;
+  reminded_at: string | null;
   created_at: string;
 };
 
@@ -343,6 +351,7 @@ export type NotificationLogRow = {
 export type TelegramChatRow = {
   chat_id: number;
   home_message_id: number | null;
+  workout_message_ids: number[];
   updated_at: string;
 };
 

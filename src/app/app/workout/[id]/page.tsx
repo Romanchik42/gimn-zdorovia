@@ -2,9 +2,16 @@ import { notFound, redirect } from "next/navigation";
 
 import { WorkoutRunner } from "@/components/workout/workout-runner";
 import { createClient } from "@/lib/supabase/server";
-import type { ExerciseSnapshot, FeedbackStatus } from "@/lib/supabase/types";
+import { SYMPTOM_LABELS } from "@/lib/schemas/workout-feedback";
+import { resolveWorkoutLength } from "@/lib/workout-engine/length";
+import type { ExerciseSnapshot, FeedbackStatus, Symptom } from "@/lib/supabase/types";
 
 export const metadata = { title: "Тренировка — Гимн.здоровья" };
+
+/** «Поднялось давление» → «поднялось давление»: фраза встаёт в середину предложения. */
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
 
 export default async function WorkoutPage({ params }: PageProps<"/app/workout/[id]">) {
   const { id } = await params;
@@ -18,31 +25,64 @@ export default async function WorkoutPage({ params }: PageProps<"/app/workout/[i
 
   const { data: workout } = await supabase
     .from("user_workouts")
-    .select("id, exercises_snapshot, status")
+    .select("id, exercises_snapshot, status, source")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!workout) notFound();
 
-  // Уже поставленные отметки — чтобы продолжить с места, где остановились.
-  const { data: feedback } = await supabase
-    .from("workout_feedback")
-    .select("exercise_id, status")
-    .eq("user_workout_id", id);
+  const exercises = (workout.exercises_snapshot ?? []) as ExerciseSnapshot[];
+  const exerciseIds = exercises.map((e) => e.exercise_id);
+
+  const [{ data: feedback }, { data: profile }, { data: diagnostics }, { data: pastEvents }] = await Promise.all([
+    // Уже поставленные отметки — чтобы продолжить с места, где остановились.
+    supabase.from("workout_feedback").select("exercise_id, status").eq("user_workout_id", id),
+    supabase.from("users").select("workout_tour_completed, workout_length, mode").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("user_diagnostics")
+      .select("calculated_intensity")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    // Симптомы на этих упражнениях в прошлых занятиях, о которых ещё не напоминали.
+    exerciseIds.length
+      ? supabase
+          .from("side_effect_events")
+          .select("id, exercise_id, symptom, description, created_at")
+          .eq("user_id", user.id)
+          .in("exercise_id", exerciseIds)
+          .neq("user_workout_id", id)
+          .is("reminded_at", null)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] as { id: string; exercise_id: string | null; symptom: string; description: string | null }[] }),
+  ]);
 
   const initialMarks: Record<string, FeedbackStatus> = {};
   for (const row of feedback ?? []) {
     if (row.exercise_id) initialMarks[row.exercise_id] = row.status as FeedbackStatus;
   }
 
-  const exercises = (workout.exercises_snapshot ?? []) as ExerciseSnapshot[];
+  // Одно напоминание на упражнение — по последнему случаю. Текст — тот, что
+  // выбрал сам человек; для «Другое» — его собственное описание.
+  const reminders: Record<string, string> = {};
+  for (const event of pastEvents ?? []) {
+    if (!event.exercise_id || reminders[event.exercise_id]) continue;
+    const symptom = event.symptom as Symptom;
+    reminders[event.exercise_id] =
+      symptom === "other" && event.description ? event.description : lowerFirst(SYMPTOM_LABELS[symptom] ?? "");
+  }
+  // Показываем один раз: отмечаем сразу все прошлые случаи по этим упражнениям.
+  const shownIds = (pastEvents ?? []).map((e) => e.id);
+  if (shownIds.length) {
+    await supabase.from("side_effect_events").update({ reminded_at: new Date().toISOString() }).in("id", shownIds);
+  }
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("workout_tour_completed")
-    .eq("id", user.id)
-    .maybeSingle();
+  const length =
+    workout.source === "plan" && profile
+      ? resolveWorkoutLength(profile.workout_length, profile.mode, diagnostics?.calculated_intensity)
+      : null;
 
   return (
     <main className="flex flex-1 flex-col px-4 py-6">
@@ -52,6 +92,8 @@ export default async function WorkoutPage({ params }: PageProps<"/app/workout/[i
           exercises={exercises}
           initialMarks={initialMarks}
           showTour={profile ? !profile.workout_tour_completed : false}
+          length={length}
+          reminders={reminders}
         />
       </div>
     </main>

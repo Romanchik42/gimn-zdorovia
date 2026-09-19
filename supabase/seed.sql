@@ -816,3 +816,21 @@ INSERT INTO meals (slug, name, meal_type, ingredients, total_kcal, total_protein
  '["lactose_intolerance"]'::jsonb)
 
 ON CONFLICT (slug) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- КАРТИНКИ УПРАЖНЕНИЙ (GIMN-010): public/exercises/<slug>.gif.
+-- Только там, где движение на картинке совпадает с нашей техникой. Источники
+-- и лицензии (public domain / CC0) — docs/IMAGE_SOURCES.md. Остальным
+-- карточка показывает знак типа упражнения. Тексты упражнений не трогаем.
+-- ---------------------------------------------------------------------------
+UPDATE exercises SET gif_url = '/exercises/' || slug || '.gif'
+WHERE slug IN (
+  'breath-diaphragm',
+  'gen-crunch',
+  'gen-lunges',
+  'gen-squat',
+  'gen-stretch-quads',
+  'gen-superman',
+  'main-heel-raises',
+  'warmup-pelvic-tilt'
+);

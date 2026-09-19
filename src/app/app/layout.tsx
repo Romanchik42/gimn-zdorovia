@@ -1,3 +1,5 @@
+import Script from "next/script";
+
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SoundProvider } from "@/components/layout/sound-provider";
 import { ThemeSync } from "@/components/layout/theme-sync";
@@ -33,6 +35,8 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
   return (
     <SoundProvider initial={sound}>
       <ThemeSync dbTheme={profile?.theme ?? null} autoTheme={profile?.auto_theme ?? false} />
+      {/* Внутри Telegram даёт «Отправить» через выбор чата; в браузере ничего не делает. */}
+      <Script src="https://telegram.org/js/telegram-web-app.js" strategy="lazyOnload" />
       <div className="flex min-h-full flex-1 flex-col">
         <div className="flex flex-1 flex-col">{children}</div>
         <BottomNav />

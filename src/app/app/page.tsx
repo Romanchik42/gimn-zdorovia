@@ -91,8 +91,8 @@ export default async function AppHomePage() {
       .limit(20),
   ]);
 
-  // Профиля нет — пользователь не прошёл онбординг.
-  if (!profile) redirect("/onboarding/welcome");
+  // Профиля или плана нет — онбординг не пройден (или аккаунт сброшен админ-кнопкой).
+  if (!profile || !planDay) redirect("/onboarding/welcome");
 
   const preview = await loadPreview(
     supabase,

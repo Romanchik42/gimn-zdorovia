@@ -7,8 +7,10 @@ import type {
   Mode,
   SequenceIntensity,
   SequenceItem,
+  WorkoutLength,
 } from "@/lib/supabase/types";
 import { estimateMinutes } from "@/lib/workout-engine/duration";
+import { cutToLength } from "@/lib/workout-engine/length";
 import {
   FOCUS_JOINTS,
   LEVEL_RANK,
@@ -187,6 +189,10 @@ export type FitPlanArgs = {
   bloodPressureOk?: boolean | null;
   excludeExerciseIds?: string[];
   excludeJoints?: string[];
+  /** Длина занятия; по умолчанию — полное (весь план). */
+  length?: WorkoutLength;
+  /** Часто пропускаемые или тяжёлые за прошлую неделю — меняем на лёгкие аналоги. */
+  struggling?: string[];
 };
 
 /**
@@ -205,7 +211,9 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
   const blocked = contraindicationsFor(args.painAreas ?? [], args.bloodPressureOk);
   const exclude = new Set(args.excludeExerciseIds ?? []);
   const excludeJoints = new Set(args.excludeJoints ?? []);
-  const inWorkout = new Set(exercises.map((e) => e.exercise_id));
+  const struggling = new Set(args.struggling ?? []);
+  // Трудные упражнения тоже считаем «занятыми» — чтобы добор не вернул их обратно.
+  const inWorkout = new Set([...exercises.map((e) => e.exercise_id), ...struggling]);
   const joints = FOCUS_JOINTS[args.focus ?? ""] ?? [];
 
   // Потолок сложности: Бехтерева — только щадящее, выше лишь на полной нагрузке.
@@ -229,6 +237,55 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
       (args.mode === "general" || e.type !== "main"),
   );
 
+  const factor = INTENSITY_FACTOR[args.intensity];
+  const snapshotOf = (e: ExerciseRow): ExerciseSnapshot => ({
+    exercise_id: e.id,
+    slug: e.slug,
+    name: e.name,
+    type: e.type,
+    target_joint: e.target_joint,
+    description: e.description,
+    technique: e.technique,
+    gif_url: e.gif_url,
+    duration_sec: scale(e.duration_sec, factor, 15),
+    repetitions: scale(e.repetitions, factor, 4),
+    order: 0,
+    warning: warningFor(e, blocked),
+  });
+
+  // Недельная адаптация (GIMN-010): упражнение, которое на прошлой неделе
+  // часто пропускали или отмечали «тяжело», меняем на аналог той же зоны
+  // и той же части занятия — не сложнее исходного. Число упражнений то же.
+  const list = [...exercises];
+  const byId = new Map(args.pool.map((e) => [e.id, e]));
+  const partKey = (type: string) => (type === "massage" ? "warmup" : type);
+  for (let i = 0; i < list.length; i++) {
+    const original = byId.get(list[i].exercise_id);
+    if (!original || !struggling.has(original.id)) continue;
+    const alternative = [...safe, ...cross]
+      .filter(
+        (e) =>
+          !inWorkout.has(e.id) &&
+          e.target_joint === original.target_joint &&
+          partKey(e.type) === partKey(original.type) &&
+          LEVEL_RANK[e.level] <= LEVEL_RANK[original.level],
+      )
+      .sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level])[0];
+    if (!alternative) continue;
+    inWorkout.add(alternative.id);
+    list[i] = { ...snapshotOf(alternative), order: list[i].order, replaced: original.name };
+  }
+
+  // Дыхание — обязательная часть занятия в любой длине (GIMN-010). Шаблоны
+  // общего режима начинаются сразу с разминки — ставим дыхание первым.
+  if (!args.isRestDay && !list.some((e) => e.type === "breathing")) {
+    const breath = [...safe, ...cross].find((e) => e.type === "breathing" && !inWorkout.has(e.id));
+    if (breath) {
+      inWorkout.add(breath.id);
+      list.unshift(snapshotOf(breath));
+    }
+  }
+
   // Очередь кандидатов по убыванию уместности, без повторов.
   const onFocus = (e: ExerciseRow) => joints.includes(e.target_joint);
   const tiers: ExerciseRow[][] = args.isRestDay
@@ -243,10 +300,7 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
         cross.filter((e) => e.type !== "main"),
       ];
   const seen = new Set<string>();
-  const queue = tiers.flat().filter((e) => !seen.has(e.id) && seen.add(e.id));
-
-  const factor = INTENSITY_FACTOR[args.intensity];
-  const list = [...exercises];
+  const queue = tiers.flat().filter((e) => !inWorkout.has(e.id) && !seen.has(e.id) && seen.add(e.id));
 
   const add = (e: ExerciseRow) => {
     const rank = PART_RANK[e.type] ?? 2;
@@ -257,20 +311,7 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
       const trailingBreath = list[i].type === "breathing" && i > 0 && i === list.length - 1;
       if ((PART_RANK[list[i].type] ?? 2) <= rank && !trailingBreath) at = i + 1;
     }
-    list.splice(at, 0, {
-      exercise_id: e.id,
-      slug: e.slug,
-      name: e.name,
-      type: e.type,
-      target_joint: e.target_joint,
-      description: e.description,
-      technique: e.technique,
-      gif_url: e.gif_url,
-      duration_sec: scale(e.duration_sec, factor, 15),
-      repetitions: scale(e.repetitions, factor, 4),
-      order: 0,
-      warning: warningFor(e, blocked),
-    });
+    list.splice(at, 0, snapshotOf(e));
   };
 
   // Убираем с конца основной части, потом разминки; каждая часть остаётся хотя бы с одним.
@@ -287,8 +328,29 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
 
   const fit = () => fitToDuration(list.map((e, i) => ({ ...e, order: i + 1 })), args.targetMin);
 
+  // Каждая часть занятия — хотя бы одним безопасным упражнением: шаблон мог
+  // потерять разминку целиком из-за противопоказаний (GIMN-010).
+  if (!args.isRestDay) {
+    for (const types of [["warmup", "massage"], ["stretch"]]) {
+      if (list.some((e) => types.includes(e.type))) continue;
+      const pick =
+        queue.find((e) => types.includes(e.type)) ??
+        [...safe, ...cross].find((e) => types.includes(e.type) && !inWorkout.has(e.id));
+      if (!pick) continue;
+      const at = queue.indexOf(pick);
+      if (at >= 0) queue.splice(at, 1);
+      inWorkout.add(pick.id);
+      add(pick);
+    }
+  }
+
   // Стартуем с разумного числа упражнений, дальше — по одному, пока не попадём в ±10%.
   while (list.length < exerciseCount(args.targetMin) && queue.length > 0) add(queue.shift()!);
+
+  // Короткое и среднее — меньше упражнений в обычной дозировке, без подгонки
+  // под минуты плана: иначе отдых раздулся бы до потолка.
+  const length = args.length ?? "full";
+  if (length !== "full") return cutToLength(list.map((e, i) => ({ ...e, order: i + 1 })), length);
 
   let result = fit();
   for (let guard = 0; guard < 20; guard++) {

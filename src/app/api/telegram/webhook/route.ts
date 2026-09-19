@@ -6,6 +6,7 @@ import { serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyWebhookSecret } from "@/lib/telegram/verify";
 import { deleteMessage, sendMessage, sendPhoto, type InlineButton } from "@/lib/telegram/bot";
+import { rememberWorkoutMessage, showHome } from "@/lib/telegram/chat";
 import { parseLinkPayload } from "@/lib/telegram/link";
 import {
   APP_LINKS,
@@ -124,7 +125,11 @@ async function handle(chatId: number, messageId: number, from: TgUser, text: str
 
     case "/today":
       if (!user) return notRegistered(chatId);
-      await sendMessage(chatId, await todayText(admin, user.id), openAppButton("Начать тренировку"));
+      // Сообщение о тренировке: уберётся, когда человек перейдёт в приложение.
+      await rememberWorkoutMessage(
+        chatId,
+        await sendMessage(chatId, await todayText(admin, user.id), openAppButton("Начать тренировку")),
+      );
       return;
 
     case "/menu": {
@@ -156,7 +161,7 @@ async function handle(chatId: number, messageId: number, from: TgUser, text: str
         chatId,
         png,
         `Пригласите друга в Гимн.здоровья — пусть отсканирует код или откроет ссылку:\n${APP_LINKS.invite(user.referral_code)}`,
-        [[{ text: "Открыть ссылку", url: APP_LINKS.invite(user.referral_code) }]],
+        [[{ text: "Открыть ссылку", url: APP_LINKS.invite(user.referral_code), style: "primary" }]],
       );
     }
 
@@ -164,7 +169,7 @@ async function handle(chatId: number, messageId: number, from: TgUser, text: str
       // Не отвечаем: убираем сообщение и опускаем «домашнее» вниз, к полю ввода,
       // чтобы кнопка приложения оставалась под рукой.
       await deleteMessage(chatId, messageId);
-      return showHome(admin, chatId, ...defaultHome(user));
+      return showHome(chatId, ...defaultHome(user));
   }
 }
 
@@ -172,36 +177,12 @@ function defaultHome(user: BotUser): Home {
   return user ? [HOME_TEXT.user(firstName(user.name)), openAppButton()] : [HOME_TEXT.guest, openAppButton()];
 }
 
-/**
- * Ставит «домашнее» сообщение и убирает прежнее. Сначала шлём новое, потом
- * удаляем старое: если отправка сорвётся, в чате останется хотя бы прежняя
- * кнопка. Старше 48 часов Telegram удалить не даст — тогда оно просто
- * останется выше, а новое встанет внизу.
- */
-async function showHome(admin: Admin, chatId: number, text: string, buttons: InlineButton[][]): Promise<void> {
-  const { data: chat } = await admin
-    .from("telegram_chats")
-    .select("home_message_id")
-    .eq("chat_id", chatId)
-    .maybeSingle();
-
-  const id = await sendMessage(chatId, text, buttons);
-
-  const previous = chat?.home_message_id ? Number(chat.home_message_id) : null;
-  if (previous && previous !== id) await deleteMessage(chatId, previous);
-
-  const { error } = await admin
-    .from("telegram_chats")
-    .upsert({ chat_id: chatId, home_message_id: id, updated_at: new Date().toISOString() });
-  if (error) console.error("telegram_chats upsert failed:", error.message);
-}
-
 async function start(admin: Admin, chatId: number, from: TgUser, arg: string, user: BotUser): Promise<void> {
   // 1. Привязка Telegram к аккаунту, созданному по email.
   const linkUserId = arg ? parseLinkPayload(arg) : null;
   if (linkUserId) {
     if (user && user.id !== linkUserId) {
-      return showHome(admin, chatId, HOME_TEXT.linkedElsewhere, openAppButton());
+      return showHome(chatId, HOME_TEXT.linkedElsewhere, openAppButton());
     }
     const { error } = await admin
       .from("users")
@@ -209,9 +190,9 @@ async function start(admin: Admin, chatId: number, from: TgUser, arg: string, us
       .eq("id", linkUserId);
     if (error) {
       console.error("telegram link failed:", error.message);
-      return showHome(admin, chatId, HOME_TEXT.linkFailed, openAppButton());
+      return showHome(chatId, HOME_TEXT.linkFailed, openAppButton());
     }
-    return showHome(admin, chatId, HOME_TEXT.linked, openAppButton());
+    return showHome(chatId, HOME_TEXT.linked, openAppButton());
   }
 
   // 2. Приглашение: /start REFCODE (ссылка вида t.me/<бот>?start=REFCODE).
@@ -219,16 +200,11 @@ async function start(admin: Admin, chatId: number, from: TgUser, arg: string, us
   if (!user && isValidReferralCode(code)) {
     // IP не сохраняем (152-ФЗ): только код и источник.
     await admin.from("referral_clicks").insert({ referral_code: code, source: "telegram", user_agent: "telegram-bot" });
-    return showHome(
-      admin,
-      chatId,
-      HOME_TEXT.invited,
-      openAppButton("Открыть приложение", webAppUrl("/app", code)),
-    );
+    return showHome(chatId, HOME_TEXT.invited, openAppButton("Открыть приложение", webAppUrl("/app", code)));
   }
 
   // 3. Обычный старт.
-  return showHome(admin, chatId, ...defaultHome(user));
+  return showHome(chatId, ...defaultHome(user));
 }
 
 async function notRegistered(chatId: number): Promise<void> {

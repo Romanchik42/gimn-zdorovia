@@ -3,6 +3,7 @@ import { serverEnv } from "@/lib/env";
 import { telegramWebAppSchema } from "@/lib/schemas/user";
 import { verifyWebAppInitData } from "@/lib/telegram/verify";
 import { openTelegramSession } from "@/lib/auth/telegram-session";
+import { clearWorkoutMessages } from "@/lib/telegram/chat";
 
 /**
  * POST /api/auth/telegram-webapp — вход в приложение, открытое кнопкой бота.
@@ -37,6 +38,9 @@ export async function POST(request: Request) {
     source: parsed.data.referral_source,
   });
   if (!session.ok) return fail(session.error, session.status);
+
+  // Перешёл в приложение — напоминания о тренировке в чате больше не нужны.
+  await clearWorkoutMessages(verdict.user.id).catch((e) => console.error("workout messages cleanup failed:", e));
 
   return ok({
     user_id: session.userId,

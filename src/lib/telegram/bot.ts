@@ -17,7 +17,13 @@ const API = "https://api.telegram.org";
  * внутри Telegram. web_app-кнопки работают только в личных чатах, а бот
  * и отвечает только в личке.
  */
-export type InlineButton = { text: string; url: string } | { text: string; web_app: { url: string } };
+/**
+ * style — цвет кнопки (Bot API 9.x+): «primary» — синий, «success» — зелёный,
+ * «danger» — красный. Без поля Telegram красит на своё усмотрение.
+ */
+type ButtonStyle = { style?: "primary" | "success" | "danger" };
+export type InlineButton = ButtonStyle &
+  ({ text: string; url: string } | { text: string; web_app: { url: string } });
 
 type TelegramResult<T = unknown> = {
   ok: boolean;
@@ -120,10 +126,10 @@ export async function trySend(
   chatId: number,
   text: string,
   buttons?: InlineButton[][],
-): Promise<{ ok: true } | { ok: false; error: string; unreachable: boolean }> {
+): Promise<{ ok: true; messageId: number } | { ok: false; error: string; unreachable: boolean }> {
   try {
-    await sendMessage(chatId, text, buttons);
-    return { ok: true };
+    const messageId = await sendMessage(chatId, text, buttons);
+    return { ok: true, messageId };
   } catch (e) {
     const err = e instanceof TelegramError ? e : new TelegramError(String(e));
     return { ok: false, error: err.message, unreachable: err.isUnreachable };

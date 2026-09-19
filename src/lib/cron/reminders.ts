@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SchemaMissingError, isSchemaMissing } from "@/lib/cron/errors";
 import { trySend } from "@/lib/telegram/bot";
+import { rememberWorkoutMessage } from "@/lib/telegram/chat";
 import { openAppButton, todayText } from "@/lib/telegram/messages";
 import { nowMinutes, startOfTodayUtcIso, timeToMinutes, todayIso } from "@/lib/dates";
 
@@ -91,8 +92,11 @@ export async function runReminders(kind: Kind, now: Date = new Date()): Promise<
       error: result.ok ? null : result.error,
     });
 
-    if (result.ok) run.sent++;
-    else run.failed++;
+    if (result.ok) {
+      run.sent++;
+      // Уберём, когда человек перейдёт в приложение (GIMN-010).
+      await rememberWorkoutMessage(u.telegram_id, result.messageId);
+    } else run.failed++;
   }
 
   return run;

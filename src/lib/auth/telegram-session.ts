@@ -3,6 +3,7 @@ import "server-only";
 import { provisionUser, telegramEmail, telegramPassword } from "@/lib/auth/provision";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { clearHome } from "@/lib/telegram/chat";
 import type { ReferralSource } from "@/lib/supabase/types";
 
 /**
@@ -24,6 +25,20 @@ export type TelegramIdentity = {
 export type TelegramSessionResult =
   | { ok: true; userId: string; isNewUser: boolean }
   | { ok: false; error: string; status: number };
+
+/**
+ * Регистрация состоялась — приглашение «откройте приложение» в чате бота
+ * больше не нужно: остаётся кнопка «Открыть» у поля ввода (GIMN-010).
+ * Чат — дело вторичное: его сбой вход не ломает.
+ */
+async function tidyChatAfterSignup(telegramId: number, isNewUser: boolean): Promise<void> {
+  if (!isNewUser) return;
+  try {
+    await clearHome(telegramId);
+  } catch (e) {
+    console.error("telegram chat cleanup failed:", e);
+  }
+}
 
 export async function openTelegramSession(
   identity: TelegramIdentity,
@@ -100,6 +115,7 @@ export async function openTelegramSession(
       console.error("telegram auth: linked-account sign-in failed", link.error?.message ?? verified?.error?.message);
       return { ok: false, error: "Не удалось открыть сессию", status: 500 };
     }
+    await tidyChatAfterSignup(identity.id, provisioned.isNewUser);
     return { ok: true, userId: provisioned.userId, isNewUser: provisioned.isNewUser };
   }
 
@@ -110,5 +126,6 @@ export async function openTelegramSession(
     return { ok: false, error: "Не удалось открыть сессию", status: 500 };
   }
 
+  await tidyChatAfterSignup(identity.id, provisioned.isNewUser);
   return { ok: true, userId: provisioned.userId, isNewUser: provisioned.isNewUser };
 }

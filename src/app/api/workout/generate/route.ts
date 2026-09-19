@@ -9,7 +9,8 @@ import {
   targetMinutes,
 } from "@/lib/workout-engine/generator";
 import { resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
-import { dayOfWeek as dayOfWeekOf, todayIso } from "@/lib/dates";
+import { addDays, dayOfWeek as dayOfWeekOf, todayIso, weekStartOf } from "@/lib/dates";
+import { resolveWorkoutLength } from "@/lib/workout-engine/length";
 import type {
   ExerciseRow,
   Level,
@@ -28,6 +29,41 @@ function planIntensityToSequence(value: string | null | undefined): SequenceInte
   if (value === "high") return "normal";
   if (value === "medium" || value === "low") return value;
   return null;
+}
+
+/**
+ * «Трудные» упражнения прошлой календарной недели (GIMN-010): пропущены (❌)
+ * или отмечены «тяжело» (⚠️) хотя бы дважды. Неделя берётся прошлая, поэтому
+ * набор замен стабилен всю текущую неделю — адаптация раз в неделю.
+ */
+const STRUGGLE_THRESHOLD = 2;
+
+async function strugglingLastWeek(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  dateStr: string,
+): Promise<string[]> {
+  const thisWeek = weekStartOf(dateStr);
+  const { data: workouts } = await supabase
+    .from("user_workouts")
+    .select("id")
+    .eq("user_id", userId)
+    .gte("scheduled_date", addDays(thisWeek, -7))
+    .lt("scheduled_date", thisWeek);
+  const ids = (workouts ?? []).map((w) => w.id);
+  if (ids.length === 0) return [];
+
+  const { data: marks } = await supabase
+    .from("workout_feedback")
+    .select("exercise_id, status")
+    .in("user_workout_id", ids)
+    .in("status", ["skipped", "difficult"]);
+
+  const counts = new Map<string, number>();
+  for (const m of marks ?? []) {
+    if (m.exercise_id) counts.set(m.exercise_id, (counts.get(m.exercise_id) ?? 0) + 1);
+  }
+  return [...counts].filter(([, n]) => n >= STRUGGLE_THRESHOLD).map(([id]) => id);
 }
 
 /** Сколько дней после побочки действует поправка к нагрузке. */
@@ -74,7 +110,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("users")
-    .select("mode")
+    .select("mode, workout_length")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -177,6 +213,11 @@ export async function POST(request: Request) {
     return fail("Не удалось собрать тренировку: все упражнения отфильтрованы", 409);
   }
 
+  const [length, struggling] = [
+    resolveWorkoutLength(profile?.workout_length, mode, diagnostics?.calculated_intensity),
+    await strugglingLastWeek(supabase, user.id, dateStr),
+  ];
+
   const snapshot = fitPlanWorkout(built.exercises, {
     pool: (exercises ?? []) as ExerciseRow[],
     mode,
@@ -194,6 +235,8 @@ export async function POST(request: Request) {
     bloodPressureOk: diagnostics?.blood_pressure_ok ?? null,
     excludeExerciseIds,
     excludeJoints,
+    length,
+    struggling,
   });
 
   const { data: created, error } = await supabase
@@ -222,6 +265,7 @@ export async function POST(request: Request) {
     intensity,
     is_rest_day: planDay?.is_rest_day ?? false,
     skipped: built.skipped,
+    length,
     reused: false,
   });
 }

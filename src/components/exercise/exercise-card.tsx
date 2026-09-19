@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { CheckIcon, TriangleAlertIcon, XIcon, ActivityIcon } from "lucide-react";
+import { CheckIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExercisePlaceholder } from "@/components/exercise/exercise-placeholder";
 import { cn } from "cn";
 import type { ExerciseSnapshot, FeedbackStatus } from "@/lib/supabase/types";
 import { exerciseMeta } from "@/lib/exercise-labels";
@@ -77,19 +78,12 @@ function ExerciseMedia({ exercise }: { exercise: ExerciseSnapshot }) {
   const [loaded, setLoaded] = useState(false);
 
   if (!exercise.gif_url) {
-    // GIF ещё нет — показываем нейтральный плейсхолдер, техника есть текстом ниже.
-    return (
-      <div className="flex aspect-[4/3] w-full items-center justify-center rounded-xl bg-muted">
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          <ActivityIcon className="size-8" aria-hidden />
-          <span className="text-xs">Смотрите технику ниже</span>
-        </div>
-      </div>
-    );
+    // Картинки ещё нет — знак типа упражнения, техника есть текстом ниже.
+    return <ExercisePlaceholder type={exercise.type} />;
   }
 
   return (
-    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted">
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
       {!loaded ? <Skeleton className="absolute inset-0 size-full" /> : null}
       <Image
         src={exercise.gif_url}
@@ -98,7 +92,7 @@ function ExerciseMedia({ exercise }: { exercise: ExerciseSnapshot }) {
         unoptimized
         loading="lazy"
         sizes="(max-width: 640px) 100vw, 480px"
-        className={cn("object-cover transition-opacity", loaded ? "opacity-100" : "opacity-0")}
+        className={cn("object-contain p-2 transition-opacity", loaded ? "opacity-100" : "opacity-0")}
         onLoad={() => setLoaded(true)}
       />
     </div>

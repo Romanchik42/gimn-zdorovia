@@ -9,6 +9,7 @@ import {
   PaletteIcon,
   PlayIcon,
   RotateCcwIcon,
+  TimerIcon,
   UserIcon,
   Volume2Icon,
 } from "lucide-react";
@@ -22,6 +23,10 @@ import { useTheme } from "@/components/layout/theme-provider";
 import { useSound } from "@/components/layout/sound-provider";
 import { themeForHour } from "@/components/layout/theme-sync";
 import { THEMES, THEME_DESCRIPTIONS, THEME_LABELS, THEME_SWATCHES } from "@/lib/themes";
+import { profileContactsSchema } from "@/lib/schemas/user";
+import { WORKOUT_LENGTHS, WORKOUT_LENGTH_HINTS, WORKOUT_LENGTH_LABELS } from "@/lib/schemas/workout";
+import type { WorkoutLength } from "@/lib/supabase/types";
+import { AVATARS, avatarSrc, type AvatarId } from "@/lib/avatars";
 import {
   PLAYABLE_PACKS,
   SOUND_PACK_DESCRIPTIONS,
@@ -72,47 +77,89 @@ function Section({
 
 /* ------------------------------ профиль ------------------------------- */
 
-export function ProfileSection({ name, email, modeLabel }: { name: string; email: string | null; modeLabel: string }) {
+type ProfileProps = {
+  name: string;
+  email: string | null;
+  phone: string | null;
+  modeLabel: string;
+  children?: React.ReactNode;
+};
+
+export function ProfileSection({ name, email, phone, modeLabel, children }: ProfileProps) {
   const router = useRouter();
-  const [value, setValue] = useState(name);
+  const [values, setValues] = useState({ name, email: email ?? "", phone: phone ?? "" });
   const [pending, setPending] = useState(false);
-  const dirty = value.trim() !== name && value.trim().length >= 2;
+
+  const nameOk = values.name.trim().length >= 2;
+  const emailOk = values.email.trim() === "" || profileContactsSchema.shape.email.safeParse(values.email.trim()).success;
+  const phoneOk = values.phone.trim() === "" || profileContactsSchema.shape.phone.safeParse(values.phone.trim()).success;
+  const dirty =
+    values.name.trim() !== name || values.email.trim() !== (email ?? "") || values.phone.trim() !== (phone ?? "");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!dirty) return;
+    if (!dirty || !nameOk || !emailOk || !phoneOk) return;
     setPending(true);
-    if (await saveSettings({ name: value.trim() })) {
-      toast.success("Имя сохранено");
+    if (await saveSettings({ name: values.name.trim(), email: values.email.trim(), phone: values.phone.trim() })) {
+      toast.success("Профиль сохранён");
       router.refresh();
     }
     setPending(false);
   }
 
+  const field = (key: keyof typeof values) => ({
+    value: values[key],
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setValues((v) => ({ ...v, [key]: e.target.value })),
+  });
+
   return (
     <Section icon={<UserIcon className="size-4 text-primary" aria-hidden />} title="Профиль">
-      <form onSubmit={submit} className="space-y-2">
-        <Label htmlFor="profile-name">Имя</Label>
-        <div className="flex gap-2">
-          <Input
-            id="profile-name"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            maxLength={100}
-            className="h-11"
-          />
-          <Button type="submit" className="h-11" disabled={!dirty || pending}>
-            {pending ? <Loader2Icon className="size-4 animate-spin" /> : "Сохранить"}
-          </Button>
+      {children}
+      <form onSubmit={submit} className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="profile-name">Имя</Label>
+          <Input id="profile-name" maxLength={100} className="h-11" autoComplete="name" {...field("name")} />
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="profile-email">Почта — по желанию</Label>
+          <Input
+            id="profile-email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            maxLength={254}
+            className="h-11"
+            aria-invalid={!emailOk}
+            {...field("email")}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="profile-phone">Телефон — по желанию</Label>
+          <Input
+            id="profile-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="+7 900 000-00-00"
+            maxLength={32}
+            className="h-11"
+            aria-invalid={!phoneOk}
+            {...field("phone")}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Вход — только через Telegram. Почта и телефон нужны лишь для связи, если захотите.
+        </p>
+        <Button
+          type="submit"
+          className="h-11 w-full"
+          disabled={!dirty || !nameOk || !emailOk || !phoneOk || pending}
+        >
+          {pending ? <Loader2Icon className="size-4 animate-spin" /> : "Сохранить"}
+        </Button>
       </form>
-      <dl className="space-y-1 text-sm">
-        {email ? (
-          <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Почта</dt>
-            <dd className="truncate">{email}</dd>
-          </div>
-        ) : null}
+      <dl className="text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Режим</dt>
           <dd>{modeLabel}</dd>
@@ -317,5 +364,129 @@ export function TourResetButton() {
       {pending ? <Loader2Icon className="size-4 animate-spin" /> : <RotateCcwIcon className="size-4" aria-hidden />}
       Показать тур заново
     </Button>
+  );
+}
+
+/* ---------------------------- длина занятия ---------------------------- */
+
+export function WorkoutLengthSection({ value, isDefault }: { value: WorkoutLength; isDefault: boolean }) {
+  const router = useRouter();
+  const [current, setCurrent] = useState(value);
+
+  async function pick(next: WorkoutLength) {
+    const prev = current;
+    setCurrent(next);
+    if (await saveSettings({ workout_length: next })) {
+      toast.success("Длина занятия сохранена — со следующей тренировки");
+      router.refresh();
+    } else {
+      setCurrent(prev);
+    }
+  }
+
+  return (
+    <Section icon={<TimerIcon className="size-4 text-primary" aria-hidden />} title="Длина занятия">
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Длина занятия">
+        {WORKOUT_LENGTHS.map((length) => {
+          const active = current === length;
+          return (
+            <button
+              key={length}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => void pick(length)}
+              className={cn(
+                "flex min-h-14 flex-col items-center justify-center rounded-xl border p-2 text-sm font-medium transition-colors",
+                active ? "border-primary bg-primary/8" : "border-border hover:bg-muted",
+              )}
+            >
+              {WORKOUT_LENGTH_LABELS[length]}
+              <span className="text-xs font-normal text-muted-foreground">{WORKOUT_LENGTH_HINTS[length]}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {isDefault
+          ? "Выбрано по вашей диагностике. Структура занятия сохраняется в любой длине: дыхание, разминка, основное, растяжка."
+          : "Структура занятия сохраняется в любой длине: дыхание, разминка, основное, растяжка."}
+      </p>
+    </Section>
+  );
+}
+
+/* -------------------------------- аватар -------------------------------- */
+
+export function AvatarPicker({ value, name }: { value: string | null; name: string }) {
+  const router = useRouter();
+  const [current, setCurrent] = useState<AvatarId | null>(
+    value && (AVATARS as readonly string[]).includes(value) ? (value as AvatarId) : null,
+  );
+  const [open, setOpen] = useState(false);
+
+  async function pick(next: AvatarId | null) {
+    const prev = current;
+    setCurrent(next);
+    setOpen(false);
+    if (await saveSettings({ avatar: next })) router.refresh();
+    else setCurrent(prev);
+  }
+
+  const src = avatarSrc(current);
+  const initial = name.trim().charAt(0).toUpperCase() || "?";
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element -- маленький локальный SVG, оптимизатор не нужен
+          <img src={src} alt="" width={56} height={56} className="size-14 rounded-full" />
+        ) : (
+          <span
+            aria-hidden
+            className="flex size-14 items-center justify-center rounded-full bg-primary/12 text-xl font-semibold text-primary"
+          >
+            {initial}
+          </span>
+        )}
+        <Button variant="outline" className="h-11" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+          {open ? "Скрыть" : "Выбрать аватар"}
+        </Button>
+      </div>
+      {open ? (
+        <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Аватар">
+          {AVATARS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={current === id}
+              aria-label={`Аватар ${id.slice(-2)}`}
+              onClick={() => void pick(id)}
+              className={cn(
+                "rounded-full p-0.5 ring-2 transition-shadow",
+                current === id ? "ring-primary" : "ring-transparent hover:ring-border",
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- см. выше */}
+              <img src={`/avatars/${id}.svg`} alt="" width={64} height={64} className="aspect-square w-full rounded-full" loading="lazy" />
+            </button>
+          ))}
+          <button
+            type="button"
+            role="radio"
+            aria-checked={current === null}
+            onClick={() => void pick(null)}
+            className={cn(
+              "flex aspect-square items-center justify-center rounded-full border text-xs text-muted-foreground ring-2",
+              current === null ? "ring-primary" : "ring-transparent hover:ring-border",
+            )}
+          >
+            Без фото
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }

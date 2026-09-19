@@ -36,7 +36,8 @@ export function webAppUrl(path = "/app", ref?: string): string {
 
 /** Кнопка открывает приложение внутри Telegram (Web App), вход — автоматически. */
 export function openAppButton(text = "Открыть приложение", url = webAppUrl()): InlineButton[][] {
-  return [[{ text, web_app: { url } }]];
+  // Синяя (primary) — кнопка бота в самом Telegram; в приложении цвета по теме.
+  return [[{ text, web_app: { url }, style: "primary" }]];
 }
 
 function longDate(iso: string): string {

@@ -100,3 +100,30 @@ export const planUpdateSchema = z.object({
 });
 
 export type PlanUpdateInput = z.infer<typeof planUpdateSchema>;
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Длина занятия (GIMN-010): человек выбирает, сколько сегодня потянет.
+ * Структура (дыхание → разминка → основное → растяжка) есть в любой длине.
+ */
+export const WORKOUT_LENGTHS = ["short", "medium", "full"] as const;
+export const workoutLengthSchema = z.enum(WORKOUT_LENGTHS);
+
+export const WORKOUT_LENGTH_LABELS: Record<(typeof WORKOUT_LENGTHS)[number], string> = {
+  short: "Короткое",
+  medium: "Среднее",
+  full: "Полное",
+};
+
+export const WORKOUT_LENGTH_HINTS: Record<(typeof WORKOUT_LENGTHS)[number], string> = {
+  short: "4-5 упражнений",
+  medium: "7-8 упражнений",
+  full: "весь план дня",
+};
+
+/** Смена длины уже собранной тренировки — пока в ней нет ни одной отметки. */
+export const changeWorkoutLengthSchema = z.object({
+  workout_id: z.uuid(),
+  length: workoutLengthSchema,
+});

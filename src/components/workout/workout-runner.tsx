@@ -3,14 +3,16 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeftIcon, PartyPopperIcon } from "lucide-react";
+import { ChevronLeftIcon, Loader2Icon, PartyPopperIcon, RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ExerciseCard } from "@/components/exercise/exercise-card";
 import { SideEffectDialog } from "@/components/exercise/side-effect-dialog";
-import type { ExerciseSnapshot, FeedbackStatus } from "@/lib/supabase/types";
+import type { ExerciseSnapshot, FeedbackStatus, WorkoutLength } from "@/lib/supabase/types";
+import { WORKOUT_LENGTHS, WORKOUT_LENGTH_HINTS, WORKOUT_LENGTH_LABELS } from "@/lib/schemas/workout";
+import { cn } from "cn";
 import { enqueue, flushQueue } from "@/lib/offline-queue";
 import { useSound } from "@/components/layout/sound-provider";
 import { WorkoutTour } from "@/components/tour/workout-tour";
@@ -30,12 +32,18 @@ export function WorkoutRunner({
   exercises,
   initialMarks,
   showTour = false,
+  length = null,
+  reminders = {},
 }: {
   workoutId: string;
   exercises: ExerciseSnapshot[];
   initialMarks: Record<string, FeedbackStatus>;
   /** Первая тренировка: показать короткий тур по кнопкам (US-11). */
   showTour?: boolean;
+  /** Длина занятия по плану; null — своя тренировка, длину не меняем. */
+  length?: WorkoutLength | null;
+  /** exercise_id → «что было в прошлый раз»: предупреждение показывается один раз. */
+  reminders?: Record<string, string>;
 }) {
   const router = useRouter();
   const sound = useSound();
@@ -46,6 +54,7 @@ export function WorkoutRunner({
   });
   const [busy, setBusy] = useState(false);
   const [symptomFor, setSymptomFor] = useState<string | null>(null);
+  const [changingTo, setChangingTo] = useState<WorkoutLength | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const total = exercises.length;
@@ -103,6 +112,29 @@ export function WorkoutRunner({
     advance();
   }
 
+  async function changeLength(next: WorkoutLength) {
+    if (next === length || changingTo) return;
+    setChangingTo(next);
+    try {
+      const res = await fetch("/api/workout/length", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workout_id: workoutId, length: next }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        toast.error(json.error ?? "Не удалось поменять длину");
+        setChangingTo(null);
+        return;
+      }
+      router.replace(`/app/workout/${json.data.workout_id}`);
+      router.refresh();
+    } catch {
+      toast.error("Сеть недоступна. Попробуйте ещё раз.");
+      setChangingTo(null);
+    }
+  }
+
   function goBack() {
     if (timer.current) clearTimeout(timer.current);
     setIndex((i) => Math.max(0, i - 1));
@@ -144,6 +176,51 @@ export function WorkoutRunner({
           {index + 1}/{total}
         </span>
       </div>
+
+      {/* Длину выбирают до первой отметки: потом занятие уже идёт. */}
+      {length && markedCount === 0 && index === 0 ? (
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">Сколько сегодня потянете?</p>
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Длина занятия">
+            {WORKOUT_LENGTHS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={option === length}
+                disabled={changingTo !== null}
+                onClick={() => void changeLength(option)}
+                className={cn(
+                  "flex min-h-12 flex-col items-center justify-center rounded-xl border px-2 py-1.5 text-sm font-medium transition-colors disabled:opacity-60",
+                  option === length ? "border-primary bg-primary/8" : "border-border hover:bg-muted",
+                )}
+              >
+                <span className="flex items-center gap-1">
+                  {changingTo === option ? <Loader2Icon className="size-3.5 animate-spin" aria-hidden /> : null}
+                  {WORKOUT_LENGTH_LABELS[option]}
+                </span>
+                <span className="text-[11px] font-normal text-muted-foreground">{WORKOUT_LENGTH_HINTS[option]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {reminders[current.exercise_id] ? (
+        <p className="flex items-start gap-2 rounded-xl bg-accent/15 p-3 text-sm" role="note">
+          <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
+          <span>
+            В прошлый раз здесь было: {reminders[current.exercise_id]}. Будьте осторожнее.
+          </span>
+        </p>
+      ) : null}
+
+      {current.replaced ? (
+        <p className="flex items-start gap-2 text-xs text-muted-foreground" role="note">
+          <RefreshCwIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+          Полегче вместо «{current.replaced}» — на прошлой неделе оно давалось тяжело.
+        </p>
+      ) : null}
 
       <ExerciseCard exercise={current} onFeedback={handleFeedback} disabled={busy} />
       <WorkoutTour autoStart={showTour && index === 0} />

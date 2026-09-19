@@ -36,6 +36,8 @@ export const metadata: Metadata = {
     images: ["/marketing/og-image.png"],
   },
   manifest: "/manifest.json",
+  // Ярлык на домашнем экране iPhone (scripts/generate-icons.mjs).
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {

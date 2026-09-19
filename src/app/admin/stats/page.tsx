@@ -7,7 +7,8 @@ import { ChevronLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { serverEnv } from "@/lib/env";
+import { isAdmin } from "@/lib/auth/admin";
+import { ResetAccountButton } from "@/components/admin/reset-account-button";
 import { addDays, todayIso } from "@/lib/dates";
 
 export const metadata = { title: "Статистика — Гимн.здоровья" };
@@ -23,14 +24,6 @@ const SOURCE_LABELS: Record<string, string> = {
   share: "Системный share",
   unknown: "Неизвестно",
 };
-
-function adminUserIdFromEnv(): string | null {
-  try {
-    return serverEnv().ADMIN_USER_ID || null;
-  } catch {
-    return null;
-  }
-}
 
 function pct(part: number, whole: number): string {
   return whole > 0 ? `${Math.round((part / whole) * 100)}%` : "—";
@@ -53,18 +46,9 @@ export default async function AdminStatsPage() {
 
   if (!user) redirect("/auth/login?next=/admin/stats");
 
+  if (!(await isAdmin(user.id))) redirect("/app?denied=admin");
+
   const admin = createAdminClient();
-  const { data: me } = await admin.from("users").select("is_admin").eq("id", user.id).maybeSingle();
-
-  const envAdminId = adminUserIdFromEnv();
-  const isAdmin = Boolean(me?.is_admin) || (envAdminId !== null && envAdminId === user.id);
-  if (!isAdmin) redirect("/app?denied=admin");
-
-  // ADMIN_USER_ID из окружения — источник правды: подтягиваем флаг в БД,
-  // чтобы RLS-политики «админ видит всё» работали и в клиентских запросах.
-  if (!me?.is_admin && envAdminId === user.id) {
-    await admin.from("users").update({ is_admin: true }).eq("id", user.id);
-  }
 
   const today = todayIso();
   const weekAgoTs = new Date(`${addDays(today, -7)}T00:00:00+03:00`).toISOString();
@@ -205,6 +189,14 @@ export default async function AdminStatsPage() {
               ))}
             </ul>
           )}
+        </section>
+
+        <section className="space-y-2 rounded-xl bg-card p-4 ring-1 ring-destructive/30">
+          <h2 className="font-medium">Тестирование</h2>
+          <p className="text-sm text-muted-foreground">
+            Пройти путь нового пользователя заново: ваши данные сотрутся, вход — как в первый раз.
+          </p>
+          <ResetAccountButton />
         </section>
       </div>
     </main>

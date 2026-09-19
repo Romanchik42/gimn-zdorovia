@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { CopyIcon, DownloadIcon, Share2Icon, UsersIcon } from "lucide-react";
+import { CopyIcon, DownloadIcon, SendIcon, UsersIcon } from "lucide-react";
 
 import {
   Dialog,
@@ -54,7 +54,6 @@ export function ShareDialog({
   // Содержимое диалога монтируется только на клиенте после открытия, поэтому
   // читать цвет темы и возможности браузера можно прямо при рендере.
   const color = open ? themeQrColor() : FALLBACK_COLOR;
-  const canShare = open && typeof navigator !== "undefined" && typeof navigator.share === "function";
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const link = `${appUrl}/i/${referralCode}`;
@@ -101,15 +100,32 @@ export function ShareDialog({
     }
   }
 
-  async function systemShare() {
+  /**
+   * «Отправить» — выбор, кому: системное меню (мессенджеры, контакты); внутри
+   * Telegram, где его нет, — выбор чата Telegram; на десктопе без того и
+   * другого — копируем ссылку.
+   */
+  async function send() {
+    const text = "Гимнастика для здоровья — попробуй вместе со мной";
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: "Гимн.здоровья", text, url: shareLink });
+      } catch {
+        // пользователь закрыл системное меню — это не ошибка
+      }
+      return;
+    }
+    const telegram = window.Telegram?.WebApp;
+    if (telegram?.openTelegramLink) {
+      const query = new URLSearchParams({ url: shareLink, text });
+      telegram.openTelegramLink(`https://t.me/share/url?${query}`);
+      return;
+    }
     try {
-      await navigator.share({
-        title: "Гимн.здоровья",
-        text: "Гимнастика для здоровья — попробуй вместе со мной",
-        url: shareLink,
-      });
+      await navigator.clipboard.writeText(shareLink);
+      toast.success("Ссылка скопирована — вставьте её в чат");
     } catch {
-      // пользователь закрыл системное меню — это не ошибка
+      toast.error("Не получилось скопировать — выделите ссылку вручную");
     }
   }
 
@@ -137,7 +153,11 @@ export function ShareDialog({
               title="QR-код приглашения"
             />
           </div>
-          <Button variant="outline" className="h-11" onClick={downloadPng}>
+          <Button className="h-12 w-full" onClick={() => void send()}>
+            <SendIcon className="size-4" aria-hidden />
+            Отправить
+          </Button>
+          <Button variant="outline" className="h-11 w-full" onClick={downloadPng}>
             <DownloadIcon className="size-4" aria-hidden />
             Сохранить картинку
           </Button>
@@ -167,16 +187,6 @@ export function ShareDialog({
             Копировать ссылку
           </Button>
         </div>
-
-        {canShare ? (
-          <>
-            <Or />
-            <Button className="h-12 w-full" onClick={systemShare}>
-              <Share2Icon className="size-4" aria-hidden />
-              Поделиться…
-            </Button>
-          </>
-        ) : null}
 
         <p className="flex items-center justify-center gap-2 pt-1 text-sm text-muted-foreground">
           <UsersIcon className="size-4" aria-hidden />

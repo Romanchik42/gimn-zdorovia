@@ -18,14 +18,6 @@ import { clearReferralCode, readReferralCode, readReferralSource } from "@/lib/r
  * тогда предлагаем обычный вход.
  */
 
-type TelegramWebApp = { initData: string; ready(): void; expand(): void };
-
-declare global {
-  interface Window {
-    Telegram?: { WebApp?: TelegramWebApp };
-  }
-}
-
 type State = { kind: "loading" } | { kind: "outside" } | { kind: "error"; message: string };
 
 export function TelegramWebAppEntry({ next, referralCode }: { next: string; referralCode?: string }) {
@@ -100,7 +92,7 @@ export function TelegramWebAppEntry({ next, referralCode }: { next: string; refe
               Попробовать ещё раз
             </Button>
             <Link href={loginHref} className="block text-sm text-muted-foreground underline-offset-4 hover:underline">
-              Войти другим способом
+              Открыть страницу входа
             </Link>
           </>
         ) : null}
@@ -108,7 +100,7 @@ export function TelegramWebAppEntry({ next, referralCode }: { next: string; refe
         {state.kind === "outside" ? (
           <>
             <p className="text-muted-foreground">
-              Эта ссылка открывается из Telegram-бота. В браузере войдите обычным способом.
+              Эта ссылка открывается из Telegram-бота. В браузере войдите через Telegram на странице входа.
             </p>
             <Button asChild className="h-12 w-full">
               <Link href={loginHref}>Войти</Link>

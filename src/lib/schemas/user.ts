@@ -1,6 +1,8 @@
 import { z } from "zod";
 
+import { workoutLengthSchema } from "@/lib/schemas/workout";
 import { THEMES } from "@/lib/themes";
+import { AVATARS } from "@/lib/avatars";
 
 /**
  * Единая Zod-схема пользователя — одна на клиент и сервер (SPEC 3.8).
@@ -28,23 +30,25 @@ export type UserData = z.infer<typeof userSchema>;
 /** Откуда пришёл приглашённый (SPEC 5.7) — для разбивки по каналам. */
 export const referralSourceSchema = z.enum(["link", "qr", "telegram", "share"]);
 
-/** Регистрация по email. */
-export const registerSchema = z.object({
-  name: z.string().trim().min(2, "Имя от 2 символов").max(100),
-  email: z.email("Некорректный email"),
-  password: z.string().min(8, "Пароль от 8 символов").max(72, "Пароль до 72 символов"),
-  referral_code: z.string().optional(),
-  referral_source: referralSourceSchema.optional(),
+/**
+ * Контакты в профиле — по желанию и НЕ для входа (вход только через Telegram).
+ * Пустая строка = «стереть»: сервер пишет NULL.
+ */
+const optionalEmail = z.union([z.literal(""), z.email("Некорректный email").max(254)]);
+const optionalPhone = z.union([
+  z.literal(""),
+  z
+    .string()
+    .trim()
+    .regex(/^\+?[0-9()\-\s]{5,32}$/, "Телефон: цифры, пробелы, скобки, «+» и «-»"),
+]);
+
+export const profileContactsSchema = z.object({
+  email: optionalEmail.optional(),
+  phone: optionalPhone.optional(),
 });
 
-export type RegisterInput = z.infer<typeof registerSchema>;
-
-export const loginSchema = z.object({
-  email: z.email("Некорректный email"),
-  password: z.string().min(1, "Введите пароль"),
-});
-
-export type LoginInput = z.infer<typeof loginSchema>;
+export type ProfileContactsInput = z.infer<typeof profileContactsSchema>;
 
 /** Время напоминания: ЧЧ:ММ с шагом 15 минут (US-08) — крон ходит раз в 15 минут. */
 export const reminderTime = z
@@ -62,6 +66,9 @@ export const userSettingsSchema = z.object({
   morning_reminder_time: reminderTime.optional(),
   evening_reminder_time: reminderTime.optional(),
   reminders_enabled: z.boolean().optional(),
+  workout_length: workoutLengthSchema.optional(),
+  avatar: z.enum(AVATARS).nullable().optional(),
+  ...profileContactsSchema.shape,
 });
 
 export type UserSettingsInput = z.infer<typeof userSettingsSchema>;

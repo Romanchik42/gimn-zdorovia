@@ -1,5 +1,5 @@
 -- ============================================================================
--- ВСЁ ОДНИМ ФАЙЛОМ: миграции 0001-0012 + seed + перезагрузка схемы PostgREST.
+-- ВСЁ ОДНИМ ФАЙЛОМ: миграции 0001-0013 + seed + перезагрузка схемы PostgREST.
 -- Собрано из supabase/migrations/*.sql и supabase/seed.sql — источник правды там.
 -- Применять ОДИН раз на пустую БД: Supabase → SQL Editor → вставить → Run.
 -- ============================================================================
@@ -680,6 +680,33 @@ CREATE TABLE IF NOT EXISTS telegram_chats (
 ALTER TABLE telegram_chats ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON telegram_chats FROM anon, authenticated;
+
+-- >>> 0013_profile_length_symptoms.sql
+-- 0013: профиль без почты для входа, длина занятия, «Просто тяжело», чистый чат.
+
+-- 1. «Просто тяжело» не сохранялось: CHECK на symptom не знал just_hard,
+--    хотя правила для него в side_effect_rules есть с самого начала.
+ALTER TABLE side_effect_events DROP CONSTRAINT IF EXISTS side_effect_events_symptom_check;
+ALTER TABLE side_effect_events ADD CONSTRAINT side_effect_events_symptom_check
+  CHECK (symptom IN ('pressure_up', 'headache', 'cramp', 'joint_pain', 'nausea', 'dizziness', 'just_hard', 'other'));
+
+-- 2. «В прошлый раз здесь было…» показываем один раз — когда упражнение
+--    снова встретится. Отметка ставится в момент показа.
+ALTER TABLE side_effect_events ADD COLUMN IF NOT EXISTS reminded_at TIMESTAMPTZ;
+
+-- 3. Профиль. Вход — только Telegram; почта и телефон — по желанию, для связи.
+--    workout_length: short (4-5 упр.), medium (7-8), full (весь план).
+--    NULL — ещё не выбирал: берём по диагностике (тяжёлая — short, иначе medium).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(32);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS workout_length VARCHAR(10)
+  CHECK (workout_length IN ('short', 'medium', 'full'));
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(60);
+
+GRANT UPDATE (email, phone, workout_length, avatar) ON public.users TO authenticated;
+
+-- 4. Сообщения бота о тренировке удаляются, когда человек перешёл в приложение
+--    (меню — остаются). Храним их id, чтобы знать, что удалять.
+ALTER TABLE telegram_chats ADD COLUMN IF NOT EXISTS workout_message_ids BIGINT[] NOT NULL DEFAULT '{}';
 
 -- >>> seed.sql
 -- ===========================================================================
@@ -1500,6 +1527,24 @@ INSERT INTO meals (slug, name, meal_type, ingredients, total_kcal, total_protein
  '["lactose_intolerance"]'::jsonb)
 
 ON CONFLICT (slug) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- КАРТИНКИ УПРАЖНЕНИЙ (GIMN-010): public/exercises/<slug>.gif.
+-- Только там, где движение на картинке совпадает с нашей техникой. Источники
+-- и лицензии (public domain / CC0) — docs/IMAGE_SOURCES.md. Остальным
+-- карточка показывает знак типа упражнения. Тексты упражнений не трогаем.
+-- ---------------------------------------------------------------------------
+UPDATE exercises SET gif_url = '/exercises/' || slug || '.gif'
+WHERE slug IN (
+  'breath-diaphragm',
+  'gen-crunch',
+  'gen-lunges',
+  'gen-squat',
+  'gen-stretch-quads',
+  'gen-superman',
+  'main-heel-raises',
+  'warmup-pelvic-tilt'
+);
 
 -- Чтобы API сразу увидел новые таблицы:
 NOTIFY pgrst, 'reload schema';
