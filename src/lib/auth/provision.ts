@@ -139,14 +139,10 @@ export async function provisionUser(args: ProvisionArgs): Promise<ProvisionResul
       .eq("converted", false);
   }
 
-  // Режим регистрации сразу активен: иначе человек оказался бы в режиме,
-  // которым «не занимается», и переключалка вела бы себя странно.
-  await admin
-    .from("user_modes")
-    .upsert({ user_id: args.authUserId, mode: args.mode ?? "general", is_active: true }, {
-      onConflict: "user_id,mode",
-    });
-
+  // Строку user_modes здесь НЕ заводим: при регистрации режим ещё не выбран,
+  // users.mode держит лишь значение по умолчанию. Режим становится активным
+  // после своей анкеты (activateMode) — иначе человек, прошедший диагностику
+  // Бехтерева, числился бы занимающимся ещё и общим режимом.
   await createDefaultWeekPlan(args.authUserId, args.mode ?? "general");
 
   return { userId: args.authUserId, referralCode, isNewUser: true };
