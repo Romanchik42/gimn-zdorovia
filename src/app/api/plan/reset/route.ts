@@ -1,6 +1,7 @@
 import { fail, ok } from "@/lib/api";
 import { createClient } from "@/lib/supabase/server";
 import { createDefaultWeekPlan } from "@/lib/auth/provision";
+import { currentMode } from "@/lib/modes/server";
 import { DEFAULT_WEEK_PLAN } from "@/lib/workout-engine/weekly-cycle";
 
 /** POST /api/plan/reset — «Вернуть рекомендуемый план» (US-06). */
@@ -12,13 +13,7 @@ export async function POST() {
 
   if (!user) return fail("Нужно войти", 401);
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("mode")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const mode = profile?.mode ?? "general";
+  const mode = await currentMode(supabase, user.id);
 
   try {
     await createDefaultWeekPlan(user.id, mode);

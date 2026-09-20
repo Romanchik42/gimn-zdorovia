@@ -9,14 +9,23 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
-export type Mode = "behtereva" | "general";
+// Режим — единый источник в @/lib/modes (GIMN-012).
+export type { Mode } from "@/lib/modes";
+import type { Mode } from "@/lib/modes";
 export type ThemeName = "sage" | "terracotta" | "ocean" | "lavender" | "sand" | "mint" | "graphite";
 /** Своя палитра поверх темы (0014). */
 export type CustomTheme = { bg: string; text: string; card: string; glow: boolean; glow_strength: number };
 export type InfoCardTint = "neutral" | "blue" | "sage" | "coral" | "sand" | "lavender";
 export type MealCategory = "porridge" | "meat" | "fish" | "vegetables" | "dairy" | "soup" | "eggs" | "fruit";
 export type FeedbackType = "review" | "bug" | "idea";
-export type SoundPack = "soft" | "energetic" | "minimal" | "none";
+export type SoundPack =
+  | "soft"
+  | "energetic"
+  | "minimal"
+  | "nature"
+  | "digital"
+  | "warm"
+  | "none";
 export type Intensity = "low" | "medium" | "high";
 export type SequenceIntensity = "low" | "medium" | "normal";
 export type ExerciseType = "breathing" | "warmup" | "main" | "stretch" | "massage";
@@ -161,6 +170,7 @@ export type WorkoutSequenceRow = {
 export type UserWeekPlanRow = {
   id: string;
   user_id: string;
+  mode: Mode;
   day_of_week: number;
   focus: string;
   duration_min: number;
@@ -182,6 +192,7 @@ export type CustomExerciseItem = {
 export type UserCustomWorkoutRow = {
   id: string;
   user_id: string;
+  mode: Mode;
   name: string;
   focus: string;
   duration_min: number;
@@ -220,6 +231,7 @@ export type ExerciseSnapshot = {
 export type UserWorkoutRow = {
   id: string;
   user_id: string;
+  mode: Mode;
   scheduled_date: string;
   started_at: string | null;
   completed_at: string | null;
@@ -297,6 +309,7 @@ export type FeedbackRow = {
 export type UserMealRow = {
   id: string;
   user_id: string;
+  mode: Mode;
   date: string;
   meal_type: MealType;
   meal_id: string;
@@ -311,6 +324,7 @@ export type ShoppingListItem = { product: string; grams: number; purchased: bool
 export type ShoppingListRow = {
   id: string;
   user_id: string;
+  mode: Mode;
   week_start_date: string;
   items: ShoppingListItem[];
   created_at: string;
@@ -332,6 +346,7 @@ export type UserProgressRow = {
 export type PersonalReportRow = {
   id: string;
   user_id: string;
+  mode: Mode;
   period_number: number;
   period_start: string;
   period_end: string;
@@ -395,6 +410,16 @@ type TableDef<Row, Req extends keyof Row = never> = {
   Relationships: [];
 };
 
+/** Режим, которым пользователь занимается (0015). is_active=false — только смотрел. */
+export type UserModeRow = {
+  id: string;
+  user_id: string;
+  mode: Mode;
+  is_active: boolean;
+  activated_at: string;
+  last_used_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -456,6 +481,7 @@ export type Database = {
       notifications_log: TableDef<NotificationLogRow, "user_id" | "type" | "status">;
       telegram_chats: TableDef<TelegramChatRow, "chat_id">;
       feedback: TableDef<FeedbackRow, "user_id" | "type" | "text">;
+      user_modes: TableDef<UserModeRow, "user_id" | "mode">;
     };
     Views: Record<never, never>;
     Functions: {

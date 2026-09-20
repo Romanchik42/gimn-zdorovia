@@ -139,6 +139,14 @@ export async function provisionUser(args: ProvisionArgs): Promise<ProvisionResul
       .eq("converted", false);
   }
 
+  // Режим регистрации сразу активен: иначе человек оказался бы в режиме,
+  // которым «не занимается», и переключалка вела бы себя странно.
+  await admin
+    .from("user_modes")
+    .upsert({ user_id: args.authUserId, mode: args.mode ?? "general", is_active: true }, {
+      onConflict: "user_id,mode",
+    });
+
   await createDefaultWeekPlan(args.authUserId, args.mode ?? "general");
 
   return { userId: args.authUserId, referralCode, isNewUser: true };
@@ -150,6 +158,7 @@ export async function createDefaultWeekPlan(userId: string, mode: Mode): Promise
 
   const rows = DEFAULT_WEEK_PLAN[mode].map((day) => ({
     user_id: userId,
+    mode,
     day_of_week: day.day_of_week,
     focus: day.focus,
     duration_min: day.duration_min,
@@ -159,7 +168,7 @@ export async function createDefaultWeekPlan(userId: string, mode: Mode): Promise
   }));
 
   const { error } = await admin.from("user_week_plan").upsert(rows, {
-    onConflict: "user_id,day_of_week",
+    onConflict: "user_id,mode,day_of_week",
   });
 
   if (error) throw new Error(`Не удалось создать недельный план: ${error.message}`);

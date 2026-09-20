@@ -11,6 +11,7 @@ import { addDays, todayIso } from "@/lib/dates";
 import { decide, type Adjustment, type PeriodStats } from "@/lib/workout-engine/adaptation";
 import { PLAN_FOCUSES, focusLabel } from "@/lib/workout-engine/weekly-cycle";
 import type { Intensity, Mode } from "@/lib/supabase/types";
+import { MODE_LABELS } from "@/lib/modes";
 
 /**
  * Персональный отчёт каждые 30 дней от регистрации (SPEC 3.6, 5.5).
@@ -42,13 +43,35 @@ export async function runPersonalReports(now: Date = new Date()): Promise<Report
   const run: ReportRun = { due: users?.length ?? 0, created: 0, sent: 0, skipped: 0, failed: 0 };
 
   for (const u of users ?? []) {
-    try {
-      const outcome = await reportFor(admin, u, today);
-      if (outcome === "created") run.created++;
-      else run.skipped++;
-    } catch (e) {
-      run.failed++;
-      console.error(`personal report failed for ${u.id}:`, e);
+    // Отчёт — на каждый активный режим отдельно (GIMN-012): у режимов разные
+    // тренировки и разный план, смешивать их в один вывод бессмысленно.
+    const { data: modeRows } = await admin
+      .from("user_modes")
+      .select("mode")
+      .eq("user_id", u.id)
+      .eq("is_active", true);
+
+    const modes = [...new Set([...(modeRows ?? []).map((r) => r.mode as Mode), u.mode])];
+    let advanced = true;
+
+    for (const mode of modes) {
+      try {
+        const outcome = await reportFor(admin, u, mode, today, modes.length > 1);
+        if (outcome === "created") run.created++;
+        else run.skipped++;
+      } catch (e) {
+        run.failed++;
+        advanced = false;
+        console.error(`personal report failed for ${u.id} (${mode}):`, e);
+      }
+    }
+
+    // Дату двигаем один раз на пользователя и только если ни один режим не упал:
+    // иначе отчёт по упавшему режиму потерялся бы на целый месяц.
+    if (advanced) {
+      let next = u.next_report_date;
+      while (next <= today) next = addDays(next, PERIOD_DAYS);
+      await admin.from("users").update({ next_report_date: next }).eq("id", u.id);
     }
   }
 
@@ -71,7 +94,9 @@ function firstLast(values: (number | null | undefined)[]): [number | null, numbe
 async function reportFor(
   admin: Admin,
   u: { id: string; mode: Mode; telegram_id: number | null; next_report_date: string },
+  mode: Mode,
   today: string,
+  labelMode: boolean,
 ): Promise<"created" | "skipped"> {
   const periodEnd = addDays(u.next_report_date, -1);
   const periodStart = addDays(u.next_report_date, -PERIOD_DAYS);
@@ -87,11 +112,16 @@ async function reportFor(
     { data: general },
     { data: plan },
   ] = await Promise.all([
-    admin.from("personal_reports").select("id", { count: "exact", head: true }).eq("user_id", u.id),
+    admin
+      .from("personal_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", u.id)
+      .eq("mode", mode),
     admin
       .from("user_workouts")
       .select("source")
       .eq("user_id", u.id)
+      .eq("mode", mode)
       .eq("status", "completed")
       .gte("scheduled_date", periodStart)
       .lte("scheduled_date", periodEnd),
@@ -120,7 +150,8 @@ async function reportFor(
     admin
       .from("user_week_plan")
       .select("day_of_week, focus, duration_min, intensity, is_rest_day, is_custom")
-      .eq("user_id", u.id),
+      .eq("user_id", u.id)
+      .eq("mode", mode),
   ]);
 
   const [shoberFirst, shoberLast] = firstLast((progress ?? []).map((p) => p.shober_test_cm));
@@ -131,12 +162,12 @@ async function reportFor(
   const inPlan = new Set((plan ?? []).map((d) => d.focus));
   const candidates = [
     ...((diagnostics?.calculated_focus as string[] | undefined) ?? []),
-    ...PLAN_FOCUSES[u.mode],
+    ...PLAN_FOCUSES[mode],
   ].filter((f) => !inPlan.has(f) && f !== "breathing" && f !== "stretch");
   const newFocus = candidates[0] ?? null;
 
   const stats: PeriodStats = {
-    mode: u.mode,
+    mode,
     goal: general?.goal ?? null,
     workouts: workouts?.length ?? 0,
     periodDays: PERIOD_DAYS,
@@ -155,6 +186,7 @@ async function reportFor(
 
   const { error: insertError } = await admin.from("personal_reports").insert({
     user_id: u.id,
+    mode,
     period_number: periodNumber,
     period_start: periodStart,
     period_end: periodEnd,
@@ -174,18 +206,16 @@ async function reportFor(
   const duplicate = insertError?.code === "23505";
   if (insertError && !duplicate) throw new Error(insertError.message);
 
-  // Отчёт записан (или уже был — повторный запуск крона): двигаем дату,
-  // иначе пользователь застрял бы в выборке навсегда.
-  let next = u.next_report_date;
-  while (next <= today) next = addDays(next, PERIOD_DAYS);
-  await admin.from("users").update({ next_report_date: next }).eq("id", u.id);
-
   if (duplicate) return "skipped";
 
-  await applyAdjustment(admin, u.id, verdict.adjustment, newFocus, plan ?? []);
+  // Дату следующего отчёта двигает вызывающий цикл — она общая на пользователя.
+  let next = u.next_report_date;
+  while (next <= today) next = addDays(next, PERIOD_DAYS);
+
+  await applyAdjustment(admin, u.id, mode, verdict.adjustment, newFocus, plan ?? []);
 
   if (u.telegram_id) {
-    const text = reportText(periodNumber, stats, verdict.recommendation, next);
+    const text = reportText(periodNumber, stats, verdict.recommendation, next, labelMode);
     const result = await trySend(u.telegram_id, text, openAppButton("Открыть прогресс", webAppUrl("/app/progress")));
 
     await admin.from("notifications_log").insert({
@@ -201,6 +231,7 @@ async function reportFor(
         .from("personal_reports")
         .update({ sent_to_telegram: true })
         .eq("user_id", u.id)
+        .eq("mode", mode)
         .eq("period_number", periodNumber);
     }
   }
@@ -217,6 +248,7 @@ const HARDER: Record<Intensity, Intensity> = { low: "medium", medium: "high", hi
 async function applyAdjustment(
   admin: Admin,
   userId: string,
+  mode: Mode,
   adjustment: Adjustment,
   newFocus: string | null,
   plan: { day_of_week: number; focus: string; duration_min: number; intensity: Intensity; is_rest_day: boolean; is_custom: boolean }[],
@@ -245,12 +277,27 @@ async function applyAdjustment(
   }
 
   for (const { day, patch } of updates) {
-    await admin.from("user_week_plan").update(patch).eq("user_id", userId).eq("day_of_week", day);
+    await admin
+      .from("user_week_plan")
+      .update(patch)
+      .eq("user_id", userId)
+      .eq("mode", mode)
+      .eq("day_of_week", day);
   }
 }
 
-function reportText(period: number, s: PeriodStats, recommendation: string, nextDate: string): string {
-  const lines = [`Персональный отчёт №${period} за 30 дней`, "", `Тренировок: ${s.workouts}`];
+function reportText(
+  period: number,
+  s: PeriodStats,
+  recommendation: string,
+  nextDate: string,
+  labelMode: boolean,
+): string {
+  // Режим в заголовке — только когда режимов два: иначе это лишний шум.
+  const head = labelMode
+    ? `Персональный отчёт №${period} за 30 дней — ${MODE_LABELS[s.mode]}`
+    : `Персональный отчёт №${period} за 30 дней`;
+  const lines = [head, "", `Тренировок: ${s.workouts}`];
 
   if (s.shoberFirst !== null && s.shoberLast !== null) {
     lines.push(`Тест Шобера: ${fmt(s.shoberFirst)} → ${fmt(s.shoberLast)} см`);

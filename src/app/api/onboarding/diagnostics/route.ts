@@ -2,8 +2,8 @@ import { fail, ok, parseBody } from "@/lib/api";
 import { diagnosticsSchema } from "@/lib/schemas/diagnostics";
 import { calculateDiagnostics } from "@/lib/onboarding/diagnostics-calc";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createDefaultWeekPlan } from "@/lib/auth/provision";
+import { activateMode } from "@/lib/modes/server";
 
 /**
  * POST /api/onboarding/diagnostics (SPEC 3.2).
@@ -45,8 +45,9 @@ export async function POST(request: Request) {
     return fail("Не удалось сохранить диагностику", 500);
   }
 
-  const admin = createAdminClient();
-  await admin.from("users").update({ mode: "behtereva" }).eq("id", user.id);
+  // Анкета пройдена — этим режимом человек занимается, и он становится текущим.
+  // Данные второго режима, если он есть, остаются нетронутыми (GIMN-012).
+  await activateMode(user.id, "behtereva");
 
   try {
     await createDefaultWeekPlan(user.id, "behtereva");

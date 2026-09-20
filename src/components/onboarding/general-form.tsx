@@ -30,7 +30,14 @@ import {
 import { DAY_NAMES } from "@/lib/workout-engine/weekly-cycle";
 import { cn } from "cn";
 
-export function GeneralForm({ keepMode = false }: { keepMode?: boolean }) {
+export function GeneralForm({
+  keepMode = false,
+  next = "/onboarding/theme",
+}: {
+  keepMode?: boolean;
+  /** Куда вернуться после анкеты — см. BehterevaWizard. */
+  next?: string;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -65,7 +72,7 @@ export function GeneralForm({ keepMode = false }: { keepMode?: boolean }) {
 
       toast.success(`Ваша норма: ${json.data.target_calories} ккал в день`);
       // Пришли из «Питания» — возвращаем туда: меню пересоберётся под новую норму.
-      router.push(keepMode ? "/app/nutrition" : "/onboarding/theme");
+      router.push(keepMode ? "/app/nutrition" : next);
       router.refresh();
     } catch {
       toast.error("Сеть недоступна. Попробуйте ещё раз.");

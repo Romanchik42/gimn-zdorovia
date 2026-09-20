@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { addDays, dayOfWeek, todayIso } from "@/lib/dates";
 import { MEAL_TYPE_LABELS } from "@/lib/schemas/nutrition";
 import { focusLabel } from "@/lib/workout-engine/weekly-cycle";
+import { isMode, type Mode } from "@/lib/modes";
 import type { InlineButton } from "@/lib/telegram/bot";
 import type { MealType } from "@/lib/supabase/types";
 
@@ -71,12 +72,24 @@ export const HOME_TEXT = {
   invited: "Вас пригласили в Гимн.здоровья — гимнастику для здоровья.",
 };
 
+/**
+ * Текущий режим — бот показывает то же, что приложение (GIMN-012).
+ * Читаем служебным ключом: бот работает вне пользовательской сессии.
+ */
+async function modeOf(admin: Admin, userId: string): Promise<Mode> {
+  const { data } = await admin.from("users").select("mode").eq("id", userId).maybeSingle();
+  return isMode(data?.mode) ? data.mode : "general";
+}
+
 export async function todayText(admin: Admin, userId: string): Promise<string> {
   const today = todayIso();
+  const mode = await modeOf(admin, userId);
+
   const { data: day } = await admin
     .from("user_week_plan")
     .select("focus, duration_min, is_rest_day")
     .eq("user_id", userId)
+    .eq("mode", mode)
     .eq("day_of_week", dayOfWeek(today))
     .maybeSingle();
 
@@ -84,6 +97,7 @@ export async function todayText(admin: Admin, userId: string): Promise<string> {
     .from("user_workouts")
     .select("id")
     .eq("user_id", userId)
+    .eq("mode", mode)
     .eq("scheduled_date", today)
     .eq("status", "completed")
     .limit(1)
@@ -106,6 +120,7 @@ export async function menuText(admin: Admin, userId: string): Promise<string | n
     .from("user_meals")
     .select("meal_type, portion, meals(name, total_kcal)")
     .eq("user_id", userId)
+    .eq("mode", await modeOf(admin, userId))
     .eq("date", today);
 
   if (!rows?.length) return null;
@@ -127,17 +142,20 @@ export async function menuText(admin: Admin, userId: string): Promise<string | n
 
 export async function progressText(admin: Admin, userId: string): Promise<string> {
   const today = todayIso();
+  const mode = await modeOf(admin, userId);
   const [{ count: week }, { count: month }, { data: last }, { data: user }] = await Promise.all([
     admin
       .from("user_workouts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .eq("mode", mode)
       .eq("status", "completed")
       .gte("scheduled_date", addDays(today, -6)),
     admin
       .from("user_workouts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .eq("mode", mode)
       .eq("status", "completed")
       .gte("scheduled_date", addDays(today, -29)),
     admin

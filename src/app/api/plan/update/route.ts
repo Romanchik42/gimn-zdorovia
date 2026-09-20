@@ -1,6 +1,7 @@
 import { fail, ok, parseBody } from "@/lib/api";
 import { planUpdateSchema } from "@/lib/schemas/workout";
 import { createClient } from "@/lib/supabase/server";
+import { currentMode } from "@/lib/modes/server";
 import { validateWeekPlan, type WeekPlanDay } from "@/lib/workout-engine/weekly-cycle";
 import type { Intensity } from "@/lib/supabase/types";
 
@@ -19,10 +20,13 @@ export async function POST(request: Request) {
 
   if (!user) return fail("Нужно войти", 401);
 
+  const mode = await currentMode(supabase, user.id);
+
   const { data: current } = await supabase
     .from("user_week_plan")
     .select("day_of_week, focus, duration_min, intensity, is_rest_day, is_custom")
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("mode", mode);
 
   const before = new Map((current ?? []).map((d) => [d.day_of_week, d]));
 
@@ -49,6 +53,7 @@ export async function POST(request: Request) {
 
     return {
       user_id: user.id,
+      mode,
       ...d,
       // Однажды изменённый вручную день остаётся custom, даже если его вернули.
       is_custom: changed || (prev?.is_custom ?? false),
@@ -57,7 +62,7 @@ export async function POST(request: Request) {
 
   const { error } = await supabase
     .from("user_week_plan")
-    .upsert(rows, { onConflict: "user_id,day_of_week" });
+    .upsert(rows, { onConflict: "user_id,mode,day_of_week" });
 
   if (error) {
     console.error("plan upsert failed:", error.message);

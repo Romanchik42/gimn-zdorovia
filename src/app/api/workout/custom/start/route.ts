@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     .from("user_workouts")
     .insert({
       user_id: user.id,
+      mode: ctx.mode,
       scheduled_date: todayIso(),
       status: "planned",
       source: templateId ? "template" : "custom",

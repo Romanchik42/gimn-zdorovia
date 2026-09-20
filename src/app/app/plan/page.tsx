@@ -5,6 +5,7 @@ import { ChevronLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlanEditor, type PlanDay } from "@/components/plan/plan-editor";
 import { createClient } from "@/lib/supabase/server";
+import { currentMode } from "@/lib/modes/server";
 import { DEFAULT_WEEK_PLAN } from "@/lib/workout-engine/weekly-cycle";
 
 export const metadata = { title: "Недельный план — Гимн.здоровья" };
@@ -17,16 +18,14 @@ export default async function PlanPage() {
 
   if (!user) redirect("/auth/login");
 
-  const [{ data: profile }, { data: rows }] = await Promise.all([
-    supabase.from("users").select("mode").eq("id", user.id).maybeSingle(),
-    supabase
-      .from("user_week_plan")
-      .select("day_of_week, focus, duration_min, intensity, is_rest_day, is_custom")
-      .eq("user_id", user.id)
-      .order("day_of_week"),
-  ]);
+  const mode = await currentMode(supabase, user.id);
 
-  const mode = profile?.mode ?? "general";
+  const { data: rows } = await supabase
+    .from("user_week_plan")
+    .select("day_of_week, focus, duration_min, intensity, is_rest_day, is_custom")
+    .eq("user_id", user.id)
+    .eq("mode", mode)
+    .order("day_of_week");
 
   // Плана ещё нет (онбординг прерван) — показываем рекомендуемый; сохранение его создаст.
   const byDay = new Map((rows ?? []).map((r) => [r.day_of_week, r]));

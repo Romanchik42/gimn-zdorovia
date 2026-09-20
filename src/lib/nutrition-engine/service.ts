@@ -9,6 +9,8 @@ import {
   planWeek,
 } from "@/lib/nutrition-engine/menu";
 import type { MealRow, MealType, ShoppingListItem } from "@/lib/supabase/types";
+import { currentMode } from "@/lib/modes/server";
+import type { Mode } from "@/lib/modes";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -32,13 +34,21 @@ export type MenuEntry = {
 
 export type WeekMenu = {
   weekStart: string;
+  mode: Mode;
   targetKcal: number;
   isDefaultTarget: boolean;
   entries: MenuEntry[];
   shopping: ShoppingListItem[];
 };
 
-async function loadTarget(supabase: ServerClient, userId: string) {
+/**
+ * Норма калорий. Считается по анкете общего режима — и только в нём:
+ * в режиме Бехтерева меню не должно подстраиваться под цель «похудеть»,
+ * даже если человек заполнил анкету второго режима (GIMN-012).
+ */
+async function loadTarget(supabase: ServerClient, userId: string, mode: Mode) {
+  if (mode !== "general") return { targetKcal: DEFAULT_TARGET_KCAL, isDefaultTarget: true };
+
   const { data } = await supabase
     .from("user_profiles_general")
     .select("calculated_target_calories")
@@ -58,10 +68,11 @@ export async function ensureWeekMenu(
   supabase: ServerClient,
   userId: string,
   weekStart: string,
-  opts: { regenerate?: boolean } = {},
+  opts: { regenerate?: boolean; mode?: Mode } = {},
 ): Promise<WeekMenu> {
   const dates = datesFrom(weekStart, 7);
-  const { targetKcal, isDefaultTarget } = await loadTarget(supabase, userId);
+  const mode = opts.mode ?? (await currentMode(supabase, userId));
+  const { targetKcal, isDefaultTarget } = await loadTarget(supabase, userId, mode);
 
   const { data: mealsData } = await supabase.from("meals").select("*");
   const meals = (mealsData ?? []) as MealRow[];
@@ -71,6 +82,7 @@ export async function ensureWeekMenu(
     .from("user_meals")
     .select("id, date, meal_type, meal_id, portion, consumed")
     .eq("user_id", userId)
+    .eq("mode", mode)
     .gte("date", dates[0])
     .lte("date", dates[6]);
 
@@ -102,6 +114,7 @@ export async function ensureWeekMenu(
     const rows = planned.flatMap((day) =>
       day.slots.map((s) => ({
         user_id: userId,
+        mode,
         date: day.date,
         meal_type: s.meal_type,
         meal_id: s.meal_id,
@@ -112,13 +125,14 @@ export async function ensureWeekMenu(
 
     const { error } = await supabase
       .from("user_meals")
-      .upsert(rows, { onConflict: "user_id,date,meal_type" });
+      .upsert(rows, { onConflict: "user_id,mode,date,meal_type" });
     if (error) throw new Error(`Не удалось сохранить меню: ${error.message}`);
 
     const { data: prevList } = await supabase
       .from("shopping_list")
       .select("items")
       .eq("user_id", userId)
+      .eq("mode", mode)
       .eq("week_start_date", weekStart)
       .maybeSingle();
 
@@ -131,8 +145,8 @@ export async function ensureWeekMenu(
     const { error: listError } = await supabase
       .from("shopping_list")
       .upsert(
-        { user_id: userId, week_start_date: weekStart, items },
-        { onConflict: "user_id,week_start_date" },
+        { user_id: userId, mode, week_start_date: weekStart, items },
+        { onConflict: "user_id,mode,week_start_date" },
       );
     if (listError) throw new Error(`Не удалось сохранить список покупок: ${listError.message}`);
   }
@@ -142,6 +156,7 @@ export async function ensureWeekMenu(
       .from("user_meals")
       .select("id, date, meal_type, meal_id, portion, consumed")
       .eq("user_id", userId)
+      .eq("mode", mode)
       .gte("date", dates[0])
       .lte("date", dates[6])
       .order("date"),
@@ -149,6 +164,7 @@ export async function ensureWeekMenu(
       .from("shopping_list")
       .select("items")
       .eq("user_id", userId)
+      .eq("mode", mode)
       .eq("week_start_date", weekStart)
       .maybeSingle(),
   ]);
@@ -172,6 +188,7 @@ export async function ensureWeekMenu(
 
   return {
     weekStart,
+    mode,
     targetKcal,
     isDefaultTarget,
     entries,

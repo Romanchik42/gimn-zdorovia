@@ -67,6 +67,26 @@ function click(out, { at = 0, freq = 2400, amp = 1, len = 0.012 }) {
   tone(out, { at, freq, dur: 0.06, amp: amp * 0.5, attack: 0.0005, decay: 90 });
 }
 
+/**
+ * Капля: короткий тон с быстрым подъёмом высоты — узнаваемый «плюх» по воде.
+ * Подъём, а не спад: падающая капля звучит именно так из-за резонанса пузырька.
+ */
+function drop(out, { at = 0, freq = 700, amp = 1, dur = 0.18 }) {
+  tone(out, { at, freq, dur, amp, attack: 0.001, decay: 26, bend: 14 });
+  tone(out, { at, freq: freq * 1.5, dur: dur * 0.5, amp: amp * 0.25, attack: 0.001, decay: 40, bend: 14 });
+}
+
+/**
+ * Маримба: дерево даёт сильный обертон на четвёртой гармонике (две октавы)
+ * и очень короткий «стук» атаки — от этого звук округлый, но не гулкий.
+ */
+function marimba(out, opts) {
+  const { amp = 1, decay = 9 } = opts;
+  tone(out, { ...opts, attack: 0.002, decay });
+  tone(out, { ...opts, freq: opts.freq * 4, amp: amp * 0.3, attack: 0.001, decay: decay * 2.4 });
+  tone(out, { ...opts, freq: opts.freq * 10, amp: amp * 0.07, attack: 0.001, decay: decay * 4 });
+}
+
 /** Однополюсный низкочастотный фильтр — «теплее», как под водой. */
 function lowpass(x, cutoff) {
   const a = 1 - Math.exp((-2 * Math.PI * cutoff) / RATE);
@@ -146,6 +166,73 @@ const PACKS = {
       tone(o, { at: 0.3, freq: NOTE.C6, dur: 1.2, decay: 3.5, amp: 0.5 });
     }),
     transition: () => mix(0.15, (o) => click(o, { freq: 3000, amp: 0.5, len: 0.006 })),
+  },
+  // Природный: капли по воде и дерево — самый спокойный набор, для утра.
+  nature: {
+    done: () =>
+      lowpass(
+        mix(0.4, (o) => {
+          drop(o, { freq: NOTE.G5 });
+          drop(o, { at: 0.11, freq: NOTE.C6, amp: 0.8 });
+        }),
+        3200,
+      ),
+    difficult: () => lowpass(mix(0.5, (o) => drop(o, { freq: NOTE.A4, dur: 0.4, amp: 0.9 })), 1600),
+    skip: () => lowpass(mix(0.2, (o) => drop(o, { freq: 1000, dur: 0.12, amp: 0.7 })), 3000),
+    complete: () =>
+      lowpass(
+        mix(1.8, (o) => {
+          [NOTE.G4, NOTE.C5, NOTE.E5, NOTE.G5].forEach((f, i) => drop(o, { at: i * 0.14, freq: f, dur: 0.3 }));
+          marimba(o, { at: 0.6, freq: NOTE.C5, dur: 1.2, amp: 0.45, decay: 3 });
+        }),
+        2800,
+      ),
+    transition: () => lowpass(mix(0.18, (o) => drop(o, { freq: 1400, dur: 0.12, amp: 0.5 })), 2600),
+  },
+  // Цифровой: чистые синусы без обертонов — как сигналы медицинских приборов.
+  digital: {
+    done: () =>
+      mix(0.3, (o) => {
+        tone(o, { freq: NOTE.C6, dur: 0.09, decay: 1, attack: 0.004 });
+        tone(o, { at: 0.12, freq: NOTE.G5, dur: 0.14, decay: 1, attack: 0.004 });
+      }),
+    difficult: () =>
+      mix(0.42, (o) => {
+        tone(o, { freq: NOTE.A4, dur: 0.16, decay: 1, attack: 0.004 });
+        tone(o, { at: 0.2, freq: NOTE.A4, dur: 0.16, decay: 1, attack: 0.004 });
+      }),
+    skip: () => mix(0.16, (o) => tone(o, { freq: 1500, dur: 0.07, decay: 1, attack: 0.003 })),
+    complete: () =>
+      mix(1.4, (o) => {
+        [NOTE.C5, NOTE.E5, NOTE.G5, NOTE.C6].forEach((f, i) =>
+          tone(o, { at: i * 0.1, freq: f, dur: 0.1, decay: 1, attack: 0.003 }),
+        );
+        tone(o, { at: 0.5, freq: NOTE.C6, dur: 0.8, decay: 4, attack: 0.01, amp: 0.55 });
+        tone(o, { at: 0.5, freq: NOTE.G5, dur: 0.8, decay: 4, attack: 0.01, amp: 0.4 });
+      }),
+    transition: () => mix(0.14, (o) => tone(o, { freq: NOTE.E5, dur: 0.06, decay: 1, attack: 0.003, amp: 0.65 })),
+  },
+  // Тёплый: маримба — дерево, округлые тона без металлического звона.
+  warm: {
+    done: () =>
+      mix(0.45, (o) => {
+        marimba(o, { freq: NOTE.C5, dur: 0.4 });
+        marimba(o, { at: 0.1, freq: NOTE.G5, dur: 0.4, amp: 0.85 });
+      }),
+    difficult: () =>
+      mix(0.55, (o) => {
+        marimba(o, { freq: NOTE.A4, dur: 0.5, decay: 7 });
+        marimba(o, { at: 0.16, freq: NOTE.G4, dur: 0.5, decay: 7, amp: 0.8 });
+      }),
+    skip: () => mix(0.22, (o) => marimba(o, { freq: NOTE.A5, dur: 0.2, decay: 18, amp: 0.7 })),
+    complete: () =>
+      mix(1.7, (o) => {
+        [NOTE.C5, NOTE.E5, NOTE.G5, NOTE.C6].forEach((f, i) =>
+          marimba(o, { at: i * 0.11, freq: f, dur: 0.6, decay: 6 }),
+        );
+        [NOTE.C5, NOTE.G5].forEach((f) => marimba(o, { at: 0.55, freq: f, dur: 1.1, decay: 2.8, amp: 0.5 }));
+      }),
+    transition: () => mix(0.2, (o) => marimba(o, { freq: NOTE.E5, dur: 0.18, decay: 14, amp: 0.55 })),
   },
 };
 

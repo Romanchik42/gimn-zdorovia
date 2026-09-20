@@ -72,10 +72,12 @@ export async function POST(request: Request) {
   }
 
   // Не начатые тренировки из плана собраны по старым ответам — пересоберутся сами.
+  // Только режим Бехтерева: углублённая диагностика на общий режим не влияет.
   await supabase
     .from("user_workouts")
     .delete()
     .eq("user_id", user.id)
+    .eq("mode", "behtereva")
     .eq("source", "plan")
     .eq("status", "planned")
     .is("started_at", null)

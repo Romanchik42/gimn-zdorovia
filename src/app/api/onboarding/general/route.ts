@@ -4,6 +4,7 @@ import { calculateAll } from "@/lib/nutrition-engine/calories";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createDefaultWeekPlan } from "@/lib/auth/provision";
+import { activateMode } from "@/lib/modes/server";
 
 /**
  * POST /api/onboarding/general (US-02).
@@ -58,14 +59,13 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   await admin
     .from("users")
-    .update({
-      ...(input.keep_mode ? {} : { mode: "general" as const }),
-      gender: input.gender,
-      birth_date: `${birthYear}-01-01`,
-    })
+    .update({ gender: input.gender, birth_date: `${birthYear}-01-01` })
     .eq("id", user.id);
 
+  // keep_mode — анкету открыли ради расчёта калорий из общего меню,
+  // режим менять не просили.
   if (!input.keep_mode) {
+    await activateMode(user.id, "general");
     try {
       await createDefaultWeekPlan(user.id, "general");
     } catch (e) {

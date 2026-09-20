@@ -7,6 +7,7 @@ import { CheckIcon, ChevronLeftIcon, TriangleAlertIcon, XIcon } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
+import { currentMode } from "@/lib/modes/server";
 import { SYMPTOM_LABELS } from "@/lib/schemas/workout-feedback";
 import type { ExerciseSnapshot, FeedbackStatus, Symptom, WorkoutStatus } from "@/lib/supabase/types";
 
@@ -46,10 +47,13 @@ export default async function HistoryPage() {
 
   if (!user) redirect("/auth/login");
 
+  const mode = await currentMode(supabase, user.id);
+
   const { data: workouts } = await supabase
     .from("user_workouts")
     .select("id, scheduled_date, status, source, exercises_snapshot")
     .eq("user_id", user.id)
+    .eq("mode", mode)
     .order("scheduled_date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(HISTORY_LIMIT);

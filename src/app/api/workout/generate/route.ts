@@ -12,6 +12,7 @@ import { resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
 import { addDays, dayOfWeek as dayOfWeekOf, todayIso, weekStartOf } from "@/lib/dates";
 import { resolveWorkoutLength } from "@/lib/workout-engine/length";
 import { deriveRestrictions, type ExtendedAnswers } from "@/lib/diagnostics/extended";
+import { isMode, type Mode } from "@/lib/modes";
 import type {
   ExerciseRow,
   Level,
@@ -43,12 +44,14 @@ async function strugglingLastWeek(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   dateStr: string,
+  mode: Mode,
 ): Promise<string[]> {
   const thisWeek = weekStartOf(dateStr);
   const { data: workouts } = await supabase
     .from("user_workouts")
     .select("id")
     .eq("user_id", userId)
+    .eq("mode", mode)
     .gte("scheduled_date", addDays(thisWeek, -7))
     .lt("scheduled_date", thisWeek);
   const ids = (workouts ?? []).map((w) => w.id);
@@ -89,10 +92,21 @@ export async function POST(request: Request) {
   const dateStr = parsed.data.date ?? todayIso();
   const dayOfWeek = dayOfWeekOf(dateStr);
 
+  // Режим определяем ДО поиска готовой тренировки: у каждого режима она своя,
+  // иначе переключившийся человек получил бы чужую программу «уже на сегодня».
+  const { data: profile } = await supabase
+    .from("users")
+    .select("mode, workout_length")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const mode: Mode = isMode(profile?.mode) ? profile.mode : "general";
+
   const existing = await supabase
     .from("user_workouts")
     .select("id, status, exercises_snapshot")
     .eq("user_id", user.id)
+    .eq("mode", mode)
     .eq("scheduled_date", dateStr)
     .eq("source", "plan")
     .in("status", ["planned", "in_progress"])
@@ -108,14 +122,6 @@ export async function POST(request: Request) {
       reused: true,
     });
   }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("mode, workout_length")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const mode = profile?.mode ?? "general";
 
   const { data: diagnostics } = await supabase
     .from("user_diagnostics")
@@ -134,6 +140,7 @@ export async function POST(request: Request) {
     .from("user_week_plan")
     .select("focus, intensity, is_rest_day, duration_min")
     .eq("user_id", user.id)
+    .eq("mode", mode)
     .eq("day_of_week", dayOfWeek)
     .maybeSingle();
 
@@ -221,7 +228,7 @@ export async function POST(request: Request) {
 
   const [length, struggling] = [
     resolveWorkoutLength(profile?.workout_length, mode, diagnostics?.calculated_intensity),
-    await strugglingLastWeek(supabase, user.id, dateStr),
+    await strugglingLastWeek(supabase, user.id, dateStr, mode),
   ];
 
   const snapshot = fitPlanWorkout(built.exercises, {
@@ -250,6 +257,7 @@ export async function POST(request: Request) {
     .from("user_workouts")
     .insert({
       user_id: user.id,
+      mode,
       scheduled_date: dateStr,
       status: "planned",
       generated_from_sequence_id: sequence.id,

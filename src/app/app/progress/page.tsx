@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ProgressChart, type ChartPoint } from "@/components/progress/progress-chart";
 import { MeasurementForm } from "@/components/progress/measurement-form";
 import { createClient } from "@/lib/supabase/server";
+import { currentMode } from "@/lib/modes/server";
 import { addDays, datesFrom, todayIso, weekStartOf } from "@/lib/dates";
 
 export const metadata = { title: "Прогресс — Гимн.здоровья" };
@@ -48,6 +49,8 @@ export default async function ProgressPage() {
   const since = addDays(today, -RANGE_DAYS);
   const regularitySince = addDays(weekStartOf(today), -7 * (REGULARITY_WEEKS - 1));
 
+  const mode = await currentMode(supabase, user.id);
+
   const [
     { data: profile },
     { data: progress },
@@ -78,18 +81,20 @@ export default async function ProgressPage() {
       .from("user_workouts")
       .select("scheduled_date")
       .eq("user_id", user.id)
+      .eq("mode", mode)
       .eq("status", "completed")
       .gte("scheduled_date", regularitySince),
     supabase
       .from("personal_reports")
       .select("period_number, period_end, recommendation")
       .eq("user_id", user.id)
+      .eq("mode", mode)
       .order("period_number", { ascending: false })
       .limit(1)
       .maybeSingle(),
   ]);
 
-  const isBehtereva = profile?.mode === "behtereva";
+  const isBehtereva = mode === "behtereva";
 
   // Гибкость: первичная диагностика + ручные замеры.
   const flexibility = series([

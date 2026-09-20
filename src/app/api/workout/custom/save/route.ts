@@ -1,6 +1,7 @@
 import { fail, ok, parseBody } from "@/lib/api";
 import { MAX_CUSTOM_TEMPLATES, customSaveSchema } from "@/lib/schemas/workout";
 import { createClient } from "@/lib/supabase/server";
+import { currentMode } from "@/lib/modes/server";
 
 /** POST /api/workout/custom/save — сохранение шаблона (SPEC 3.2). */
 export async function POST(request: Request) {
@@ -14,10 +15,14 @@ export async function POST(request: Request) {
 
   if (!user) return fail("Нужно войти", 401);
 
+  const mode = await currentMode(supabase, user.id);
+
+  // Лимит шаблонов — на режим: программы разных режимов не делят одну квоту.
   const { count } = await supabase
     .from("user_custom_workouts")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("mode", mode);
 
   if ((count ?? 0) >= MAX_CUSTOM_TEMPLATES) {
     return fail(`Максимум ${MAX_CUSTOM_TEMPLATES} шаблонов. Удалите ненужные.`, 400);
@@ -27,6 +32,7 @@ export async function POST(request: Request) {
     .from("user_custom_workouts")
     .insert({
       user_id: user.id,
+      mode,
       name: parsed.data.name,
       focus: parsed.data.focus,
       duration_min: parsed.data.duration_min,

@@ -1,6 +1,7 @@
 import { fail, ok, parseBody } from "@/lib/api";
 import { toggleShoppingItemSchema } from "@/lib/schemas/nutrition";
 import { createClient } from "@/lib/supabase/server";
+import { currentMode } from "@/lib/modes/server";
 import type { ShoppingListItem } from "@/lib/supabase/types";
 
 /** POST /api/nutrition/shopping — галочка «куплено» у продукта. */
@@ -17,10 +18,15 @@ export async function POST(request: Request) {
 
   const { week_start_date, product, purchased } = parsed.data;
 
+  // Список недели теперь уникален в паре с режимом — без фильтра запрос
+  // мог бы вернуть список другого режима.
+  const mode = await currentMode(supabase, user.id);
+
   const { data: list } = await supabase
     .from("shopping_list")
     .select("items")
     .eq("user_id", user.id)
+    .eq("mode", mode)
     .eq("week_start_date", week_start_date)
     .maybeSingle();
 
@@ -34,6 +40,7 @@ export async function POST(request: Request) {
     .from("shopping_list")
     .update({ items })
     .eq("user_id", user.id)
+    .eq("mode", mode)
     .eq("week_start_date", week_start_date);
 
   if (error) return fail("Не удалось обновить список", 500);

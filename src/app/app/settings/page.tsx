@@ -18,19 +18,17 @@ import {
 import { AuthorBlock } from "@/components/settings/author-block";
 import { CustomColorsSection, InfoTintSection } from "@/components/settings/appearance-builder";
 import { FeedbackSection } from "@/components/settings/feedback-section";
+import { ModesSection } from "@/components/settings/modes-section";
 import { ShareButton } from "@/components/share/share-button";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 import { createClient } from "@/lib/supabase/server";
 import { publicEnv } from "@/lib/env";
 import { linkUrl } from "@/lib/telegram/link";
 import { resolveWorkoutLength } from "@/lib/workout-engine/length";
+import { loadModes } from "@/lib/modes/server";
+import { MODE_LABELS } from "@/lib/modes";
 
 export const metadata = { title: "Настройки — Гимн.здоровья" };
-
-const MODE_LABELS: Record<string, string> = {
-  behtereva: "Реабилитация Бехтерева",
-  general: "Общая форма",
-};
 
 function safeLinkUrl(userId: string): string | null {
   try {
@@ -50,6 +48,8 @@ export default async function SettingsPage() {
 
   if (!user) redirect("/auth/login");
 
+  const modes = await loadModes(supabase, user.id);
+
   const { data: profile } = await supabase
     .from("users")
     .select(
@@ -68,7 +68,7 @@ export default async function SettingsPage() {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const workoutLength = resolveWorkoutLength(profile.workout_length, profile.mode, diagnostics?.calculated_intensity);
+  const workoutLength = resolveWorkoutLength(profile.workout_length, modes.current, diagnostics?.calculated_intensity);
 
   return (
     <main className="flex flex-1 flex-col px-4 py-6">
@@ -80,10 +80,12 @@ export default async function SettingsPage() {
           name={profile.name}
           email={profile.email}
           phone={profile.phone}
-          modeLabel={MODE_LABELS[profile.mode] ?? profile.mode}
+          modeLabel={MODE_LABELS[modes.current]}
         >
           <AvatarPicker value={profile.avatar} name={profile.name} photoUrl={profile.avatar_url} />
         </ProfileSection>
+
+        <ModesSection current={modes.current} active={modes.active} />
 
         <WorkoutLengthSection value={workoutLength} isDefault={profile.workout_length === null} />
 

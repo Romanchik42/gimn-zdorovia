@@ -4,7 +4,9 @@ import { TodayCard } from "@/components/app/today-card";
 import { MyWorkouts, type TemplateSummary } from "@/components/app/my-workouts";
 import { ShareButton } from "@/components/share/share-button";
 import { AppTour } from "@/components/tour/app-tour";
+import { ModeSwitcher } from "@/components/modes/mode-switcher";
 import { publicEnv } from "@/lib/env";
+import { loadModes } from "@/lib/modes/server";
 import { createClient } from "@/lib/supabase/server";
 import { dayName, focusLabel, resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
 import { addDays, dayOfWeek, todayIso } from "@/lib/dates";
@@ -14,7 +16,11 @@ import { cn } from "cn";
 export const metadata = { title: "Сегодня — Гимн.здоровья" };
 
 /** Полоска регулярности за последние 7 дней. */
-async function loadStreak(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
+async function loadStreak(
+  userId: string,
+  mode: Mode,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+) {
   const todayStr = todayIso();
   const sinceStr = addDays(todayStr, -6);
 
@@ -22,6 +28,7 @@ async function loadStreak(userId: string, supabase: Awaited<ReturnType<typeof cr
     .from("user_workouts")
     .select("scheduled_date, status")
     .eq("user_id", userId)
+    .eq("mode", mode)
     .gte("scheduled_date", sinceStr);
 
   const doneDates = new Set(
@@ -53,6 +60,10 @@ export default async function AppHomePage() {
   const todayStr = todayIso();
   const dow = dayOfWeek(todayStr);
 
+  // Режим нужен раньше остальных запросов: он их и фильтрует.
+  const modes = await loadModes(supabase, user.id);
+  const mode = modes.current;
+
   const [
     { data: profile },
     { data: planDay },
@@ -69,23 +80,26 @@ export default async function AppHomePage() {
       .from("user_week_plan")
       .select("focus, duration_min, is_rest_day")
       .eq("user_id", user.id)
+      .eq("mode", mode)
       .eq("day_of_week", dow)
       .maybeSingle(),
     supabase
       .from("user_workouts")
       .select("id")
       .eq("user_id", user.id)
+      .eq("mode", mode)
       .eq("scheduled_date", todayStr)
       .eq("source", "plan")
       .in("status", ["planned", "in_progress"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    loadStreak(user.id, supabase),
+    loadStreak(user.id, mode, supabase),
     supabase
       .from("user_custom_workouts")
       .select("id, name, duration_min, exercises_order")
       .eq("user_id", user.id)
+      .eq("mode", mode)
       .order("last_used_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(20),
@@ -96,9 +110,9 @@ export default async function AppHomePage() {
 
   const preview = await loadPreview(
     supabase,
-    profile.mode,
+    mode,
     dow,
-    resolveSequenceSlug(profile.mode, planDay?.focus, planDay?.is_rest_day ?? false),
+    resolveSequenceSlug(mode, planDay?.focus, planDay?.is_rest_day ?? false),
   );
 
   return (
@@ -115,6 +129,8 @@ export default async function AppHomePage() {
         </header>
 
         <AppTour autoStart={!profile.tour_completed} />
+
+        <ModeSwitcher current={modes.current} active={modes.active} />
 
         <TodayCard
           focusLabel={focusLabel(planDay?.focus ?? "full_body")}

@@ -45,7 +45,12 @@ function toNumber(value: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function BehterevaWizard() {
+/**
+ * `afterDone` — куда уйти после анкеты. В онбординге это выбор темы, а при
+ * подключении второго режима (GIMN-012) — назад в приложение: тема у
+ * человека уже выбрана, проводить его по онбордингу заново незачем.
+ */
+export function BehterevaWizard({ afterDone = "/onboarding/theme" }: { afterDone?: string }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>(EMPTY);
@@ -57,7 +62,7 @@ export function BehterevaWizard() {
   }
 
   function back() {
-    if (step === 0) router.push("/onboarding/mode");
+    if (step === 0) router.push(afterDone === "/onboarding/theme" ? "/onboarding/mode" : afterDone);
     else setStep((s) => s - 1);
   }
 
@@ -121,10 +126,10 @@ export function BehterevaWizard() {
           </p>
         </header>
         <div className="space-y-2">
-          <Button size="lg" className="h-12 w-full" onClick={() => router.push("/onboarding/extended?next=/onboarding/theme")}>
+          <Button size="lg" className="h-12 w-full" onClick={() => router.push(`/onboarding/extended?next=${encodeURIComponent(afterDone)}`)}>
             Да, ответить
           </Button>
-          <Button variant="outline" className="h-12 w-full" onClick={() => router.push("/onboarding/theme")}>
+          <Button variant="outline" className="h-12 w-full" onClick={() => router.push(afterDone)}>
             Позже
           </Button>
           <p className="text-center text-xs text-muted-foreground">Пройти можно в любой момент в настройках.</p>

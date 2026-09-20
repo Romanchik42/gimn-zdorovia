@@ -4,14 +4,16 @@ import { workoutLengthSchema } from "@/lib/schemas/workout";
 import { THEMES } from "@/lib/themes";
 import { AVATARS } from "@/lib/avatars";
 import { customThemeSchema, infoTintSchema } from "@/lib/appearance";
+import { MODES } from "@/lib/modes";
+import { PLAYABLE_PACKS } from "@/lib/sound/sound-packs";
 
 /**
  * Единая Zod-схема пользователя — одна на клиент и сервер (SPEC 3.8).
  * Формы валидируют ей же, что и API, поэтому правила не расходятся.
  */
 
-export const MODES = ["behtereva", "general"] as const;
-export const SOUND_PACKS = ["soft", "energetic", "minimal", "none"] as const;
+export { MODES } from "@/lib/modes";
+export const SOUND_PACKS = [...PLAYABLE_PACKS, "none"] as const;
 
 export const modeSchema = z.enum(MODES);
 export const themeSchema = z.enum(THEMES);

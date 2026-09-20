@@ -40,6 +40,7 @@ const USER_TABLES = [
   "user_progress",
   "personal_reports",
   "notifications_log",
+  "user_modes",
 ] as const;
 
 /**
