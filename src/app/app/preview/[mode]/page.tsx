@@ -90,11 +90,13 @@ export default async function ModePreviewPage({ params }: PageProps<"/app/previe
           <ul className="space-y-1.5 text-sm">
             {preview.meals.map((m) => (
               <li key={m.meal_type} className="flex justify-between gap-3">
-                <span className="text-muted-foreground">
+                <span className="shrink-0 text-muted-foreground">
                   {MEAL_TYPE_LABELS[m.meal_type as MealType]}
                 </span>
+                {/* Калории держим одним куском: иначе «549» и «ккал» разъезжаются по строкам. */}
                 <span className="text-right">
-                  {m.name} — {m.kcal} ккал
+                  {m.name}{" "}
+                  <span className="whitespace-nowrap text-muted-foreground">· {m.kcal} ккал</span>
                 </span>
               </li>
             ))}
