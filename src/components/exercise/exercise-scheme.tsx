@@ -702,15 +702,20 @@ function arrowPath(a: Arrow): { d: string; head: boolean; tail: boolean; bold?: 
 export function ExerciseScheme({
   slug,
   className,
+  compact,
 }: {
   slug: string;
   className?: string;
+  /** Значок в списке: линии толще, иначе на 44 пикселях схема еле видна. */
+  compact?: boolean;
 }) {
   const scheme = SCHEMES[slug];
   if (!scheme) return null;
 
+  const k = compact ? 1.7 : 1;
+
   const pose = POSES[scheme.pose];
-  const markerId = `arrowhead-${slug}`;
+  const markerId = `arrowhead-${slug}${compact ? "-s" : ""}`;
   const props = (scheme.props ?? []).flatMap((p) => PROPS[p]);
 
   return (
@@ -729,8 +734,8 @@ export function ExerciseScheme({
           viewBox="0 0 10 10"
           refX="8"
           refY="5"
-          markerWidth="5"
-          markerHeight="5"
+          markerWidth={compact ? 4 : 5}
+          markerHeight={compact ? 4 : 5}
           orient="auto-start-reverse"
         >
           <path d="M0 1 L9 5 L0 9 z" fill="currentColor" className="text-primary" />
@@ -739,13 +744,13 @@ export function ExerciseScheme({
 
       <g transform={scheme.flip ? `translate(${W} 0) scale(-1 1)` : undefined}>
         {/* Опоры — тоньше и бледнее фигурки: это обстановка, а не движение. */}
-        <g className="text-foreground/25" stroke="currentColor" strokeWidth={2}>
+        <g className="text-foreground/25" stroke="currentColor" strokeWidth={2 * k}>
           {props.map(([x1, y1, x2, y2], i) => (
             <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />
           ))}
         </g>
 
-        <g className="text-foreground/70" stroke="currentColor" strokeWidth={3.4}>
+        <g className="text-foreground/70" stroke="currentColor" strokeWidth={3.4 * k}>
           <circle cx={pose.head[0]} cy={pose.head[1]} r={pose.head[2]} />
           {pose.segments.map(([x1, y1, x2, y2], i) => (
             <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />
@@ -762,7 +767,7 @@ export function ExerciseScheme({
             rx={3}
             className="text-foreground/70"
             stroke="currentColor"
-            strokeWidth={2.6}
+            strokeWidth={2.6 * k}
           />
         ))}
 
@@ -773,7 +778,7 @@ export function ExerciseScheme({
               <path
                 key={i}
                 d={d}
-                strokeWidth={bold ? 4 : 3}
+                strokeWidth={(bold ? 4 : 3) * k}
                 strokeDasharray={dashed ? "5 4" : undefined}
                 markerEnd={head ? `url(#${markerId})` : undefined}
                 markerStart={tail ? `url(#${markerId})` : undefined}

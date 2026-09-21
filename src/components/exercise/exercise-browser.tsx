@@ -45,15 +45,15 @@ function CatalogThumb({ exercise }: { exercise: CatalogExercise }) {
 
   if (src) {
     return (
-      <span className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-primary/8">
-        <Image src={src} alt="" fill unoptimized loading="lazy" sizes="44px" className="object-contain p-0.5" />
+      <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-primary/8">
+        <Image src={src} alt="" fill unoptimized loading="lazy" sizes="48px" className="object-contain p-0.5" />
       </span>
     );
   }
   if (hasScheme(exercise.slug)) {
     return (
-      <span className="size-11 shrink-0 rounded-lg bg-primary/8">
-        <ExerciseScheme slug={exercise.slug} className="size-full" />
+      <span className="size-12 shrink-0 rounded-lg bg-primary/8">
+        <ExerciseScheme slug={exercise.slug} className="size-full" compact />
       </span>
     );
   }

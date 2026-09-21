@@ -21,12 +21,42 @@
 | `gen-lunges.gif` | Выпады (с опорой) | [Lunge](https://commons.wikimedia.org/wiki/File:Lunge-CDC_strength_training_for_older_adults.gif) |
 | `breath-diaphragm.gif` | Диафрагмальное дыхание | [Diaphragmatic breathing](https://commons.wikimedia.org/wiki/File:Diaphragmatic_breathing.gif) — John Pierce, **CC0** |
 
-Остальные 42 упражнения показывают знак своего типа (дыхание, разминка,
-основное, растяжка, самомассаж) — `src/components/exercise/exercise-placeholder.tsx`.
-Для них в свободных лицензиях не нашлось картинок, точно совпадающих с
-техникой. Отвергнуто: Hamstring stretch CDC (сидя, у нас — лёжа), Chest
-stretch CDC (не дверной проём), Wall push-up CDC (у нас — от пола), фото
-военных и туристов — другой стиль.
+## Картинки упражнений — `public/exercises/<slug>.webp`
+
+[Pixabay](https://pixabay.com/service/license-summary/) — Content License:
+использование бесплатно, в том числе коммерчески. Хотлинк запрещён, поэтому
+файлы скачаны к себе (`node scripts/fetch-exercise-images.mjs`, ключ — только
+в `secrets/.env`). В карточке и в каталоге под картинкой стоит подпись
+«изображение: Pixabay» (поле `exercises.image_credit`).
+
+| Файл | Упражнение | Автор | Источник | Взято |
+|---|---|---|---|---|
+| `gen-plank.webp` | Планка | Mohamed_hassan | [plank-exercise-sport-workout-man-6573171](https://pixabay.com/vectors/plank-exercise-sport-workout-man-6573171/) | 21.09.2026 |
+| `gen-pushup.webp` | Отжимания | katigori | [press-up-push-up-4925111](https://pixabay.com/illustrations/press-up-push-up-press-up-push-up-4925111/) | 21.09.2026 |
+| `main-hip-abduction.webp` | Отведение ноги лёжа на боку | SerenaWong | [exercise-side-lying-leg-raises-woman-2180074](https://pixabay.com/illustrations/exercise-side-lying-leg-raises-woman-2180074/) | 21.09.2026 |
+| `stretch-child-pose.webp` | Поза ребёнка | AndiP | [yoga-childs-pose-asana-2959214](https://pixabay.com/photos/yoga-childs-pose-asana-2959214/) | 21.09.2026 |
+
+Каждый файл отсмотрен глазами: движение совпадает с нашей техникой.
+
+**Отвергнуто при отборе** (движение другое — ставить такое хуже, чем не
+ставить): «side plank» с Pixabay — продвинутая поза васиштхасана с поднятой
+ногой, у нас обычная боковая планка; «mini squat» — обычный глубокий присед;
+«jumping jacks» — игрушка-паяц и собака Джек-Рассел; «bird dog» — собаки;
+«dead bug» — жуки; «glute bridge» — лондонские мосты; самомассаж — фото
+массажиста, работающего с клиентом, а у нас человек массирует себя сам.
+Из прежних отборов: Hamstring stretch CDC (сидя, у нас — лёжа), Chest stretch
+CDC (не дверной проём), Wall push-up CDC (у нас — от пола).
+
+## Схемы движения — рисуются кодом
+
+`src/components/exercise/exercise-scheme.tsx` — 49 упражнений, у которых
+точного совпадения в свободных источниках не нашлось. Это собственная
+работа: фигурка задаётся координатами суставов, движение — стрелками.
+Лицензий не требует, весит ноль (инлайн-SVG), перекрашивается темой
+(фигурка — `currentColor`, стрелки — брендовый акцент).
+
+Знак типа упражнения (`exercise-placeholder.tsx`) остался аварийным
+запасом: в справочнике нет упражнений, которые до него доходят.
 
 ## Знаки типов упражнений и ярлык приложения
 
@@ -46,6 +76,6 @@ stretch CDC (не дверной проём), Wall push-up CDC (у нас — о
 
 ## Не использовались
 
-Pixabay и Pexels отдают API только по ключу, Unsplash из этой сети недоступен.
-Если захотите фото — нужен ключ API, либо подберите вручную и положите в
-`public/exercises/` с тем же именем `<slug>.gif|webp`.
+Pexels и Unsplash — из этой сети недоступны. Если захотите добавить фото
+вручную, положите файл в `public/exercises/` с именем `<slug>.webp` и
+пропишите его в `exercises.image_url` (и в `supabase/seed.sql`).
