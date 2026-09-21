@@ -943,3 +943,11 @@ UPDATE meals SET category = 'soup' WHERE slug IN ('ln-lentil-soup');
 UPDATE meals SET category = 'vegetables' WHERE slug IN ('ln-beans-veg-stew');
 UPDATE meals SET category = 'fruit'
   WHERE slug IN ('sn-kefir-apple', 'sn-banana-nuts', 'sn-orange-yogurt', 'sn-pear-kefir');
+
+-- Картинки движения с Pixabay (GIMN-013). Отобраны вручную и отсмотрены:
+-- движение совпадает с нашей техникой. Файлы лежат в public/exercises/
+-- (хотлинк запрещён лицензией), источники — в docs/IMAGE_SOURCES.md.
+-- Остальным упражнениям визуал даёт схема движения, она рисуется кодом
+-- по slug и в базе не хранится.
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp', image_credit = 'Pixabay'
+  WHERE slug IN ('gen-plank', 'gen-pushup', 'main-hip-abduction', 'stretch-child-pose');

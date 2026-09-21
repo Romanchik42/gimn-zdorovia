@@ -6,6 +6,7 @@ import { CheckIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExercisePlaceholder } from "@/components/exercise/exercise-placeholder";
+import { ExerciseSchemeCard, hasScheme } from "@/components/exercise/exercise-scheme";
 import { cn } from "cn";
 import type { ExerciseSnapshot, FeedbackStatus } from "@/lib/supabase/types";
 import { exerciseMeta } from "@/lib/exercise-labels";
@@ -73,29 +74,46 @@ export function ExerciseCard({
   );
 }
 
-/** GIF грузится лениво и до загрузки показывает Skeleton (SPEC 4.3). */
+/**
+ * Визуал упражнения (GIMN-013). Порядок: живая гифка → картинка → схема
+ * движения со стрелками → знак типа. Последний остался аварийным запасом:
+ * у всех упражнений справочника есть либо картинка, либо схема.
+ * Картинки грузятся лениво и до загрузки показывают Skeleton (SPEC 4.3).
+ */
 function ExerciseMedia({ exercise }: { exercise: ExerciseSnapshot }) {
   const [loaded, setLoaded] = useState(false);
+  const src = exercise.gif_url ?? exercise.image_url ?? null;
 
-  if (!exercise.gif_url) {
-    // Картинки ещё нет — знак типа упражнения, техника есть текстом ниже.
-    return <ExercisePlaceholder type={exercise.type} />;
+  if (!src) {
+    return hasScheme(exercise.slug) ? (
+      <ExerciseSchemeCard slug={exercise.slug} />
+    ) : (
+      <ExercisePlaceholder type={exercise.type} />
+    );
   }
 
   return (
-    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
-      {!loaded ? <Skeleton className="absolute inset-0 size-full" /> : null}
-      <Image
-        src={exercise.gif_url}
-        alt={exercise.name}
-        fill
-        unoptimized
-        loading="lazy"
-        sizes="(max-width: 640px) 100vw, 480px"
-        className={cn("object-contain p-2 transition-opacity", loaded ? "opacity-100" : "opacity-0")}
-        onLoad={() => setLoaded(true)}
-      />
-    </div>
+    <figure className="space-y-1">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
+        {!loaded ? <Skeleton className="absolute inset-0 size-full" /> : null}
+        <Image
+          src={src}
+          alt={exercise.name}
+          fill
+          unoptimized
+          loading="lazy"
+          sizes="(max-width: 640px) 100vw, 480px"
+          className={cn("object-contain p-2 transition-opacity", loaded ? "opacity-100" : "opacity-0")}
+          onLoad={() => setLoaded(true)}
+        />
+      </div>
+      {/* Атрибуция источника — требование лицензии картинки. */}
+      {exercise.image_credit && !exercise.gif_url ? (
+        <figcaption className="text-right text-[11px] text-muted-foreground">
+          изображение: {exercise.image_credit}
+        </figcaption>
+      ) : null}
+    </figure>
   );
 }
 

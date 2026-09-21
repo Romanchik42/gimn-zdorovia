@@ -23,6 +23,7 @@ export async function loadCatalog(
 
   const exercises = ((data ?? []) as ExerciseRow[]).map((e) => ({
     id: e.id,
+    slug: e.slug,
     name: e.name,
     type: e.type,
     target_joint: e.target_joint,
@@ -30,6 +31,9 @@ export async function loadCatalog(
     repetitions: e.repetitions,
     description: e.description,
     technique: e.technique,
+    gif_url: e.gif_url,
+    image_url: e.image_url,
+    image_credit: e.image_credit,
     warning: warningText(e, ctx.contraindications),
   }));
 

@@ -135,6 +135,10 @@ export type ExerciseRow = {
   description: string;
   technique: string;
   gif_url: string | null;
+  /** Статичная картинка движения (0016). Живая гифка важнее. */
+  image_url: string | null;
+  /** Источник картинки для подписи, например Pixabay (0016). */
+  image_credit: string | null;
   duration_sec: number | null;
   repetitions: number | null;
   level: Level;
@@ -214,6 +218,8 @@ export type ExerciseSnapshot = {
   description: string;
   technique: string;
   gif_url: string | null;
+  image_url?: string | null;
+  image_credit?: string | null;
   duration_sec: number | null;
   repetitions: number | null;
   order: number;

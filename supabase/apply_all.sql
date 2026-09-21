@@ -1,5 +1,5 @@
 -- ============================================================================
--- ВСЁ ОДНИМ ФАЙЛОМ: миграции 0001-0015 + seed + перезагрузка схемы PostgREST.
+-- ВСЁ ОДНИМ ФАЙЛОМ: миграции 0001-0016 + seed + перезагрузка схемы PostgREST.
 -- Собрано из supabase/migrations/*.sql и supabase/seed.sql — источник правды там.
 -- Применять ОДИН раз на пустую БД: Supabase → SQL Editor → вставить → Run.
 -- ============================================================================
@@ -900,6 +900,32 @@ ALTER TABLE users DROP CONSTRAINT IF EXISTS users_sound_pack_check;
 ALTER TABLE users ADD CONSTRAINT users_sound_pack_check CHECK (sound_pack IN (
   'soft', 'energetic', 'minimal', 'nature', 'digital', 'warm', 'none'
 ));
+
+-- >>> 0016_exercise_images.sql
+-- 0016 (GIMN-013): визуал на каждое упражнение.
+--
+-- Было: картинка только у 8 упражнений из 61 (колонка gif_url), остальные
+-- показывали знак своего типа. Стало: живая картинка там, где нашлось точное
+-- совпадение движения, и рисованная схема со стрелками — всем остальным.
+--
+-- Схемы не хранятся в базе: они рисуются кодом по slug
+-- (src/components/exercise/exercise-scheme.tsx), поэтому колонок им не нужно.
+-- В базу добавляем только адрес живой картинки и подпись об источнике —
+-- атрибуция требуется лицензией Pixabay.
+
+ALTER TABLE exercises ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE exercises ADD COLUMN IF NOT EXISTS image_credit VARCHAR(40);
+
+COMMENT ON COLUMN exercises.image_url IS
+  'Статичная картинка движения (GIMN-013). Показывается, если нет gif_url';
+COMMENT ON COLUMN exercises.image_credit IS
+  'Источник картинки для подписи в карточке, например Pixabay';
+
+-- Отобраны вручную и отсмотрены глазами: движение совпадает с нашей техникой.
+-- Файлы скачаны в public/exercises/ (хотлинк запрещён лицензией Pixabay),
+-- источники — в docs/IMAGE_SOURCES.md.
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp', image_credit = 'Pixabay'
+WHERE slug IN ('gen-plank', 'gen-pushup', 'main-hip-abduction', 'stretch-child-pose');
 
 -- >>> seed.sql
 -- ===========================================================================
@@ -1847,6 +1873,14 @@ UPDATE meals SET category = 'soup' WHERE slug IN ('ln-lentil-soup');
 UPDATE meals SET category = 'vegetables' WHERE slug IN ('ln-beans-veg-stew');
 UPDATE meals SET category = 'fruit'
   WHERE slug IN ('sn-kefir-apple', 'sn-banana-nuts', 'sn-orange-yogurt', 'sn-pear-kefir');
+
+-- Картинки движения с Pixabay (GIMN-013). Отобраны вручную и отсмотрены:
+-- движение совпадает с нашей техникой. Файлы лежат в public/exercises/
+-- (хотлинк запрещён лицензией), источники — в docs/IMAGE_SOURCES.md.
+-- Остальным упражнениям визуал даёт схема движения, она рисуется кодом
+-- по slug и в базе не хранится.
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp', image_credit = 'Pixabay'
+  WHERE slug IN ('gen-plank', 'gen-pushup', 'main-hip-abduction', 'stretch-child-pose');
 
 -- Чтобы API сразу увидел новые таблицы:
 NOTIFY pgrst, 'reload schema';

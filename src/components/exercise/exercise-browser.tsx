@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { CheckIcon, ChevronDownIcon, PlusIcon, SearchIcon, TriangleAlertIcon } from "lucide-react";
 
+import Image from "next/image";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,11 +14,13 @@ import {
   TYPE_LABELS,
   exerciseMeta,
 } from "@/lib/exercise-labels";
+import { ExerciseScheme, hasScheme } from "@/components/exercise/exercise-scheme";
 import type { ExerciseType, TargetJoint } from "@/lib/supabase/types";
 import { cn } from "cn";
 
 export type CatalogExercise = {
   id: string;
+  slug: string;
   name: string;
   type: ExerciseType;
   target_joint: TargetJoint;
@@ -24,9 +28,37 @@ export type CatalogExercise = {
   repetitions: number | null;
   description: string;
   technique: string;
+  gif_url: string | null;
+  image_url: string | null;
+  image_credit: string | null;
   /** Текст предупреждения, если упражнение противопоказано этому пользователю. */
   warning: string | null;
 };
+
+/**
+ * Значок движения в строке каталога (GIMN-013): та же картинка или схема,
+ * что и в тренировке, только маленькая — чтобы упражнение узнавалось
+ * до раскрытия. Схема рисуется кодом, поэтому 60 значков ничего не грузят.
+ */
+function CatalogThumb({ exercise }: { exercise: CatalogExercise }) {
+  const src = exercise.gif_url ?? exercise.image_url ?? null;
+
+  if (src) {
+    return (
+      <span className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-primary/8">
+        <Image src={src} alt="" fill unoptimized loading="lazy" sizes="44px" className="object-contain p-0.5" />
+      </span>
+    );
+  }
+  if (hasScheme(exercise.slug)) {
+    return (
+      <span className="size-11 shrink-0 rounded-lg bg-primary/8">
+        <ExerciseScheme slug={exercise.slug} className="size-full" />
+      </span>
+    );
+  }
+  return null;
+}
 
 const DURATION_FILTERS = [
   { id: "all", label: "Любые" },
@@ -146,8 +178,9 @@ export function ExerciseBrowser({
                   type="button"
                   onClick={() => setExpanded(isOpen ? null : e.id)}
                   aria-expanded={isOpen}
-                  className="flex min-h-11 flex-1 items-center gap-2 text-left"
+                  className="flex min-h-11 flex-1 items-center gap-2.5 text-left"
                 >
+                  <CatalogThumb exercise={e} />
                   <span className="flex-1">
                     <span className="flex items-center gap-1.5 font-medium">
                       {e.warning ? (
@@ -205,6 +238,14 @@ export function ExerciseBrowser({
 
               {isOpen ? (
                 <div className="space-y-2 border-t border-border p-3 text-sm">
+                  {!e.gif_url && !e.image_url && hasScheme(e.slug) ? (
+                    <ExerciseScheme slug={e.slug} className="mx-auto aspect-[4/3] w-full max-w-56" />
+                  ) : null}
+                  {e.image_credit && !e.gif_url ? (
+                    <p className="text-right text-[11px] text-muted-foreground">
+                      изображение: {e.image_credit}
+                    </p>
+                  ) : null}
                   <p className="text-muted-foreground">{e.description}</p>
                   <p className="leading-relaxed whitespace-pre-line">{e.technique}</p>
                   {e.warning && !isConfirming ? (
