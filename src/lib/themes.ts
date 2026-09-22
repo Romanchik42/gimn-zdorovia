@@ -11,6 +11,17 @@ export type Theme = (typeof THEMES)[number];
 
 export const DEFAULT_THEME: Theme = "sage";
 
+/**
+ * Тёмные темы. Нужно не для цвета — цвета и так в globals.css, — а для того,
+ * что цветом не задаётся: всплывающие сообщения sonner и цвет строки браузера
+ * выбирают светлый или тёмный набор по этому признаку.
+ */
+export const DARK_THEMES: readonly Theme[] = ["graphite"];
+
+export function isDarkTheme(value: unknown): boolean {
+  return isTheme(value) && DARK_THEMES.includes(value);
+}
+
 export const THEME_LABELS: Record<Theme, string> = {
   sage: "Шалфей",
   terracotta: "Терракота",

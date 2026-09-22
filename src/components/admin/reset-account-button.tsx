@@ -33,6 +33,10 @@ export function ResetAccountButton() {
         setPending(false);
         return;
       }
+      // Страницы приложения лежат в кеше service worker, и после сброса там
+      // остались бы данные прежнего аккаунта. Воркер умеет их удалять по
+      // сообщению — до этого тикета его никто не отправлял.
+      navigator.serviceWorker?.controller?.postMessage("gz:clear-pages");
       // Полная перезагрузка: сессия уже закрыта, клиентский кеш не нужен.
       window.location.assign(json.data.next);
     } catch {

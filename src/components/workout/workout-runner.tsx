@@ -154,6 +154,15 @@ export function WorkoutRunner({
     setIndex((i) => Math.max(0, i - 1));
   }
 
+  // Ушли с экрана в те полсекунды, пока ждёт автопереход, — звук следующего
+  // упражнения не должен догнать человека уже на другой странице.
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
   // Все упражнения отмечены — финальный экран.
   if (index >= total) {
     return (

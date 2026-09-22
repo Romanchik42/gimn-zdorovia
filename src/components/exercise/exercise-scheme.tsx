@@ -453,7 +453,12 @@ type Arrow =
   /** Двусторонняя — движение туда-обратно. Короче 30 единиц не делать:
    *  наконечники сойдутся и стрелка превратится в пятно. */
   | ["both", number, number, number, number]
-  /** Дуга: центр, радиус, углы в градусах (0° — вправо, против часовой). */
+  /**
+   * Дуга: центр, радиус, углы в градусах (0° — вправо, против часовой).
+   * Углы задаются сквозной шкалой и могут быть отрицательными: пара вроде
+   * 350 → 20 означает не «короткая дуга через ноль», а ход назад на 330°,
+   * и вместо стрелки выходит круг. Пишите -10 → 20.
+   */
   | ["arc", number, number, number, number, number]
   /** Круг со стрелкой — вращение на месте. */
   | ["circle", number, number, number]
@@ -592,8 +597,8 @@ const SCHEMES: Record<string, Scheme> = {
     pose: "sitting_front",
     props: ["chair_front"],
     arrows: [
-      ["both", 74, 56, 52, 56],
-      ["both", 86, 56, 108, 56],
+      ["both", 74, 56, 42, 56],
+      ["both", 86, 56, 118, 56],
     ],
   },
 
@@ -659,8 +664,8 @@ const SCHEMES: Record<string, Scheme> = {
   "gen-arm-swings": {
     pose: "standing_front",
     arrows: [
-      ["both", 48, 44, 72, 50],
-      ["both", 112, 44, 88, 50],
+      ["both", 44, 43, 76, 51],
+      ["both", 116, 43, 84, 51],
     ],
   },
   "main-arm-circles": {
@@ -672,7 +677,9 @@ const SCHEMES: Record<string, Scheme> = {
   },
   "main-scapula-squeeze": {
     pose: "standing_front",
-    arrows: [["both", 58, 52, 74, 52], ["both", 102, 52, 86, 52]],
+    // Сведение лопаток — движение в одну сторону, поэтому «нажим», а не
+    // двусторонняя: между лопатками 16 единиц, два наконечника там слипаются.
+    arrows: [["press", 50, 52, 72, 52], ["press", 110, 52, 88, 52]],
   },
   "main-shoulder-external": {
     pose: "standing_front",
@@ -707,7 +714,7 @@ const SCHEMES: Record<string, Scheme> = {
   "gen-pushup": {
     pose: "plank_hands",
     props: ["floor"],
-    arrows: [["both", 88, 78, 88, 100]],
+    arrows: [["both", 80, 58, 80, 90]],
   },
 
   /* ---------- позвоночник ---------- */
@@ -719,7 +726,9 @@ const SCHEMES: Record<string, Scheme> = {
   "main-thoracic-rotation": {
     pose: "quadruped",
     props: ["floor"],
-    arrows: [["arc", 64, 62, 22, 320, 60]],
+    // Локоть раскрывается ВВЕРХ. Углы пишем сквозной шкалой (-40, а не 320):
+    // через 0° дуга уходила длинным путём и рисовала круг под животом.
+    arrows: [["arc", 64, 62, 22, -40, 60]],
   },
   "main-side-bend-standing": {
     pose: "standing_front",
@@ -746,12 +755,14 @@ const SCHEMES: Record<string, Scheme> = {
   "main-wall-posture": {
     pose: "standing_side",
     props: ["wall_back", "floor"],
-    arrows: [["line", 84, 16, 84, 4], ["press", 88, 44, 72, 44]],
+    arrows: [["line", 84, 12, 84, 2], ["press", 88, 44, 72, 44]],
   },
   "spine-iso-chair": {
     pose: "sitting_side",
     props: ["chair_side"],
-    arrows: [["press", 62, 58, 78, 58]],
+    // Спина давит НАЗАД, в спинку стула: фигура сидит лицом вправо,
+    // значит стрелка идёт влево. Раньше она показывала ровно наоборот.
+    arrows: [["press", 94, 58, 80, 58]],
   },
   "spine-micro-rotation": {
     pose: "sitting_front",
@@ -831,7 +842,8 @@ const SCHEMES: Record<string, Scheme> = {
   "main-hip-abduction": {
     pose: "side_lying",
     props: ["floor"],
-    arrows: [["arc", 88, 92, 34, 350, 20]],
+    // Нога поднимается на 30-40 см — короткая дуга вверх, не круг (см. выше).
+    arrows: [["arc", 88, 92, 34, -10, 20]],
   },
   "hips-iso-squeeze": {
     pose: "sitting_front",
@@ -870,10 +882,10 @@ const SCHEMES: Record<string, Scheme> = {
   "gen-jumping-jacks": {
     pose: "standing_front",
     arrows: [
-      ["both", 54, 40, 40, 22],
-      ["both", 106, 40, 120, 22],
-      ["both", 64, 104, 48, 108],
-      ["both", 96, 104, 112, 108],
+      ["both", 56, 44, 34, 16],
+      ["both", 104, 44, 126, 16],
+      ["both", 56, 108, 24, 108],
+      ["both", 104, 108, 136, 108],
     ],
   },
   "massage-glutes-ball": {

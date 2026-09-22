@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { THEMES, THEME_STORAGE_KEY } from "@/lib/themes";
+import { DARK_THEMES, THEMES, THEME_STORAGE_KEY, isDarkTheme } from "@/lib/themes";
 import type { CustomTheme, InfoCardTint } from "@/lib/supabase/types";
 
 /**
@@ -65,6 +65,31 @@ export function contrastRatio(a: string, b: string): number {
 
 export const MIN_TEXT_CONTRAST = 4.5;
 
+/**
+ * Ниже этой яркости фон считаем тёмным. 0.18 — граница, на которой белый
+ * текст перестаёт уступать чёрному по контрасту.
+ */
+const DARK_BG_LUMINANCE = 0.18;
+
+export function isDarkBackground(hex: string): boolean {
+  return luminance(hex) < DARK_BG_LUMINANCE;
+}
+
+/**
+ * Отмечает на <html>, тёмное ли сейчас оформление. Своя палитра важнее темы:
+ * она перекрывает --background. Атрибут читают всплывающие сообщения и
+ * цвет строки браузера — то, что переменными CSS не задаётся.
+ */
+export function refreshDarkFlag(): void {
+  const root = document.documentElement;
+  const customBg = root.style.getPropertyValue("--background").trim();
+  const dark = /^#[0-9a-fA-F]{6}$/.test(customBg)
+    ? isDarkBackground(customBg)
+    : isDarkTheme(root.dataset.theme);
+  if (dark) root.dataset.dark = "on";
+  else delete root.dataset.dark;
+}
+
 /** Ставит/снимает свою палитру на <html>: переменные поверх темы. */
 export function applyCustomTheme(theme: CustomTheme | null): void {
   const root = document.documentElement;
@@ -73,6 +98,7 @@ export function applyCustomTheme(theme: CustomTheme | null): void {
     for (const v of vars) root.style.removeProperty(v);
     root.style.removeProperty("--card-glow-strength");
     delete root.dataset.cardGlow;
+    refreshDarkFlag();
     return;
   }
   root.style.setProperty("--background", theme.bg);
@@ -84,6 +110,7 @@ export function applyCustomTheme(theme: CustomTheme | null): void {
   root.style.setProperty("--card-glow-strength", String(theme.glow_strength));
   if (theme.glow) root.dataset.cardGlow = "on";
   else delete root.dataset.cardGlow;
+  refreshDarkFlag();
 }
 
 export function applyInfoTint(tint: InfoCardTint): void {
@@ -109,11 +136,14 @@ export function rememberAppearance(custom: CustomTheme | null, tint?: InfoCardTi
 export const appearanceBootstrapScript = `
 (function(){try{var d=document.documentElement,s=localStorage;
 var t=s.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(${JSON.stringify(THEMES)}.indexOf(t)>=0){d.dataset.theme=t;}
+if(${JSON.stringify(DARK_THEMES)}.indexOf(d.dataset.theme)>=0){d.dataset.dark="on";}
 var n=s.getItem(${JSON.stringify(INFO_TINT_STORAGE_KEY)});if(${JSON.stringify(INFO_TINTS)}.indexOf(n)>=0){d.dataset.infoTint=n;}
 var c=JSON.parse(s.getItem(${JSON.stringify(CUSTOM_THEME_STORAGE_KEY)})||"null"),h=/^#[0-9a-fA-F]{6}$/;
 if(c&&h.test(c.bg)&&h.test(c.text)&&h.test(c.card)){var st=d.style;
 st.setProperty("--background",c.bg);st.setProperty("--foreground",c.text);st.setProperty("--card",c.card);
 st.setProperty("--card-foreground",c.text);st.setProperty("--popover",c.card);st.setProperty("--popover-foreground",c.text);
-var g=Number(c.glow_strength);if(g>=0&&g<=100){st.setProperty("--card-glow-strength",String(g));}if(c.glow===true){d.dataset.cardGlow="on";}}
+var g=Number(c.glow_strength);if(g>=0&&g<=100){st.setProperty("--card-glow-strength",String(g));}if(c.glow===true){d.dataset.cardGlow="on";}
+var L=[1,3,5].map(function(i){var v=parseInt(c.bg.slice(i,i+2),16)/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
+if(0.2126*L[0]+0.7152*L[1]+0.0722*L[2]<0.18){d.dataset.dark="on";}else{delete d.dataset.dark;}}
 }catch(e){}})();
 `;

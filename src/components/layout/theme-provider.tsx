@@ -5,9 +5,11 @@ import * as React from "react";
 import {
   DEFAULT_THEME,
   THEME_STORAGE_KEY,
+  THEME_SWATCHES,
   isTheme,
   type Theme,
 } from "@/lib/themes";
+import { refreshDarkFlag } from "@/lib/appearance";
 
 /* ---------------------------------------------------------------------------
    Внешнее хранилище темы.
@@ -33,8 +35,16 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
+/** Цвет строки браузера и «шапки» установленного приложения — под тему. */
+function writeThemeColor(theme: Theme): void {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", THEME_SWATCHES[theme].background);
+}
+
 function writeTheme(next: Theme): void {
   document.documentElement.dataset.theme = next;
+  refreshDarkFlag();
+  writeThemeColor(next);
   try {
     window.localStorage.setItem(THEME_STORAGE_KEY, next);
   } catch {
@@ -50,8 +60,25 @@ type ThemeContextValue = {
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null);
 
+/** Тёмное ли оформление: тема «Графит» или своя палитра с тёмным фоном. */
+function readDark(): boolean {
+  return document.documentElement.dataset.dark === "on";
+}
+
+/**
+ * Всплывающие сообщения и цвет строки браузера светлым/тёмным набором
+ * переменными CSS не задаются — им нужен булев признак.
+ */
+export function useIsDark(): boolean {
+  return React.useSyncExternalStore(subscribe, readDark, () => false);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = React.useSyncExternalStore(subscribe, readTheme, () => DEFAULT_THEME);
+
+  // Строку браузера красим и при первой загрузке: тему мог поднять
+  // инлайн-скрипт из localStorage, а meta приезжает из метаданных Next.
+  React.useEffect(() => writeThemeColor(theme), [theme]);
 
   const value = React.useMemo<ThemeContextValue>(
     () => ({ theme, setTheme: writeTheme }),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -456,6 +456,14 @@ export function AvatarPicker({
   const [preview, setPreview] = useState<{ url: string; blob: Blob } | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Тот же адрес освобождаем при уходе со страницы: зависимость — сам адрес,
+  // поэтому старый снимается ровно тогда, когда его сменил новый.
+  const previewSrc = preview?.url ?? null;
+  useEffect(() => {
+    if (!previewSrc) return;
+    return () => URL.revokeObjectURL(previewSrc);
+  }, [previewSrc]);
+
   async function choosePhoto(file: File) {
     if (file.size > MAX_PHOTO_BYTES) {
       toast.error("Файл больше 5 МБ — выберите поменьше");
@@ -467,6 +475,9 @@ export function AvatarPicker({
     }
     try {
       const blob = await squareWebp(file);
+      // Адрес превью держит картинку в памяти, пока вкладка жива; освобождает
+      // его эффект выше — по одному месту на все пути (заменили, загрузили,
+      // отменили, ушли со страницы).
       setPreview({ url: URL.createObjectURL(blob), blob });
     } catch {
       toast.error("Не удалось обработать картинку");
@@ -582,7 +593,6 @@ export function AvatarPicker({
               variant="ghost"
               className="h-11"
               onClick={() => {
-                URL.revokeObjectURL(preview.url);
                 setPreview(null);
               }}
               disabled={uploading}

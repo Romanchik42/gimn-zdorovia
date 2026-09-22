@@ -40,6 +40,9 @@ export function ThemeSync({
     applyCustomTheme(custom);
     applyInfoTint(infoTint);
     rememberAppearance(custom, infoTint);
+    // Палитра могла сменить светлое оформление на тёмное — тем, кто следит
+    // за темой (всплывающие сообщения), нужно об этом узнать.
+    window.dispatchEvent(new Event("gz:theme-change"));
     // customTheme сравниваем по содержимому, а не по ссылке
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customKey, infoTint]);

@@ -62,8 +62,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: appearanceBootstrapScript }} />
       </head>
       <body className="flex min-h-full flex-col">
-        <ThemeProvider>{children}</ThemeProvider>
-        <Toaster theme="light" richColors position="top-center" />
+        {/* Toaster внутри провайдера: ему нужен признак тёмного оформления. */}
+        <ThemeProvider>
+          {children}
+          <Toaster richColors position="top-center" />
+        </ThemeProvider>
         <PwaRegistrar />
       </body>
     </html>

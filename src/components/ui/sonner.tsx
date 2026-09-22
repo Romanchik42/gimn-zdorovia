@@ -1,15 +1,22 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
+import { useIsDark } from "@/components/layout/theme-provider"
+
+/**
+ * Всплывающие сообщения. Раньше тема бралась из next-themes, провайдера
+ * которого в приложении нет: хук всегда возвращал пустоту, и на тёмной
+ * палитре «Графит» сообщения оставались светлыми. Берём признак из своего
+ * провайдера тем — он же учитывает тёмную свою палитру.
+ */
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const dark = useIsDark()
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={dark ? "dark" : "light"}
       className="toaster group"
       icons={{
         success: (
