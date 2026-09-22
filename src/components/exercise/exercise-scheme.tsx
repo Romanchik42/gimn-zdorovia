@@ -902,23 +902,43 @@ export function hasScheme(slug: string | null | undefined): boolean {
 
 /* ------------------------------- отрисовка ------------------------------- */
 
-function arrowPath(a: Arrow): { d: string; head: boolean; tail: boolean; bold?: boolean; dashed?: boolean } {
+type DrawnArrow = {
+  d: string;
+  head: boolean;
+  tail: boolean;
+  bold?: boolean;
+  dashed?: boolean;
+  /**
+   * Класс анимации (GIMN-021): стрелка прочерчивается в сторону движения.
+   * Ключевые кадры — в globals.css, там же выключение при
+   * prefers-reduced-motion.
+   */
+  anim: "draw" | "sweep" | "hold";
+};
+
+function arrowPath(a: Arrow): DrawnArrow {
   switch (a[0]) {
     case "line":
-      return { d: `M${a[1]} ${a[2]} L${a[3]} ${a[4]}`, head: true, tail: false };
+      return { d: `M${a[1]} ${a[2]} L${a[3]} ${a[4]}`, head: true, tail: false, anim: "draw" };
     case "press":
-      return { d: `M${a[1]} ${a[2]} L${a[3]} ${a[4]}`, head: true, tail: false, bold: true };
+      return { d: `M${a[1]} ${a[2]} L${a[3]} ${a[4]}`, head: true, tail: false, bold: true, anim: "draw" };
     case "hold":
-      return { d: `M${a[1]} ${a[2]} L${a[3]} ${a[4]}`, head: false, tail: false, dashed: true };
+      return { d: `M${a[1]} ${a[2]} L${a[3]} ${a[4]}`, head: false, tail: false, dashed: true, anim: "hold" };
     case "both":
-      return { d: `M${a[1]} ${a[2]} L${a[3]} ${a[4]}`, head: true, tail: true };
+      return { d: `M${a[1]} ${a[2]} L${a[3]} ${a[4]}`, head: true, tail: true, anim: "sweep" };
     case "arc":
-      return { d: arcPath(a[1], a[2], a[3], a[4], a[5]), head: true, tail: false };
+      return { d: arcPath(a[1], a[2], a[3], a[4], a[5]), head: true, tail: false, anim: "draw" };
     case "circle":
       // Не замкнутый круг: разрыв нужен, чтобы поместился наконечник.
-      return { d: arcPath(a[1], a[2], a[3], 80, -250), head: true, tail: false };
+      return { d: arcPath(a[1], a[2], a[3], 80, -250), head: true, tail: false, anim: "draw" };
   }
 }
+
+const ANIM_CLASS: Record<DrawnArrow["anim"], string> = {
+  draw: "gz-arrow-draw",
+  sweep: "gz-arrow-sweep",
+  hold: "gz-arrow-hold",
+};
 
 /**
  * Схема движения. `id` нужен, чтобы маркеры-наконечники не конфликтовали,
@@ -928,11 +948,17 @@ export function ExerciseScheme({
   slug,
   className,
   compact,
+  animated = true,
 }: {
   slug: string;
   className?: string;
   /** Значок в списке: линии толще, иначе на 44 пикселях схема еле видна. */
   compact?: boolean;
+  /**
+   * Прочерчивать стрелки (GIMN-021). В каталоге выключено: шесть десятков
+   * значков, дёргающихся разом, мешают читать список, а не помогают.
+   */
+  animated?: boolean;
 }) {
   const scheme = SCHEMES[slug];
   if (!scheme) return null;
@@ -998,11 +1024,12 @@ export function ExerciseScheme({
 
         <g className="text-primary" stroke="currentColor">
           {scheme.arrows.map((a, i) => {
-            const { d, head, tail, bold, dashed } = arrowPath(a);
+            const { d, head, tail, bold, dashed, anim } = arrowPath(a);
             return (
               <path
                 key={i}
                 d={d}
+                className={animated ? ANIM_CLASS[anim] : undefined}
                 strokeWidth={(bold ? 4 : 3) * k}
                 strokeDasharray={dashed ? "5 4" : undefined}
                 markerEnd={head ? `url(#${markerId})` : undefined}
@@ -1021,7 +1048,7 @@ export function ExerciseSchemeCard({ slug, type }: { slug: string; type?: Exerci
   void type;
   return (
     <div className="flex aspect-[4/3] w-full items-center justify-center rounded-xl bg-primary/8">
-      <ExerciseScheme slug={slug} className="size-full p-3" />
+      <ExerciseScheme slug={slug} className="size-full p-3" animated />
     </div>
   );
 }

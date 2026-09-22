@@ -16,6 +16,7 @@ import {
 } from "@/lib/exercise-labels";
 import { ExerciseScheme, hasScheme } from "@/components/exercise/exercise-scheme";
 import type { Equipment, ExerciseType, TargetJoint } from "@/lib/supabase/types";
+import { MODE_SHORT_LABELS, type Mode } from "@/lib/modes";
 import { cn } from "cn";
 
 export type CatalogExercise = {
@@ -31,6 +32,10 @@ export type CatalogExercise = {
   gif_url: string | null;
   image_url: string | null;
   image_credit: string | null;
+  /** Программа, за которой записано упражнение. */
+  mode: Mode | "both";
+  /** Входит ли в программу, которой человек сейчас занимается. */
+  in_my_mode: boolean;
   /** Нужный снаряд (GIMN-014). */
   equipment: Equipment;
   /** «Нужен турник» — подпись к строке, если снаряд всё-таки нужен. */
@@ -61,12 +66,19 @@ function CatalogThumb({ exercise }: { exercise: CatalogExercise }) {
   if (hasScheme(exercise.slug)) {
     return (
       <span className="size-12 shrink-0 rounded-lg bg-primary/8">
-        <ExerciseScheme slug={exercise.slug} className="size-full" compact />
+        <ExerciseScheme slug={exercise.slug} className="size-full" compact animated={false} />
       </span>
     );
   }
   return null;
 }
+
+const PROGRAM_FILTERS = [
+  { id: "all", label: "Все" },
+  { id: "mine", label: "Моя программа" },
+] as const;
+
+type ProgramFilter = (typeof PROGRAM_FILTERS)[number]["id"];
 
 const DURATION_FILTERS = [
   { id: "all", label: "Любые" },
@@ -100,6 +112,9 @@ export function ExerciseBrowser({
   const [joint, setJoint] = useState<TargetJoint | "all">("all");
   const [type, setType] = useState<ExerciseType | "all">("all");
   const [duration, setDuration] = useState<DurationFilter>("all");
+  // По умолчанию «все»: каталог — справочник, и поиск «наклон» должен
+  // находить наклоны, даже если они записаны за другой программой (GIMN-021).
+  const [program, setProgram] = useState<ProgramFilter>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
 
@@ -112,10 +127,13 @@ export function ExerciseBrowser({
       if (type !== "all" && e.type !== type) return false;
       if (duration === "short" && approxSeconds(e) > 60) return false;
       if (duration === "long" && approxSeconds(e) <= 60) return false;
-      if (q && !e.name.toLowerCase().includes(q)) return false;
+      if (program === "mine" && !e.in_my_mode) return false;
+      // Ищем и по описанию с техникой: человек помнит «колено к груди»,
+      // а упражнение называется «Колени к груди» — или наоборот.
+      if (q && !`${e.name} ${e.description} ${e.technique}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [exercises, joint, type, duration, query]);
+  }, [exercises, joint, type, duration, program, query]);
 
   function pick(e: CatalogExercise) {
     if (!onPick) return;
@@ -159,6 +177,12 @@ export function ExerciseBrowser({
         onChange={(v) => setType(v as ExerciseType | "all")}
       />
       <ChipRow
+        label="Программа"
+        options={PROGRAM_FILTERS.map((p) => ({ id: p.id, label: p.label }))}
+        value={program}
+        onChange={(v) => setProgram(v as ProgramFilter)}
+      />
+      <ChipRow
         label="Длительность"
         options={DURATION_FILTERS.map((d) => ({ id: d.id, label: d.label }))}
         value={duration}
@@ -199,6 +223,11 @@ export function ExerciseBrowser({
                     <span className="block text-xs text-muted-foreground">
                       {exerciseMeta(e)} · {JOINT_LABELS[e.target_joint]}
                       {e.equipment_hint ? ` · ${e.equipment_hint}` : ""}
+                      {/* Из чужой программы — говорим прямо: посмотреть можно,
+                          в программу дня оно само не попадёт. */}
+                      {!e.in_my_mode && e.mode !== "both"
+                        ? ` · программа «${MODE_SHORT_LABELS[e.mode]}»`
+                        : ""}
                     </span>
                   </span>
                   <ChevronDownIcon

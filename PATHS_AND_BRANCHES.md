@@ -69,6 +69,8 @@ F:\Project gimn zdorovia\
 │   ├── seed.sql              справочники: 76 упражнений, блюда, шаблоны
 │   └── apply_all.sql         СОБИРАЕТСЯ скриптом, руками не править
 ├── scripts/                  вспомогательные, запускаются вручную
+│   └── lib/seed-exercises.mjs разбор справочника из seed, общий для обоих
+│                              документов врачу
 ├── docs/                     IMAGE_SOURCES.md — откуда картинки и лицензии
 ├── secrets/                  реальные ключи, В GIT НЕ ПОПАДАЮТ
 └── .github/workflows/        деплой и синхронизация переменных
@@ -83,7 +85,8 @@ F:\Project gimn zdorovia\
 | `SPEC_gimn_zdorovia_v2.md` | **Источник истины.** Расхождение кода и спецификации решается в пользу спецификации |
 | `CHECKLIST_TESTING.md` | Ручная проверка перед выкладыванием, 18 разделов |
 | `GUIDE_STANDALONE_WEB_APP.md` | Путь к своему домену и установке на телефон |
-| `DOC_REVMATOLOG_FULL_gimn_zdorovia.md` | Справочник упражнений для врача (собирается скриптом) |
+| `DOC_REVMATOLOG_FULL_gimn_zdorovia.md` | Справочник упражнений для врача, для чтения (собирается скриптом) |
+| `docs/DOC_REVMATOLOG_CHECKLIST_gimn.docx` | Он же в Word, для заполнения врачом (собирается скриптом) |
 | `PATHS_AND_BRANCHES.md` | Этот файл |
 | `AGENTS.md`, `CLAUDE.md` | Правила для ИИ-помощника. `CLAUDE.md` — одна строка `@AGENTS.md` |
 | `BATCH_*.md` | История заданий по тикетам |
@@ -104,7 +107,8 @@ F:\Project gimn zdorovia\
 | `node scripts/build-apply-all.mjs` | Пересобирает `supabase/apply_all.sql` из миграций и seed. **Запускать после каждой новой миграции** |
 | `node scripts/build-apply-all.mjs --from=0017` | То же, но отдельным файлом только миграции от 0017 и дальше плюс seed. Нужно потому, что `apply_all.sql` перерос размер, который принимает вставка в SQL Editor |
 | `... --from=0017 --no-seed` | Только миграции, без seed — если и 100 КиБ не проходят; seed тогда вставляется вторым заходом |
-| `node scripts/build-doctor-doc.mjs` | Пересобирает документ для ревматолога из seed |
+| `node scripts/build-doctor-doc.mjs` | Пересобирает документ для ревматолога (Markdown) из seed |
+| `node scripts/build-doctor-docx.mjs` | Пересобирает заполняемый чеклист врачу в Word (`docs/*.docx`) |
 | `node scripts/fetch-wger-images.mjs` | Скачивает картинки упражнений с wger |
 | `node scripts/fetch-exercise-images.mjs` | То же с Pixabay (нужен ключ из `secrets/.env`) |
 | `node scripts/build-exercise-thumbs.mjs` | Делает превью 96 px для каталога |
@@ -203,16 +207,17 @@ Vercel, прод
 пользователей в нём нет.
 
 На сегодня непримененными могут быть **0017** (турник: колонки `equipment`
-и `has_turnik` плюс 15 упражнений в seed) и **0018** (картинки с wger) —
-без них приложение соберётся, но вопрос про турник упадёт при сохранении
-анкеты.
+и `has_turnik` плюс 15 упражнений в seed), **0018** (картинки с wger) и
+**0019** (описания без названия диагноза) — без 0017 приложение соберётся,
+но вопрос про турник упадёт при сохранении анкеты.
 
 ---
 
 ## 8. Что нельзя делать
 
 * Править `supabase/apply_all.sql` руками — он собирается скриптом, правка потеряется.
-* Править `DOC_REVMATOLOG_FULL_gimn_zdorovia.md` руками — то же самое.
+* Править `DOC_REVMATOLOG_FULL_gimn_zdorovia.md` и
+  `docs/DOC_REVMATOLOG_CHECKLIST_gimn.docx` руками — то же самое.
 * Класть значения в `.env.example` — он коммитится.
 * Ставить пакеты через npm или yarn — разойдётся `pnpm-lock.yaml`.
 * Удалять блок про Next.js из `AGENTS.md` — его заново пишет `next dev`,
