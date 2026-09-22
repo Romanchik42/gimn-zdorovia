@@ -3,12 +3,14 @@ import "server-only";
 import type {
   ExerciseRow,
   ExerciseSnapshot,
+  HasTurnik,
   Level,
   Mode,
   SequenceIntensity,
   SequenceItem,
   WorkoutLength,
 } from "@/lib/supabase/types";
+import { equipmentAvailable, equipmentNote, needsEquipment } from "@/lib/workout-engine/equipment";
 import { estimateMinutes } from "@/lib/workout-engine/duration";
 import { cutToLength } from "@/lib/workout-engine/length";
 import { NO_RESTRICTIONS, type Restrictions } from "@/lib/diagnostics/extended";
@@ -82,6 +84,8 @@ export type BuildArgs = {
   excludeExerciseIds?: string[];
   /** Зоны, исключённые после побочки (skip_joint). */
   excludeJoints?: string[];
+  /** Ответ анкеты про турник (GIMN-014). Нет ответа — считаем «нет». */
+  hasTurnik?: HasTurnik | null;
 };
 
 export type BuildResult = {
@@ -129,6 +133,14 @@ export function buildWorkout(args: BuildArgs): BuildResult {
       continue;
     }
 
+    // Снаряда нет — упражнения нет (GIMN-014). Шаблоны последовательностей
+    // турниковых упражнений не содержат, это защита на случай, если однажды
+    // будут: показать подтягивание человеку без турника хуже, чем не показать.
+    if (!equipmentAvailable(exercise.equipment, args.hasTurnik)) {
+      skipped.push({ slug: item.slug, reason: "нужен снаряд, которого нет" });
+      continue;
+    }
+
     // Значения из шаблона приоритетнее справочника: шаблон задаёт дозировку дня.
     const durationSec = item.duration_sec ?? exercise.duration_sec;
     const repetitions = item.repetitions ?? exercise.repetitions;
@@ -147,11 +159,19 @@ export function buildWorkout(args: BuildArgs): BuildResult {
       duration_sec: scale(durationSec, factor, 15),
       repetitions: scale(repetitions, factor, 4),
       order: exercises.length + 1,
-      warning: warningFor(exercise, blocked),
+      warning: joinNotes(warningFor(exercise, blocked), equipmentNote(exercise.equipment, args.hasTurnik)),
+      equipment: exercise.equipment,
+      optional: needsEquipment(exercise.equipment) && args.hasTurnik === "maybe",
     });
   }
 
   return { exercises, skipped, totalDurationMin: estimateMinutes(exercises) };
+}
+
+/** Пометки в карточке — одной строкой, пустые отбрасываются. */
+function joinNotes(...parts: (string | null | undefined)[]): string | null {
+  const list = parts.filter((p): p is string => Boolean(p));
+  return list.length > 0 ? list.join(". ") : null;
 }
 
 /**
@@ -198,6 +218,8 @@ export type FitPlanArgs = {
   struggling?: string[];
   /** Выводы углублённой диагностики: недоступные положения, ограниченные зоны. */
   restrictions?: Restrictions;
+  /** Ответ анкеты про турник (GIMN-014). Нет ответа — считаем «нет». */
+  hasTurnik?: HasTurnik | null;
 };
 
 /**
@@ -237,6 +259,7 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
       !isContraindicated(e, blocked) &&
       !blockedPositions.has(e.position) &&
       !tooHardForZone(e) &&
+      equipmentAvailable(e.equipment, args.hasTurnik) &&
     !(excludeJoints.has(e.target_joint) && e.type !== "breathing" && e.type !== "stretch");
   const inMode = (e: ExerciseRow) => e.mode === args.mode || e.mode === "both";
   const safe = args.pool.filter((e) => allowed(e) && inMode(e) && LEVEL_RANK[e.level] <= levelCap);
@@ -265,7 +288,9 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
     duration_sec: scale(e.duration_sec, factor, 15),
     repetitions: scale(e.repetitions, factor, 4),
     order: 0,
-    warning: warningFor(e, blocked),
+    warning: joinNotes(warningFor(e, blocked), equipmentNote(e.equipment, args.hasTurnik)),
+    equipment: e.equipment,
+    optional: needsEquipment(e.equipment) && args.hasTurnik === "maybe",
   });
 
   const list = [...exercises];
@@ -387,6 +412,12 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
       ];
   const seen = new Set<string>();
   const queue = tiers.flat().filter((e) => !inWorkout.has(e.id) && !seen.has(e.id) && seen.add(e.id));
+
+  // «Могу найти» — не «есть»: турниковые уходят в конец очереди, и занятие
+  // набирается из них, только когда без них до нужной длительности не хватило.
+  if (args.hasTurnik === "maybe") {
+    queue.sort((a, b) => Number(needsEquipment(a.equipment)) - Number(needsEquipment(b.equipment)));
+  }
 
   // Убираем с конца основной части, потом разминки; каждая часть остаётся хотя бы с одним.
   const removeOne = (): boolean => {

@@ -27,16 +27,24 @@ import {
   generalProfileSchema,
   type GeneralProfileInput,
 } from "@/lib/schemas/diagnostics";
+import { HAS_TURNIK_LABELS, HAS_TURNIK_VALUES } from "@/lib/workout-engine/equipment";
 import { DAY_NAMES } from "@/lib/workout-engine/weekly-cycle";
 import { cn } from "cn";
 
 export function GeneralForm({
   keepMode = false,
   next = "/onboarding/theme",
+  initial,
 }: {
   keepMode?: boolean;
   /** Куда вернуться после анкеты — см. BehterevaWizard. */
   next?: string;
+  /**
+   * Ответы прошлой анкеты (GIMN-014). Анкету открывают и второй раз — сменить
+   * цель или ответ про турник; форма с пустыми полями означала бы, что вес
+   * и рост надо вводить заново, а не подтверждать.
+   */
+  initial?: Partial<GeneralProfileInput> | null;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -52,6 +60,8 @@ export function GeneralForm({
       activity_level: "medium",
       difficulty: "beginner",
       training_days: [1, 3, 5],
+      has_turnik: "no",
+      ...(initial ?? {}),
     },
   });
 
@@ -184,6 +194,31 @@ export function GeneralForm({
                   </ChoiceButton>
                 ))}
               </div>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="has_turnik"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>У вас есть турник?</FormLabel>
+              <div className="grid grid-cols-3 gap-2">
+                {HAS_TURNIK_VALUES.map((value) => (
+                  <ChoiceButton
+                    key={value}
+                    active={field.value === value}
+                    onClick={() => field.onChange(value)}
+                  >
+                    {HAS_TURNIK_LABELS[value]}
+                  </ChoiceButton>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Дома, во дворе или в зале — подойдёт любой. Ответите «могу найти» — подтягивания
+                и висы будут приходить второй опцией, их можно пропускать.
+              </p>
             </FormItem>
           )}
         />

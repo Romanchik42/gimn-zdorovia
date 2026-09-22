@@ -4,10 +4,12 @@ import type {
   ExerciseRow,
   ExerciseSnapshot,
   ExerciseType,
+  HasTurnik,
   Intensity,
   Level,
   Mode,
 } from "@/lib/supabase/types";
+import { equipmentAvailable, equipmentHint } from "@/lib/workout-engine/equipment";
 import { DEFAULT_REST_SEC, SEC_PER_REP, estimateMinutes } from "@/lib/workout-engine/duration";
 
 /**
@@ -74,6 +76,8 @@ export type CustomBuildArgs = {
   intensity: Intensity;
   difficulty: Level | null;
   userContraindications: string[];
+  /** Есть ли турник (GIMN-014): чего нечем делать, того в конструкторе нет. */
+  hasTurnik?: HasTurnik | null;
 };
 
 export function buildCustomWorkout(args: CustomBuildArgs): {
@@ -84,14 +88,17 @@ export function buildCustomWorkout(args: CustomBuildArgs): {
   const joints = FOCUS_JOINTS[args.focus] ?? [args.focus];
 
   const inMode = (e: ExerciseRow) => e.mode === args.mode || e.mode === "both";
-  const eligible = args.pool.filter((e) => inMode(e) && LEVEL_RANK[e.level] <= levelCap);
+  // Снаряд — не противопоказание: противопоказанное мы показываем с ⚠️ и даём
+  // решать человеку (US-05), а турник либо есть, либо его нечем заменить.
+  const pool = args.pool.filter((e) => equipmentAvailable(e.equipment, args.hasTurnik));
+  const eligible = pool.filter((e) => inMode(e) && LEVEL_RANK[e.level] <= levelCap);
 
   const picked: ExerciseRow[] = [];
   const used = new Set<string>();
 
   const free = (list: ExerciseRow[]) => list.filter((e) => !used.has(e.id));
   // Щадящие упражнения соседнего режима — запас, если своего пула не хватило на длинное занятие.
-  const crossGentle = args.pool.filter((e) => !inMode(e) && e.level === "beginner");
+  const crossGentle = pool.filter((e) => !inMode(e) && e.level === "beginner");
 
   const totalCount = exerciseCount(args.durationMin);
 
@@ -139,7 +146,10 @@ export function buildCustomWorkout(args: CustomBuildArgs): {
     duration_sec: e.duration_sec,
     repetitions: e.repetitions,
     order: i + 1,
-    warning: warningText(e, args.userContraindications),
+    equipment: e.equipment,
+    warning: [warningText(e, args.userContraindications), equipmentHint(e.equipment)]
+      .filter(Boolean)
+      .join(". ") || null,
   }));
 
   const exercises = fitToDuration(raw, args.durationMin);

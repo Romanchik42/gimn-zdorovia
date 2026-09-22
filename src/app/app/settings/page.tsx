@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ClipboardListIcon } from "lucide-react";
+import { ClipboardListIcon, DumbbellIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +27,8 @@ import { linkUrl } from "@/lib/telegram/link";
 import { resolveWorkoutLength } from "@/lib/workout-engine/length";
 import { loadModes } from "@/lib/modes/server";
 import { MODE_LABELS } from "@/lib/modes";
+import { HAS_TURNIK_LABELS } from "@/lib/workout-engine/equipment";
+import type { HasTurnik } from "@/lib/supabase/types";
 
 export const metadata = { title: "Настройки — Гимн.здоровья" };
 
@@ -70,6 +72,16 @@ export default async function SettingsPage() {
     .maybeSingle();
   const workoutLength = resolveWorkoutLength(profile.workout_length, modes.current, diagnostics?.calculated_intensity);
 
+  // Анкета общего режима: её открывают повторно, чтобы сменить цель, уровень
+  // или ответ про турник. Показываем только тем, кто этим режимом занимается.
+  const { data: generalProfile } = modes.active.includes("general")
+    ? await supabase
+        .from("user_profiles_general")
+        .select("has_turnik")
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null };
+
   return (
     <main className="flex flex-1 flex-col px-4 py-6">
       <div className="mx-auto w-full max-w-md space-y-5">
@@ -104,6 +116,22 @@ export default async function SettingsPage() {
               <Link href="/onboarding/extended?next=/app/settings">
                 {diagnostics.extended_completed_at ? "Пройти заново" : "Пройти"}
               </Link>
+            </Button>
+          </section>
+        ) : null}
+
+        {generalProfile ? (
+          <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+            <h2 className="flex items-center gap-2 font-medium">
+              <DumbbellIcon className="size-4 text-primary" aria-hidden />
+              Анкета общего режима
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Цель, уровень подготовки, дни занятий и турник. Турник сейчас:{" "}
+              {HAS_TURNIK_LABELS[(generalProfile.has_turnik as HasTurnik) ?? "no"].toLowerCase()}.
+            </p>
+            <Button asChild variant="outline" className="h-11 w-full">
+              <Link href="/onboarding/general?next=/app/settings">Изменить ответы</Link>
             </Button>
           </section>
         ) : null}

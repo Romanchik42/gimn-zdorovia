@@ -253,6 +253,114 @@ const CHILD_FOLD: Figure = {
   ],
 };
 
+/**
+ * Вис на турнике лицом к нам, хват на ширине плеч.
+ *
+ * Вид спереди, а не сбоку: сбоку руки, корпус и ноги вытягиваются в одну
+ * вертикаль и фигурка читается как палка с головой посередине.
+ */
+const HANG_FRONT: Figure = {
+  head: [80, 40, 8.5],
+  segments: [
+    [80, 48, 80, 55],
+    [67, 57, 93, 57],
+    [80, 55, 80, 84],
+    [67, 57, 70, 38], [70, 38, 71, 17],
+    [93, 57, 90, 38], [90, 38, 89, 17],
+    [71, 84, 89, 84],
+    [71, 84, 70, 97], [70, 97, 70, 108], [70, 108, 62, 110],
+    [89, 84, 90, 97], [90, 97, 90, 108], [90, 108, 98, 110],
+  ],
+};
+
+/** Вис лицом к нам, хват заметно шире плеч. */
+const HANG_WIDE: Figure = {
+  head: [80, 40, 8.5],
+  segments: [
+    [80, 48, 80, 55],
+    [66, 57, 94, 57],
+    [80, 55, 80, 84],
+    [66, 57, 56, 38], [56, 38, 50, 17],
+    [94, 57, 104, 38], [104, 38, 110, 17],
+    [70, 84, 90, 84],
+    [70, 84, 70, 97], [70, 97, 70, 108], [70, 108, 62, 110],
+    [90, 84, 90, 97], [90, 97, 90, 108], [90, 108, 98, 110],
+  ],
+};
+
+/**
+ * Вис боком с подтянутыми коленями. Здесь вид сбоку обязателен — спереди
+ * колени «к груди» не видно. Голова вынесена вперёд от линии рук, иначе
+ * круг головы ложится прямо на руку.
+ */
+const HANG_KNEES: Figure = {
+  head: [92, 42, 8.5],
+  segments: [
+    [86, 46, 79, 52],
+    [80, 17, 79, 34], [79, 34, 78, 52],
+    [78, 52, 76, 80],
+    [76, 80, 82, 82],
+    [79, 81, 100, 72], [100, 72, 103, 90], [103, 90, 111, 92],
+  ],
+};
+
+/** Вис боком с прямыми ногами вперёд — L-сидение. */
+const HANG_L: Figure = {
+  head: [92, 42, 8.5],
+  segments: [
+    [86, 46, 79, 52],
+    [80, 17, 79, 34], [79, 34, 78, 52],
+    [78, 52, 76, 80],
+    [76, 80, 82, 80],
+    [80, 80, 104, 79], [104, 79, 128, 78], [128, 78, 132, 71],
+  ],
+};
+
+/** Вис лицом к нам, колени подтянуты и уведены вбок — маятник. */
+const HANG_TWIST: Figure = {
+  head: [80, 40, 8.5],
+  segments: [
+    [80, 48, 80, 55],
+    [69, 57, 91, 57],
+    [80, 55, 80, 82],
+    [69, 57, 71, 38], [71, 38, 72, 17],
+    [91, 57, 89, 38], [89, 38, 88, 17],
+    [73, 82, 87, 82],
+    [85, 82, 108, 72], [108, 72, 113, 90], [113, 90, 121, 92],
+    [85, 86, 110, 76], [110, 76, 115, 94],
+  ],
+};
+
+/** Наклонный вис под низкой перекладиной — австралийские подтягивания. */
+const INCLINE_HANG: Figure = {
+  head: [42, 82, 8.5],
+  segments: [
+    [48, 80, 56, 77],
+    [58, 77, 96, 96],
+    [58, 54, 58, 66], [58, 66, 58, 77],
+    [96, 96, 102, 98],
+    [102, 98, 120, 106], [120, 106, 130, 110],
+  ],
+};
+
+/**
+ * Упор на прямых руках между брусьями, вид спереди: видно, что руки по бокам
+ * и ноги оторваны от пола. Сбоку жерди сливаются, и выходит человек у забора.
+ */
+const DIP_SUPPORT: Figure = {
+  head: [80, 28, 8.5],
+  segments: [
+    [80, 36, 80, 43],
+    [68, 45, 92, 45],
+    [80, 43, 80, 74],
+    [68, 45, 64, 56], [64, 56, 62, 68],
+    [92, 45, 96, 56], [96, 56, 98, 68],
+    [72, 74, 88, 74],
+    [72, 74, 68, 86], [68, 86, 74, 96],
+    [88, 74, 92, 86], [92, 86, 86, 96],
+  ],
+};
+
 const POSES = {
   standing_front: STANDING_FRONT,
   standing_side: STANDING_SIDE,
@@ -272,6 +380,13 @@ const POSES = {
   sitting_leg_out: SITTING_LEG_OUT,
   kneeling_lunge: KNEELING_LUNGE,
   child_fold: CHILD_FOLD,
+  hang_front: HANG_FRONT,
+  hang_knees: HANG_KNEES,
+  hang_l: HANG_L,
+  hang_wide: HANG_WIDE,
+  hang_twist: HANG_TWIST,
+  incline_hang: INCLINE_HANG,
+  dip_support: DIP_SUPPORT,
 } as const;
 
 type PoseName = keyof typeof POSES;
@@ -307,6 +422,24 @@ const PROPS = {
   support_bar: [
     [100, 62, 100, FLOOR],
     [90, 62, 110, 62],
+  ] as Segment[],
+  /** Турник: перекладина под потолком на двух стойках (GIMN-014). */
+  pullup_bar: [
+    [24, 16, 136, 16],
+    [28, 16, 28, FLOOR],
+    [132, 16, 132, FLOOR],
+  ] as Segment[],
+  /** Низкая перекладина по пояс — для австралийских подтягиваний. */
+  low_bar: [
+    [40, 52, 76, 52],
+    [70, 52, 70, FLOOR],
+  ] as Segment[],
+  /** Брусья спереди: две жерди по бокам, каждая на своей стойке. */
+  dip_bars: [
+    [46, 68, 68, 68],
+    [92, 68, 114, 68],
+    [52, 68, 52, FLOOR],
+    [108, 68, 108, FLOOR],
   ] as Segment[],
 };
 
@@ -355,6 +488,86 @@ type Scheme = {
 };
 
 const SCHEMES: Record<string, Scheme> = {
+  /* ---------- турник и брусья (GIMN-014) ---------- */
+  "bar-dead-hang": {
+    pose: "hang_front",
+    props: ["pullup_bar", "floor"],
+    // Вис — это вытяжение вниз под своим весом, а не движение.
+    arrows: [["line", 46, 56, 46, 100]],
+  },
+  "bar-hang-posture": {
+    pose: "hang_front",
+    props: ["pullup_bar", "floor"],
+    arrows: [["hold", 46, 42, 46, 104]],
+  },
+  "bar-active-hang": {
+    pose: "hang_front",
+    props: ["pullup_bar", "floor"],
+    // Плечи опускаются — тело чуть поднимается.
+    arrows: [["line", 46, 78, 46, 54]],
+  },
+  "bar-shrug": {
+    pose: "hang_front",
+    props: ["pullup_bar", "floor"],
+    arrows: [["both", 46, 46, 46, 78]],
+  },
+  "bar-australian-row": {
+    pose: "incline_hang",
+    props: ["low_bar", "floor"],
+    arrows: [["both", 88, 58, 88, 88]],
+  },
+  "bar-negative-pullup": {
+    pose: "hang_front",
+    props: ["pullup_bar", "floor"],
+    // Только спуск: подъём в этом упражнении делается ногами с опоры.
+    arrows: [["line", 46, 44, 46, 86]],
+  },
+  "bar-pullup-overhand": {
+    pose: "hang_front",
+    props: ["pullup_bar", "floor"],
+    arrows: [["both", 46, 86, 46, 44]],
+  },
+  "bar-pullup-underhand": {
+    pose: "hang_front",
+    props: ["pullup_bar", "floor"],
+    arrows: [["both", 48, 86, 48, 46]],
+  },
+  "bar-pullup-wide": {
+    pose: "hang_wide",
+    props: ["pullup_bar", "floor"],
+    arrows: [["both", 38, 86, 38, 44]],
+  },
+  "bar-knee-raise": {
+    pose: "hang_knees",
+    props: ["pullup_bar", "floor"],
+    arrows: [["both", 104, 102, 108, 68]],
+  },
+  "bar-leg-raise": {
+    pose: "hang_l",
+    props: ["pullup_bar", "floor"],
+    arrows: [["both", 116, 104, 116, 72]],
+  },
+  "bar-l-hang": {
+    pose: "hang_l",
+    props: ["pullup_bar", "floor"],
+    arrows: [["hold", 84, 86, 130, 84]],
+  },
+  "bar-hang-twist": {
+    pose: "hang_twist",
+    props: ["pullup_bar", "floor"],
+    arrows: [["arc", 80, 82, 34, 300, 352]],
+  },
+  "dip-support-hold": {
+    pose: "dip_support",
+    props: ["dip_bars", "floor"],
+    arrows: [["hold", 126, 40, 126, 92]],
+  },
+  "dip-pushup": {
+    pose: "dip_support",
+    props: ["dip_bars", "floor"],
+    arrows: [["both", 126, 42, 126, 86]],
+  },
+
   /* ---------- дыхание ---------- */
   "breath-square": {
     pose: "sitting_front",

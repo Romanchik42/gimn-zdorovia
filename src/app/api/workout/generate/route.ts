@@ -15,6 +15,7 @@ import { deriveRestrictions, type ExtendedAnswers } from "@/lib/diagnostics/exte
 import { isMode, type Mode } from "@/lib/modes";
 import type {
   ExerciseRow,
+  HasTurnik,
   Level,
   SequenceIntensity,
   SequenceItem,
@@ -190,8 +191,16 @@ export async function POST(request: Request) {
   // Весь справочник (50 строк): из него же добираем упражнения до длительности дня.
   const [{ data: exercises }, { data: generalProfile }] = await Promise.all([
     supabase.from("exercises").select("*"),
-    supabase.from("user_profiles_general").select("difficulty").eq("user_id", user.id).maybeSingle(),
+    supabase
+      .from("user_profiles_general")
+      .select("difficulty, has_turnik")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
+
+  // Турник — вопрос анкеты общего режима (GIMN-014). У режима Бехтерева
+  // анкеты нет, и упражнений со снарядом в нём тоже нет, поэтому null.
+  const hasTurnik = (generalProfile?.has_turnik as HasTurnik | undefined) ?? null;
 
   const bySlug = new Map<string, ExerciseRow>(
     ((exercises ?? []) as ExerciseRow[]).map((e) => [e.slug, e]),
@@ -220,6 +229,7 @@ export async function POST(request: Request) {
     bloodPressureOk,
     excludeExerciseIds,
     excludeJoints,
+    hasTurnik,
   });
 
   if (built.exercises.length === 0) {
@@ -251,6 +261,7 @@ export async function POST(request: Request) {
     length,
     struggling,
     restrictions,
+    hasTurnik,
   });
 
   const { data: created, error } = await supabase

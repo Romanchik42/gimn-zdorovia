@@ -31,6 +31,10 @@ export type SequenceIntensity = "low" | "medium" | "normal";
 export type ExerciseType = "breathing" | "warmup" | "main" | "stretch" | "massage";
 export type TargetJoint = "spine" | "shoulder" | "neck" | "legs" | "hips" | "core" | "full_body";
 export type Level = "beginner" | "intermediate" | "advanced";
+/** Снаряд, без которого упражнение не сделать (0017). */
+export type Equipment = "none" | "pullup_bar" | "dip_bars";
+/** Ответ анкеты про турник (0017). maybe — «могу найти». */
+export type HasTurnik = "yes" | "no" | "maybe";
 export type FeedbackStatus = "done" | "difficult" | "skipped";
 export type WorkoutStatus = "planned" | "in_progress" | "completed" | "skipped";
 export type WorkoutSource = "plan" | "custom" | "template";
@@ -118,6 +122,8 @@ export type UserProfileGeneralRow = {
   activity_level: "sedentary" | "light" | "medium" | "high" | "very_high";
   difficulty: Level;
   training_days: number[];
+  /** Есть ли турник (0017). Влияет на подбор, не на калории. */
+  has_turnik: HasTurnik;
   calculated_bmr: number;
   calculated_tdee: number;
   calculated_target_calories: number;
@@ -148,6 +154,8 @@ export type ExerciseRow = {
   position: string;
   /** Щадящее: микроамплитуда или изометрика (0014). */
   gentle: boolean;
+  /** Нужный снаряд (0017): none — ничего, pullup_bar — турник, dip_bars — брусья. */
+  equipment: Equipment;
   created_at: string;
 };
 
@@ -232,6 +240,10 @@ export type ExerciseSnapshot = {
   replaced_reason?: "weekly" | "position" | "gentle" | null;
   /** Щадящее для ограниченной зоны — короткое занятие его не отрезает. */
   priority?: boolean;
+  /** Нужный снаряд (0017) — карточка показывает пометку. */
+  equipment?: Equipment | null;
+  /** «Могу найти»: упражнение стоит второй опцией, его можно пропустить. */
+  optional?: boolean;
 };
 
 export type UserWorkoutRow = {

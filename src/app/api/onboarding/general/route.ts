@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createDefaultWeekPlan } from "@/lib/auth/provision";
 import { activateMode } from "@/lib/modes/server";
+import { todayIso } from "@/lib/dates";
 
 /**
  * POST /api/onboarding/general (US-02).
@@ -32,6 +33,14 @@ export async function POST(request: Request) {
     goal: input.goal,
   });
 
+  // Прошлый ответ про турник нужен, чтобы понять, устарела ли собранная
+  // на сегодня тренировка: снаряд поменялся — набор упражнений другой.
+  const { data: previous } = await supabase
+    .from("user_profiles_general")
+    .select("has_turnik")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   const { error } = await supabase.from("user_profiles_general").upsert(
     {
       user_id: user.id,
@@ -41,6 +50,7 @@ export async function POST(request: Request) {
       activity_level: input.activity_level,
       difficulty: input.difficulty,
       training_days: input.training_days,
+      has_turnik: input.has_turnik,
       calculated_bmr: bmr,
       calculated_tdee: tdee,
       calculated_target_calories: target,
@@ -62,14 +72,38 @@ export async function POST(request: Request) {
     .update({ gender: input.gender, birth_date: `${birthYear}-01-01` })
     .eq("id", user.id);
 
+  // Ответ про турник изменился — сегодняшняя тренировка собрана из другого
+  // набора упражнений. Удаляем её, чтобы она пересобралась при следующем
+  // открытии главной. Трогаем только не начатую: начатую прерывать нельзя.
+  if (previous && previous.has_turnik !== input.has_turnik) {
+    await supabase
+      .from("user_workouts")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("mode", "general")
+      .eq("scheduled_date", todayIso())
+      .eq("source", "plan")
+      .eq("status", "planned");
+  }
+
   // keep_mode — анкету открыли ради расчёта калорий из общего меню,
   // режим менять не просили.
   if (!input.keep_mode) {
     await activateMode(user.id, "general");
-    try {
-      await createDefaultWeekPlan(user.id, "general");
-    } catch (e) {
-      console.error("week plan creation failed:", e);
+    // План раскладываем только на первой анкете: upsert затёр бы правки,
+    // которые человек внёс на странице «План» (GIMN-014).
+    const { count } = await supabase
+      .from("user_week_plan")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("mode", "general");
+
+    if (!count) {
+      try {
+        await createDefaultWeekPlan(user.id, "general");
+      } catch (e) {
+        console.error("week plan creation failed:", e);
+      }
     }
   }
 

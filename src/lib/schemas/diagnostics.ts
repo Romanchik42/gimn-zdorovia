@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { HAS_TURNIK_VALUES } from "@/lib/workout-engine/equipment";
+
 /**
  * Диагностика Бехтерева и анкета общего режима (SPEC 3.2, US-01, US-02).
  * Все поля диагностики опциональны: пользователь мог не знать своих
@@ -62,6 +64,9 @@ export const DIFFICULTY_LABELS: Record<(typeof DIFFICULTIES)[number], string> = 
   advanced: "Продвинутый",
 };
 
+/** Вопрос про турник (GIMN-014). Значения и подписи — в workout-engine/equipment. */
+export const hasTurnikSchema = z.enum(HAS_TURNIK_VALUES);
+
 export const generalProfileSchema = z.object({
   gender: z.enum(["male", "female"]),
   age_years: z.number().int().min(14, "Возраст от 14").max(100, "Возраст до 100"),
@@ -74,6 +79,12 @@ export const generalProfileSchema = z.object({
     .array(z.number().int().min(1).max(7))
     .min(1, "Выберите хотя бы один день")
     .max(7),
+  /**
+   * Есть ли турник. Поле обязательное, а не с умолчанием: с умолчанием
+   * zod делает вход и выход схемы разными типами, и форма на ней уже
+   * не типизируется. Экран анкеты всегда шлёт значение, стартовое — «нет».
+   */
+  has_turnik: hasTurnikSchema,
   /**
    * true — анкету заполняют ради меню, режим и план не трогаем.
    * Иначе пользователь Бехтерева, открыв анкету из «Питания», незаметно

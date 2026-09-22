@@ -15,7 +15,7 @@ import {
   exerciseMeta,
 } from "@/lib/exercise-labels";
 import { ExerciseScheme, hasScheme } from "@/components/exercise/exercise-scheme";
-import type { ExerciseType, TargetJoint } from "@/lib/supabase/types";
+import type { Equipment, ExerciseType, TargetJoint } from "@/lib/supabase/types";
 import { cn } from "cn";
 
 export type CatalogExercise = {
@@ -31,6 +31,10 @@ export type CatalogExercise = {
   gif_url: string | null;
   image_url: string | null;
   image_credit: string | null;
+  /** Нужный снаряд (GIMN-014). */
+  equipment: Equipment;
+  /** «Нужен турник» — подпись к строке, если снаряд всё-таки нужен. */
+  equipment_hint: string | null;
   /** Текст предупреждения, если упражнение противопоказано этому пользователю. */
   warning: string | null;
 };
@@ -194,6 +198,7 @@ export function ExerciseBrowser({
                     </span>
                     <span className="block text-xs text-muted-foreground">
                       {exerciseMeta(e)} · {JOINT_LABELS[e.target_joint]}
+                      {e.equipment_hint ? ` · ${e.equipment_hint}` : ""}
                     </span>
                   </span>
                   <ChevronDownIcon

@@ -2,7 +2,7 @@ import "server-only";
 
 import type { createClient } from "@/lib/supabase/server";
 import { contraindicationsFor } from "@/lib/workout-engine/generator";
-import type { Level, Mode } from "@/lib/supabase/types";
+import type { HasTurnik, Level, Mode } from "@/lib/supabase/types";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -11,6 +11,8 @@ export type TrainingContext = {
   difficulty: Level | null;
   /** Метки противопоказаний по последней диагностике. */
   contraindications: string[];
+  /** Есть ли турник (GIMN-014). Вопрос только у общего режима. */
+  hasTurnik: HasTurnik | null;
 };
 
 /** Режим, уровень и противопоказания пользователя — одним запросом на источник. */
@@ -27,12 +29,17 @@ export async function loadTrainingContext(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase.from("user_profiles_general").select("difficulty").eq("user_id", userId).maybeSingle(),
+    supabase
+      .from("user_profiles_general")
+      .select("difficulty, has_turnik")
+      .eq("user_id", userId)
+      .maybeSingle(),
   ]);
 
   return {
     mode: profile?.mode ?? "general",
     difficulty: general?.difficulty ?? null,
+    hasTurnik: (general?.has_turnik as HasTurnik | undefined) ?? null,
     contraindications: contraindicationsFor(
       (diagnostics?.pain_areas as string[] | undefined) ?? [],
       diagnostics?.blood_pressure_ok ?? null,
