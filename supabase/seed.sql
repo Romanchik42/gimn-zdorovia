@@ -1050,3 +1050,35 @@ INSERT INTO exercises (slug, name, type, target_joint, mode, description, techni
  NULL, 8, 'advanced', '["shoulder_pain","high_blood_pressure"]'::jsonb, '[{"trigger":"joint_pain","action":"stop"},{"trigger":"pressure_up","action":"reduce_intensity"}]'::jsonb, 'standing', FALSE, 'dip_bars')
 
 ON CONFLICT (slug) DO NOTHING;
+
+-- Картинки движения с wger (GIMN-015). Отобраны вручную и отсмотрены:
+-- движение совпадает с нашей техникой. Лицензия CC BY-SA требует назвать
+-- автора — он в image_credit, полные ссылки в docs/IMAGE_SOURCES.md.
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger (CC BY-SA 4.0)'
+WHERE slug IN ('bar-knee-raise', 'bar-leg-raise', 'gen-jumping-jacks',
+               'warmup-neck-tilts', 'warmup-neck-turns', 'main-bridge', 'gen-glute-bridge');
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Imobard (CC BY-SA 4.0)'
+WHERE slug = 'bar-pullup-overhand';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Everkinetic (CC BY-SA 3.0)'
+WHERE slug = 'bar-pullup-underhand';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, cshep442 (CC BY-SA 4.0)'
+WHERE slug = 'dip-pushup';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Gavru (CC BY-SA 4.0)'
+WHERE slug = 'bar-australian-row';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, utkb (CC BY-SA 4.0)'
+WHERE slug = 'main-bird-dog';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Davidgj32 (CC BY-SA 4.0)'
+WHERE slug IN ('main-hip-flexor-stretch', 'stretch-piriformis');

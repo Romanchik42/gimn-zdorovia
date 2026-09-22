@@ -1,5 +1,5 @@
 -- ============================================================================
--- ВСЁ ОДНИМ ФАЙЛОМ: миграции 0001-0017 + seed + перезагрузка схемы PostgREST.
+-- ВСЁ ОДНИМ ФАЙЛОМ: миграции 0001-0018 + seed + перезагрузка схемы PostgREST.
 -- Собрано из supabase/migrations/*.sql и supabase/seed.sql — источник правды там.
 -- Применять ОДИН раз на пустую БД: Supabase → SQL Editor → вставить → Run.
 -- ============================================================================
@@ -968,6 +968,55 @@ COMMENT ON COLUMN user_profiles_general.has_turnik IS
 -- RLS не трогаем: политика profiles_general_own стоит FOR ALL на всю строку,
 -- колоночных грантов у этой таблицы нет — новая колонка наследует права.
 
+-- >>> 0018_wger_images.sql
+-- 0018 (GIMN-015): картинки движения с wger.
+--
+-- Было: живая картинка у 12 упражнений из 76, остальным — рисованная схема.
+-- Стало: ещё 14, в том числе всем шести турниковым, где движение сложное
+-- и схема объясняет его хуже фотографии.
+--
+-- Источник — wger.de, открытая база тренировок: 374 картинки под Creative
+-- Commons, публичный API без ключа. Отобраны вручную и отсмотрены глазами:
+-- взяты только те, где движение совпадает с нашей техникой. Musclewiki и
+-- ExRx не подошли — оба закрыты от машинного доступа, и их условия
+-- использования не разрешают брать картинки к себе.
+--
+-- Лицензия CC BY-SA требует назвать автора, поэтому image_credit хранит
+-- «wger, <автор> (CC BY-SA 4.0)» — карточка печатает это под картинкой.
+-- Полные ссылки на файлы — в docs/IMAGE_SOURCES.md и в scripts/fetch-wger-images.mjs.
+--
+-- Файлы скачаны в public/exercises/<slug>.webp: хотлинк на чужой сервер
+-- означал бы, что картинки исчезнут в тот день, когда wger переедет.
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger (CC BY-SA 4.0)'
+WHERE slug IN ('bar-knee-raise', 'bar-leg-raise', 'gen-jumping-jacks',
+               'warmup-neck-tilts', 'warmup-neck-turns', 'main-bridge', 'gen-glute-bridge');
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Imobard (CC BY-SA 4.0)'
+WHERE slug = 'bar-pullup-overhand';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Everkinetic (CC BY-SA 3.0)'
+WHERE slug = 'bar-pullup-underhand';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, cshep442 (CC BY-SA 4.0)'
+WHERE slug = 'dip-pushup';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Gavru (CC BY-SA 4.0)'
+WHERE slug = 'bar-australian-row';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, utkb (CC BY-SA 4.0)'
+WHERE slug = 'main-bird-dog';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Davidgj32 (CC BY-SA 4.0)'
+WHERE slug IN ('main-hip-flexor-stretch', 'stretch-piriformis');
+
 -- >>> seed.sql
 -- ===========================================================================
 -- seed.sql — начальное наполнение справочников.
@@ -1922,6 +1971,137 @@ UPDATE meals SET category = 'fruit'
 -- по slug и в базе не хранится.
 UPDATE exercises SET image_url = '/exercises/' || slug || '.webp', image_credit = 'Pixabay'
   WHERE slug IN ('gen-plank', 'gen-pushup', 'main-hip-abduction', 'stretch-child-pose');
+
+-- ---------------------------------------------------------------------------
+-- УПРАЖНЕНИЯ НА ТУРНИКЕ И БРУСЬЯХ (GIMN-014, 15 штук) — только общий режим.
+--
+-- Порядок в списке — от самого простого к самому тяжёлому: вис, шраги,
+-- австралийские, негативные, полные подтягивания. Так человек без опыта
+-- получает висы и шраги, а подтягивания приходят с ростом уровня.
+--
+-- Режим «Бехтерева» их не получает, и это намеренно: вис под собственным
+-- весом при анкилозирующем спондилите — вопрос к врачу, а не к приложению.
+-- Механика запрета общая для всех режимов: подбор берёт из соседнего режима
+-- только дыхание, разминку и растяжку уровня «начальный».
+--
+-- equipment: подбор покажет эти упражнения, только если в анкете отмечен
+-- турник (has_turnik = 'yes'), а при «могу найти» — последними и с пометкой.
+-- ---------------------------------------------------------------------------
+
+INSERT INTO exercises (slug, name, type, target_joint, mode, description, technique, duration_sec, repetitions, level, contraindications, side_effects, position, gentle, equipment) VALUES
+
+-- Висы: с них начинают, они же — растяжка позвоночника после силовой части.
+('bar-dead-hang', 'Мёртвый вис', 'stretch', 'spine', 'general',
+ 'Вытягивает позвоночник под собственным весом и разгружает поясницу.',
+ E'1. Возьмитесь за турник прямым хватом на ширине плеч.\n2. Полностью повисните: руки прямые, плечи расслаблены, ноги не касаются пола.\n3. Дышите ровно, не раскачивайтесь.\n4. Слезайте мягко, не спрыгивая.',
+ 30, NULL, 'beginner', '["shoulder_pain"]'::jsonb, '[{"trigger":"joint_pain","action":"stop"}]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-hang-posture', 'Вис для осанки', 'stretch', 'spine', 'general',
+ 'Мягкое вытяжение в конце занятия: раскрывает грудную клетку и снимает сутулость.',
+ E'1. Повисните на турнике прямым хватом, стопы могут слегка касаться пола — так легче.\n2. Расслабьте спину и плечи, дайте телу вытянуться вниз.\n3. Макушкой тянитесь вверх, подбородок не задирайте.\n4. Держите столько, сколько спокойно держится хват.',
+ 40, NULL, 'beginner', '["shoulder_pain"]'::jsonb, '[]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-active-hang', 'Активный вис', 'main', 'shoulder', 'general',
+ 'Учит держать плечи включёнными — база для подтягиваний.',
+ E'1. Повисните на прямых руках прямым хватом.\n2. Не сгибая локти, опустите плечи вниз и сведите лопатки — тело чуть поднимется.\n3. Держите это положение, грудь раскрыта.\n4. Дышите ровно, не задерживайте дыхание.',
+ 20, NULL, 'beginner', '["shoulder_pain"]'::jsonb, '[{"trigger":"joint_pain","action":"stop"}]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-shrug', 'Шраги на турнике', 'main', 'shoulder', 'general',
+ 'Пожимание плечами в висе — укрепляет лопаточные мышцы перед подтягиваниями.',
+ E'1. Повисните на турнике прямым хватом, руки прямые.\n2. Не сгибая локти, опустите плечи вниз и сведите лопатки.\n3. Плавно отпустите — плечи поднимаются к ушам.\n4. Работают только лопатки, локти всё время прямые.',
+ NULL, 10, 'beginner', '["shoulder_pain"]'::jsonb, '[]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+-- Подтягивания: от облегчённых к полным.
+('bar-australian-row', 'Австралийские подтягивания', 'main', 'shoulder', 'general',
+ 'Подтягивание к низкой перекладине из наклонного виса — облегчённый вариант для спины.',
+ E'1. Возьмитесь за низкую перекладину (на уровне пояса) прямым хватом шире плеч.\n2. Выпрямите тело в линию, пятки на полу, руки прямые.\n3. Подтяните грудь к перекладине, сводя лопатки.\n4. Медленно опуститесь. Чем ближе стопы к перекладине, тем легче.',
+ NULL, 12, 'beginner', '["shoulder_pain"]'::jsonb, '[]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-negative-pullup', 'Негативные подтягивания', 'main', 'shoulder', 'general',
+ 'Медленный спуск из верхней точки — так учатся подтягиваться с нуля.',
+ E'1. Встаньте на опору так, чтобы подбородок был над перекладиной, возьмитесь прямым хватом.\n2. Уберите ноги с опоры и удерживайте верхнее положение.\n3. Опускайтесь вниз медленно, на счёт 3-5, до полностью прямых рук.\n4. Вернитесь на опору и повторите.',
+ NULL, 5, 'intermediate', '["shoulder_pain"]'::jsonb, '[{"trigger":"just_hard","action":"reduce_intensity"}]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-pullup-overhand', 'Подтягивание прямым хватом', 'main', 'shoulder', 'general',
+ 'Базовое подтягивание: широчайшие мышцы спины, плечи, руки.',
+ E'1. Возьмитесь за турник прямым хватом (ладони от себя) на ширине плеч.\n2. Из виса на прямых руках подтянитесь, пока подбородок не окажется над перекладиной.\n3. Опускайтесь подконтрольно до прямых рук, без падения вниз.\n4. Не раскачивайтесь и не помогайте себе рывком ног.',
+ NULL, 6, 'intermediate', '["shoulder_pain","high_blood_pressure"]'::jsonb, '[{"trigger":"pressure_up","action":"reduce_intensity"},{"trigger":"just_hard","action":"reduce_intensity"}]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-pullup-underhand', 'Подтягивание обратным хватом', 'main', 'shoulder', 'general',
+ 'Ладони к себе — больше работы достаётся бицепсам, подтягиваться легче.',
+ E'1. Возьмитесь за турник обратным хватом (ладони к себе) на ширине плеч.\n2. Подтянитесь, пока подбородок не окажется над перекладиной, локти идут вниз вдоль тела.\n3. Опускайтесь медленно до прямых рук.\n4. Плечи держите опущенными, не втягивайте голову.',
+ NULL, 6, 'intermediate', '["shoulder_pain","high_blood_pressure"]'::jsonb, '[{"trigger":"pressure_up","action":"reduce_intensity"},{"trigger":"just_hard","action":"reduce_intensity"}]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-pullup-wide', 'Подтягивание широким хватом', 'main', 'shoulder', 'general',
+ 'Хват шире плеч — акцент на широчайшие, самый тяжёлый вариант.',
+ E'1. Возьмитесь прямым хватом заметно шире плеч.\n2. Подтянитесь грудью к перекладине, сводя лопатки, локти идут в стороны и вниз.\n3. Опускайтесь подконтрольно до прямых рук.\n4. Берите этот вариант, только когда обычные подтягивания даются легко.',
+ NULL, 5, 'advanced', '["shoulder_pain","high_blood_pressure"]'::jsonb, '[{"trigger":"pressure_up","action":"reduce_intensity"},{"trigger":"joint_pain","action":"stop"}]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+-- Пресс в висе.
+('bar-knee-raise', 'Подъём коленей в висе', 'main', 'core', 'general',
+ 'Пресс в висе: колени к груди, поясница не прогибается.',
+ E'1. Повисните на турнике прямым хватом, плечи опущены.\n2. Подтяните колени к груди, округляя низ живота.\n3. Опустите ноги медленно, не раскачиваясь.\n4. Движение делайте прессом, а не махом ног.',
+ NULL, 10, 'beginner', '["acute_back_pain"]'::jsonb, '[]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-leg-raise', 'Подъём ног к груди в висе', 'main', 'core', 'general',
+ 'Тот же подъём, но с прямыми ногами — заметно тяжелее.',
+ E'1. Повисните на турнике прямым хватом, ноги прямые.\n2. Поднимите прямые ноги до уровня таза или выше, к груди.\n3. Опускайте медленно, без раскачки.\n4. Не можете с прямыми — согните колени, это тот же подъём полегче.',
+ NULL, 8, 'advanced', '["acute_back_pain","high_blood_pressure"]'::jsonb, '[{"trigger":"just_hard","action":"reduce_intensity"}]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-l-hang', 'Вис в L-сидении', 'main', 'core', 'general',
+ 'Удержание прямых ног под углом 90 градусов — статика на пресс.',
+ E'1. Повисните на турнике прямым хватом, плечи опущены.\n2. Поднимите прямые ноги до угла 90 градусов с телом.\n3. Держите положение, дышите ровно, носки тяните на себя.\n4. Тяжело — держите согнутые колени, это тот же угол полегче.',
+ 15, NULL, 'advanced', '["acute_back_pain"]'::jsonb, '[{"trigger":"just_hard","action":"reduce_intensity"}]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+('bar-hang-twist', 'Маятник в висе', 'main', 'core', 'general',
+ 'Колени вбок из виса — косые мышцы живота.',
+ E'1. Повисните на турнике прямым хватом, колени подтянуты к груди.\n2. Не опуская колени, отведите их вбок, скручиваясь в пояснице.\n3. Вернитесь в центр и повторите в другую сторону.\n4. Амплитуда небольшая, движение медленное.',
+ NULL, 10, 'intermediate', '["acute_back_pain"]'::jsonb, '[]'::jsonb, 'standing', FALSE, 'pullup_bar'),
+
+-- Брусья. Отдельный снаряд: турник есть чаще, чем брусья.
+('dip-support-hold', 'Удержание в упоре на брусьях', 'main', 'core', 'general',
+ 'Стойка на прямых руках между брусьями — учит держать корпус и плечи.',
+ E'1. Встаньте между брусьями, обопритесь на прямые руки, локти выпрямлены.\n2. Оторвите ноги от пола, тело вертикально, плечи опущены от ушей.\n3. Держите положение, напрягая живот и ягодицы.\n4. Опускайтесь на пол мягко.',
+ 20, NULL, 'beginner', '["shoulder_pain"]'::jsonb, '[{"trigger":"joint_pain","action":"stop"}]'::jsonb, 'standing', FALSE, 'dip_bars'),
+
+('dip-pushup', 'Отжимания на брусьях', 'main', 'shoulder', 'general',
+ 'Грудь, передние дельты и трицепс под полным весом тела.',
+ E'1. Встаньте в упор на прямых руках между брусьями.\n2. Опуститесь, сгибая локти примерно до 90 градусов, корпус чуть наклонён вперёд.\n3. Выжмите себя вверх до прямых рук.\n4. Плечи не проваливайте к ушам; болит плечо — уменьшите глубину.',
+ NULL, 8, 'advanced', '["shoulder_pain","high_blood_pressure"]'::jsonb, '[{"trigger":"joint_pain","action":"stop"},{"trigger":"pressure_up","action":"reduce_intensity"}]'::jsonb, 'standing', FALSE, 'dip_bars')
+
+ON CONFLICT (slug) DO NOTHING;
+
+-- Картинки движения с wger (GIMN-015). Отобраны вручную и отсмотрены:
+-- движение совпадает с нашей техникой. Лицензия CC BY-SA требует назвать
+-- автора — он в image_credit, полные ссылки в docs/IMAGE_SOURCES.md.
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger (CC BY-SA 4.0)'
+WHERE slug IN ('bar-knee-raise', 'bar-leg-raise', 'gen-jumping-jacks',
+               'warmup-neck-tilts', 'warmup-neck-turns', 'main-bridge', 'gen-glute-bridge');
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Imobard (CC BY-SA 4.0)'
+WHERE slug = 'bar-pullup-overhand';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Everkinetic (CC BY-SA 3.0)'
+WHERE slug = 'bar-pullup-underhand';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, cshep442 (CC BY-SA 4.0)'
+WHERE slug = 'dip-pushup';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Gavru (CC BY-SA 4.0)'
+WHERE slug = 'bar-australian-row';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, utkb (CC BY-SA 4.0)'
+WHERE slug = 'main-bird-dog';
+
+UPDATE exercises SET image_url = '/exercises/' || slug || '.webp',
+                     image_credit = 'wger, Davidgj32 (CC BY-SA 4.0)'
+WHERE slug IN ('main-hip-flexor-stretch', 'stretch-piriformis');
 
 -- Чтобы API сразу увидел новые таблицы:
 NOTIFY pgrst, 'reload schema';
