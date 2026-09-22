@@ -198,8 +198,10 @@ export async function POST(request: Request) {
       .maybeSingle(),
   ]);
 
-  // Турник — вопрос анкеты общего режима (GIMN-014). У режима Бехтерева
-  // анкеты нет, и упражнений со снарядом в нём тоже нет, поэтому null.
+  // Турник — вопрос анкеты общего режима (GIMN-014). Ответ передаём как есть,
+  // а отсекает турниковые в режиме Бехтерева сам подбор, по режиму (GIMN-022):
+  // анкета общего режима может быть заполнена и у того, кто сейчас занимается
+  // по Бехтерева — режимов у человека бывает два сразу.
   const hasTurnik = (generalProfile?.has_turnik as HasTurnik | undefined) ?? null;
 
   const bySlug = new Map<string, ExerciseRow>(
@@ -224,6 +226,7 @@ export async function POST(request: Request) {
   const built = buildWorkout({
     items,
     exercisesBySlug: bySlug,
+    mode,
     intensity,
     painAreas: (diagnostics?.pain_areas as string[] | undefined) ?? [],
     bloodPressureOk,

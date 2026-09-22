@@ -10,7 +10,12 @@ import type {
   SequenceItem,
   WorkoutLength,
 } from "@/lib/supabase/types";
-import { equipmentAvailable, equipmentNote, needsEquipment } from "@/lib/workout-engine/equipment";
+import {
+  equipmentAvailable,
+  equipmentNote,
+  equipmentOptional,
+  needsEquipment,
+} from "@/lib/workout-engine/equipment";
 import { estimateMinutes } from "@/lib/workout-engine/duration";
 import { cutToLength } from "@/lib/workout-engine/length";
 import { NO_RESTRICTIONS, type Restrictions } from "@/lib/diagnostics/extended";
@@ -77,6 +82,8 @@ function scale(value: number | null | undefined, factor: number, min: number): n
 export type BuildArgs = {
   items: SequenceItem[];
   exercisesBySlug: Map<string, ExerciseRow>;
+  /** Режим занятия: у Бехтерева упражнений со снарядом нет (GIMN-022). */
+  mode: Mode;
   intensity: SequenceIntensity;
   painAreas?: string[];
   bloodPressureOk?: boolean | null;
@@ -136,7 +143,8 @@ export function buildWorkout(args: BuildArgs): BuildResult {
     // Снаряда нет — упражнения нет (GIMN-014). Шаблоны последовательностей
     // турниковых упражнений не содержат, это защита на случай, если однажды
     // будут: показать подтягивание человеку без турника хуже, чем не показать.
-    if (!equipmentAvailable(exercise.equipment, args.hasTurnik)) {
+    // В режиме Бехтерева отсекается по режиму, независимо от ответа (GIMN-022).
+    if (!equipmentAvailable(exercise.equipment, args.mode, args.hasTurnik)) {
       skipped.push({ slug: item.slug, reason: "нужен снаряд, которого нет" });
       continue;
     }
@@ -159,9 +167,12 @@ export function buildWorkout(args: BuildArgs): BuildResult {
       duration_sec: scale(durationSec, factor, 15),
       repetitions: scale(repetitions, factor, 4),
       order: exercises.length + 1,
-      warning: joinNotes(warningFor(exercise, blocked), equipmentNote(exercise.equipment, args.hasTurnik)),
+      warning: joinNotes(
+        warningFor(exercise, blocked),
+        equipmentNote(exercise.equipment, args.mode, args.hasTurnik),
+      ),
       equipment: exercise.equipment,
-      optional: needsEquipment(exercise.equipment) && args.hasTurnik === "maybe",
+      optional: equipmentOptional(exercise.equipment, args.mode, args.hasTurnik),
     });
   }
 
@@ -259,7 +270,7 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
       !isContraindicated(e, blocked) &&
       !blockedPositions.has(e.position) &&
       !tooHardForZone(e) &&
-      equipmentAvailable(e.equipment, args.hasTurnik) &&
+      equipmentAvailable(e.equipment, args.mode, args.hasTurnik) &&
     !(excludeJoints.has(e.target_joint) && e.type !== "breathing" && e.type !== "stretch");
   const inMode = (e: ExerciseRow) => e.mode === args.mode || e.mode === "both";
   const safe = args.pool.filter((e) => allowed(e) && inMode(e) && LEVEL_RANK[e.level] <= levelCap);
@@ -288,9 +299,9 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
     duration_sec: scale(e.duration_sec, factor, 15),
     repetitions: scale(e.repetitions, factor, 4),
     order: 0,
-    warning: joinNotes(warningFor(e, blocked), equipmentNote(e.equipment, args.hasTurnik)),
+    warning: joinNotes(warningFor(e, blocked), equipmentNote(e.equipment, args.mode, args.hasTurnik)),
     equipment: e.equipment,
-    optional: needsEquipment(e.equipment) && args.hasTurnik === "maybe",
+    optional: equipmentOptional(e.equipment, args.mode, args.hasTurnik),
   });
 
   const list = [...exercises];
@@ -415,7 +426,7 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
 
   // «Могу найти» — не «есть»: турниковые уходят в конец очереди, и занятие
   // набирается из них, только когда без них до нужной длительности не хватило.
-  if (args.hasTurnik === "maybe") {
+  if (args.mode === "general" && args.hasTurnik === "maybe") {
     queue.sort((a, b) => Number(needsEquipment(a.equipment)) - Number(needsEquipment(b.equipment)));
   }
 

@@ -61,6 +61,7 @@ export async function buildModePreview(
   const built = buildWorkout({
     items: (sequence.exercises_order ?? []) as SequenceItem[],
     exercisesBySlug: bySlug,
+    mode,
     intensity: "medium",
     painAreas: [],
     bloodPressureOk: null,

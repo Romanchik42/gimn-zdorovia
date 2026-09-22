@@ -90,7 +90,10 @@ export function buildCustomWorkout(args: CustomBuildArgs): {
   const inMode = (e: ExerciseRow) => e.mode === args.mode || e.mode === "both";
   // Снаряд — не противопоказание: противопоказанное мы показываем с ⚠️ и даём
   // решать человеку (US-05), а турник либо есть, либо его нечем заменить.
-  const pool = args.pool.filter((e) => equipmentAvailable(e.equipment, args.hasTurnik));
+  // Фильтр стоит ДО деления на свой режим и запас: иначе турниковые пролезали
+  // бы в занятие Бехтерева через crossGentle, где режим упражнения как раз
+  // чужой (GIMN-022).
+  const pool = args.pool.filter((e) => equipmentAvailable(e.equipment, args.mode, args.hasTurnik));
   const eligible = pool.filter((e) => inMode(e) && LEVEL_RANK[e.level] <= levelCap);
 
   const picked: ExerciseRow[] = [];

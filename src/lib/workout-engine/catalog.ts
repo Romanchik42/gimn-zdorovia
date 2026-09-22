@@ -30,8 +30,10 @@ export async function loadCatalog(
 
   // Упражнения со снарядом, которого у человека нет, в каталог не попадают
   // (GIMN-014): в отличие от противопоказания, это не «осторожно», а «нечем».
+  // В режиме Бехтерева их нет при любом ответе анкеты (GIMN-022): весь
+  // справочник в каталоге показывается, турниковая его часть — нет.
   const exercises = ((data ?? []) as ExerciseRow[])
-    .filter((e) => equipmentAvailable(e.equipment, ctx.hasTurnik))
+    .filter((e) => equipmentAvailable(e.equipment, ctx.mode, ctx.hasTurnik))
     .map((e) => ({
       id: e.id,
       slug: e.slug,
