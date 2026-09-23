@@ -32,7 +32,12 @@ export async function loadTrainingContext(
       .maybeSingle(),
     supabase
       .from("user_profiles_general")
-      .select("difficulty, has_turnik, gym_equipment")
+      // "*" вместо перечисления колонок намеренно: деплой кода и применение
+      // миграции 0021 не атомарны, а запрос с ещё не существующей колонкой
+      // gym_equipment вернул бы ошибку целиком — вместе с difficulty и
+      // has_turnik. Тогда у тех, кто уже занимается, снаряд и уровень
+      // молча обнулились бы до применения миграции.
+      .select("*")
       .eq("user_id", userId)
       .maybeSingle(),
   ]);

@@ -193,7 +193,10 @@ export async function POST(request: Request) {
     supabase.from("exercises").select("*"),
     supabase
       .from("user_profiles_general")
-      .select("difficulty, has_turnik, gym_equipment")
+      // "*": колонка gym_equipment появляется только с миграцией 0021, а
+      // деплой кода и миграция не атомарны — перечисление колонок уронило
+      // бы весь запрос до её применения (см. user-context.ts).
+      .select("*")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);
