@@ -22,6 +22,7 @@ import { FeedbackSection } from "@/components/settings/feedback-section";
 import { ModesSection } from "@/components/settings/modes-section";
 import { TariffsSection } from "@/components/settings/tariffs-section";
 import { PointsSection } from "@/components/settings/points-section";
+import { LegalSection } from "@/components/settings/legal-section";
 import { ShareButton } from "@/components/share/share-button";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 import { createClient } from "@/lib/supabase/server";
@@ -160,6 +161,7 @@ export default async function SettingsPage() {
 
         <TariffsSection />
         <PointsSection />
+        <LegalSection />
 
         <AuthorBlock siteUrl={publicEnv.authorSiteUrl} />
 
