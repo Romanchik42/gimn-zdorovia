@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ReminderSettings } from "@/components/settings/reminder-settings";
 import {
   AppearanceSection,
+  Section,
   AvatarPicker,
   ProfileSection,
   SoundSection,
@@ -102,11 +103,10 @@ export default async function SettingsPage() {
         <WorkoutLengthSection value={workoutLength} isDefault={profile.workout_length === null} />
 
         {diagnostics ? (
-          <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-            <h2 className="flex items-center gap-2 font-medium">
-              <ClipboardListIcon className="size-4 text-primary" aria-hidden />
-              Углублённая диагностика
-            </h2>
+          <Section
+            icon={<ClipboardListIcon className="size-4 text-primary" aria-hidden />}
+            title="Углублённая диагностика"
+          >
             <p className="text-sm text-muted-foreground">
               {diagnostics.extended_completed_at
                 ? `Пройдена ${format(new Date(diagnostics.extended_completed_at), "d MMMM", { locale: ru })}. Если самочувствие изменилось — пройдите заново.`
@@ -117,15 +117,14 @@ export default async function SettingsPage() {
                 {diagnostics.extended_completed_at ? "Пройти заново" : "Пройти"}
               </Link>
             </Button>
-          </section>
+          </Section>
         ) : null}
 
         {generalProfile ? (
-          <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-            <h2 className="flex items-center gap-2 font-medium">
-              <DumbbellIcon className="size-4 text-primary" aria-hidden />
-              Анкета общего режима
-            </h2>
+          <Section
+            icon={<DumbbellIcon className="size-4 text-primary" aria-hidden />}
+            title="Анкета общего режима"
+          >
             <p className="text-sm text-muted-foreground">
               Цель, уровень подготовки, дни занятий и турник. Турник сейчас:{" "}
               {HAS_TURNIK_LABELS[(generalProfile.has_turnik as HasTurnik) ?? "no"].toLowerCase()}.
@@ -133,7 +132,7 @@ export default async function SettingsPage() {
             <Button asChild variant="outline" className="h-11 w-full">
               <Link href="/onboarding/general?next=/app/settings">Изменить ответы</Link>
             </Button>
-          </section>
+          </Section>
         ) : null}
 
         <AppearanceSection autoTheme={profile.auto_theme} />

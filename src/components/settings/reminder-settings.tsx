@@ -6,6 +6,7 @@ import { BellIcon, CheckCircle2Icon, Loader2Icon, SendIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Section } from "@/components/settings/settings-sections";
 
 /** Слоты по 15 минут (US-08): крон срабатывает с тем же шагом. */
 function slots(fromHour: number, toHour: number): string[] {
@@ -75,12 +76,15 @@ export function ReminderSettings({
   }
 
   return (
-    <section className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-foreground/10" data-tour="reminders">
+    <Section
+      icon={<BellIcon className="size-4 text-primary" aria-hidden />}
+      title="Напоминания"
+      dataTour="reminders"
+    >
+      {/* Тумблер переехал из заголовка в тело: заголовок стал кнопкой
+          раскрытия, и переключатель в нём ловил бы чужие нажатия. */}
       <div className="flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-medium">
-          <BellIcon className="size-4 text-primary" aria-hidden />
-          Напоминания
-        </h2>
+        <span className="text-sm font-medium">Присылать напоминания</span>
         <Switch
           checked={on}
           disabled={busy}
@@ -144,7 +148,7 @@ export function ReminderSettings({
           <Loader2Icon className="size-3 animate-spin" /> Сохраняем…
         </p>
       ) : null}
-    </section>
+    </Section>
   );
 }
 

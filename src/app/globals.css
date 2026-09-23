@@ -461,3 +461,22 @@ body {
     animation: none;
   }
 }
+
+/*
+ * Раскрытие секций настроек (GIMN-027). Нативные details/summary не умеют
+ * анимировать высоту, поэтому проявляем содержимое — этого хватает, чтобы
+ * раскрытие не выглядело рывком. При prefers-reduced-motion анимации нет:
+ * в приложении для людей с болями резкое движение на экране лишнее.
+ */
+@keyframes gz-reveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+details[open] > .gz-reveal {
+  animation: gz-reveal 0.2s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  details[open] > .gz-reveal { animation: none; }
+}

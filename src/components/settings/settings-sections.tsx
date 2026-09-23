@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   CheckIcon,
+  ChevronDownIcon,
   Loader2Icon,
   PaletteIcon,
   PlayIcon,
@@ -56,23 +57,48 @@ export async function saveSettings(patch: Record<string, unknown>): Promise<bool
   }
 }
 
+/**
+ * Секция настроек — сворачиваемая (GIMN-027).
+ *
+ * Настроек набралось на полтора экрана прокрутки, и нужное тонуло. Теперь
+ * каждая свёрнута до заголовка, раскрытая по умолчанию — одна.
+ *
+ * Сделано на нативных details/summary, а не на библиотечном аккордеоне:
+ * раскрытие работает без JS, состояние держит сам браузер, поиск по странице
+ * (Ctrl+F) находит текст внутри закрытых секций и раскрывает их. Для списка
+ * настроек этого достаточно, а лишней зависимости не появляется.
+ */
 export function Section({
   icon,
   title,
+  defaultOpen = false,
+  dataTour,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
+  /** Раскрыта при загрузке. Стоит ровно у одной секции — «Оформление». */
+  defaultOpen?: boolean;
+  /** Якорь ознакомительного тура — остаётся на внешнем элементе секции. */
+  dataTour?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-      <h2 className="flex items-center gap-2 font-medium">
+    <details
+      open={defaultOpen}
+      data-tour={dataTour}
+      className="group rounded-xl bg-card ring-1 ring-foreground/10 [&_summary::-webkit-details-marker]:hidden"
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-2 p-4 font-medium select-none">
         {icon}
-        {title}
-      </h2>
-      {children}
-    </section>
+        <span className="flex-1">{title}</span>
+        <ChevronDownIcon
+          className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+          aria-hidden
+        />
+      </summary>
+      <div className="gz-reveal space-y-4 px-4 pb-4">{children}</div>
+    </details>
   );
 }
 
@@ -194,7 +220,7 @@ export function AppearanceSection({ autoTheme }: { autoTheme: boolean }) {
   }
 
   return (
-    <Section icon={<PaletteIcon className="size-4 text-primary" aria-hidden />} title="Оформление">
+    <Section icon={<PaletteIcon className="size-4 text-primary" aria-hidden />} title="Оформление" defaultOpen>
       <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Тема оформления">
         {THEMES.map((name) => {
           const active = theme === name;
