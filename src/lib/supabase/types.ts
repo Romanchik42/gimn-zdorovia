@@ -142,6 +142,8 @@ export type UserProfileGeneralRow = {
   training_location: TrainingLocation;
   /** Отмеченное снаряжение (0021). Пусто — читаем has_turnik. */
   gym_equipment: Equipment[];
+  /** Когда предлагали следующий уровень (0025). NULL — ни разу. */
+  level_up_offered_at: string | null;
   calculated_bmr: number;
   calculated_tdee: number;
   calculated_target_calories: number;
@@ -497,8 +499,16 @@ export type ReferralClickRow = {
 export type NotificationLogRow = {
   id: string;
   user_id: string;
-  type: "morning_reminder" | "evening_reminder" | "personal_report" | "doctor_advice" | "other";
-  channel: "telegram" | "push" | "email";
+  type:
+    | "morning_reminder"
+    | "evening_reminder"
+    | "personal_report"
+    | "doctor_advice"
+    /** Предложение следующего уровня (0025). */
+    | "level_up"
+    | "other";
+  /** Доставляет только telegram; остальные каналы — задел (0025). */
+  channel: "telegram" | "push" | "email" | "sms" | "vk" | "apple" | "google";
   status: "sent" | "failed";
   error: string | null;
   sent_at: string;

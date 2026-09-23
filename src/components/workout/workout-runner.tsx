@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ExerciseCard } from "@/components/exercise/exercise-card";
 import { SideEffectDialog } from "@/components/exercise/side-effect-dialog";
+import { LevelUpDialog } from "@/components/progression/level-up-dialog";
 import type { ExerciseSnapshot, FeedbackStatus, WorkoutLength } from "@/lib/supabase/types";
+import type { LevelUpOffer } from "@/lib/progression/offer";
 import { WORKOUT_LENGTHS, WORKOUT_LENGTH_HINTS, WORKOUT_LENGTH_LABELS } from "@/lib/schemas/workout";
 import { cn } from "cn";
 import { enqueue, flushQueue } from "@/lib/offline-queue";
@@ -55,6 +57,8 @@ export function WorkoutRunner({
   const [busy, setBusy] = useState(false);
   const [symptomFor, setSymptomFor] = useState<string | null>(null);
   const [changingTo, setChangingTo] = useState<WorkoutLength | null>(null);
+  // Предложение уровня приходит ответом на последнюю отметку (GIMN-028).
+  const [levelUp, setLevelUp] = useState<LevelUpOffer | null>(null);
   const remindedRef = useRef(new Set<string>());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -74,7 +78,10 @@ export function WorkoutRunner({
         });
         const json = await res.json();
         if (!json.success) toast.error(json.error ?? "Отметка не сохранилась");
-        else void flushQueue();
+        else {
+          void flushQueue();
+          if (json.data?.level_up) setLevelUp(json.data.level_up as LevelUpOffer);
+        }
       } catch {
         // Нет сети: занятие не прерываем, отметку откладываем и дошлём позже.
         enqueue("/api/workout/feedback", body);
@@ -179,6 +186,7 @@ export function WorkoutRunner({
         <Button asChild size="lg" className="h-12 w-full">
           <Link href="/app">На главный экран</Link>
         </Button>
+        <LevelUpDialog offer={levelUp} onClose={() => setLevelUp(null)} />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { fail, ok, parseBody } from "@/lib/api";
 import { workoutFeedbackSchema } from "@/lib/schemas/workout-feedback";
 import { createClient } from "@/lib/supabase/server";
+import { maybeOfferLevelUp, type LevelUpOffer } from "@/lib/progression/offer";
 import type { ExerciseSnapshot } from "@/lib/supabase/types";
 
 /**
@@ -65,11 +66,16 @@ export async function POST(request: Request) {
   const total = snapshot.length;
   const isComplete = total > 0 && marked >= total;
 
+  // Конец тренировки — единственный момент, когда уместно спросить про
+  // уровень: цифры только что обновились, а человек ещё здесь (GIMN-028).
+  let levelUp: LevelUpOffer | null = null;
   if (isComplete) {
     await supabase
       .from("user_workouts")
       .update({ status: "completed", completed_at: new Date().toISOString() })
       .eq("id", user_workout_id);
+
+    levelUp = await maybeOfferLevelUp(supabase, user.id);
   }
 
   // Для «⚠️ Плохо» клиент отдельно откроет модалку симптомов (US-04).
@@ -78,5 +84,6 @@ export async function POST(request: Request) {
     total,
     is_complete: isComplete,
     needs_symptom_check: status === "difficult",
+    level_up: levelUp,
   });
 }
