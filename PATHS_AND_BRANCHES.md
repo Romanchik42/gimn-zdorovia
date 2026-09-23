@@ -76,6 +76,21 @@ F:\Project gimn zdorovia\
 └── .github/workflows/        деплой и синхронизация переменных
 ```
 
+### Появилось в GIMN-027
+
+| Путь | Что там |
+|---|---|
+| `src/lib/points/service.ts` | Начисление и обмен баллов, защита от дублей |
+| `src/app/api/points/`, `src/app/api/points/history/` | Остаток баллов и история, только свои |
+| `src/components/settings/tariffs-section.tsx` | Витрина тарифов, без кнопок оплаты |
+| `src/components/settings/points-section.tsx` | Счётчик баллов, за что начисляем, история |
+| `src/components/settings/legal-section.tsx` | Три документа в сворачиваемых блоках |
+| `src/legal/` | Тексты соглашения, политики и согласия + общий каркас документа |
+| `supabase/migrations/0020_points_system.sql` | Таблицы баллов, статус отзыва |
+| `supabase/migrations/tester_bonus.sql.template` | Бонус тестерам. Шаблон: в `apply_all.sql` не попадает, применяется руками перед запуском |
+| `scripts/check-turnik.mts`, `scripts/check-points.mts` | Проверки логики, запускаются через `npm run check:*` |
+| `scripts/lib/ts-resolve-hook.mjs` | Учит Node алиасу `@/` и `server-only` — на нём работают проверки |
+
 ---
 
 ## 3. Важные файлы в корне
@@ -95,6 +110,8 @@ F:\Project gimn zdorovia\
 | `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs` | Конфигурация сборки |
 | `vercel.json` | Указывает Vercel, что это Next.js |
 | `components.json` | Настройки shadcn/ui |
+| `README.md` | Запуск, проверки, TODO перед платным запуском |
+| `MINES.md` | Грабли, на которые уже наступали, и правила против них |
 
 ---
 
@@ -115,6 +132,9 @@ F:\Project gimn zdorovia\
 | `node scripts/preview-schemes.mjs . <slug> out.png` | Собирает схемы движения в PNG — отсмотреть стрелки глазами |
 | `node scripts/generate-icons.mjs` | Ярлыки приложения из логотипа |
 | `node scripts/generate-sounds.mjs` | Синтезирует 6 наборов звуков |
+| `node scripts/apply-migration.mjs <файл.sql>` | Применяет одну миграцию к базе одной транзакцией. Строка подключения — `DATABASE_URL` из `secrets/.env` |
+| `npm run check:turnik` | Режимы и снаряд: турник не протекает в режим Бехтерева (23 проверки) |
+| `npm run check:points` | Баллы: нет двойного начисления за одну и ту же ссылку (13 проверок) |
 
 Ежедневные команды разработки:
 
