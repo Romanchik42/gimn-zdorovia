@@ -90,6 +90,12 @@ export function serverEnv(): ServerEnv {
     TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
     ADMIN_USER_ID: process.env.ADMIN_USER_ID,
     CRON_SECRET: process.env.CRON_SECRET,
+    // Без этой строки переменная была объявлена в схеме, но не читалась
+    // (GIMN-024): serverEnv().TELEGRAM_ADMIN_CHAT_ID всегда возвращал
+    // undefined, и запасной адрес для отзывов молча не работал.
+    // Пустое значение приводим к undefined: z.coerce.number() превратил бы
+    // "" в 0, и отзыв ушёл бы в несуществующий чат.
+    TELEGRAM_ADMIN_CHAT_ID: process.env.TELEGRAM_ADMIN_CHAT_ID || undefined,
   });
 
   if (!parsed.success) {
