@@ -1,9 +1,18 @@
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 /**
  * Лендинг-заглушка (Этап 1). Логотип намеренно не рисуем —
  * на его месте нейтральный плейсхолдер до готовности знака (БЛОК 7).
+ *
+ * Вход с главной (GIMN-023): до этого на `/` не было ни одной ссылки, и войти
+ * можно было только из бота или по приглашению `/i/КОД`. Кто набирал адрес
+ * руками, упирался в заглушку. Кнопки — той же формы, что на странице
+ * приглашения: вход и регистрация здесь одно действие, аккаунт заводится
+ * при первом входе через Telegram.
  */
 export default function LandingPage() {
   return (
@@ -35,6 +44,18 @@ export default function LandingPage() {
             Выберите оформление
           </p>
           <ThemeSwitcher />
+        </div>
+
+        <div className="flex w-full flex-col items-center gap-3 pt-2">
+          <Button asChild size="lg" className="h-14 w-full max-w-xs text-base">
+            <Link href="/auth/register">Начать</Link>
+          </Button>
+          <Link
+            href="/auth/login"
+            className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+          >
+            Уже есть аккаунт? Войти
+          </Link>
         </div>
       </div>
 
