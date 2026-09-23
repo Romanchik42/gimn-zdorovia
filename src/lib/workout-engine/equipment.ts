@@ -39,6 +39,9 @@ export const EQUIPMENT_VALUES = [
   "machine",
 ] as const satisfies readonly Equipment[];
 
+/** Снаряд, который человек может отметить в анкете. Всё, кроме «ничего не нужно». */
+export type SelectableEquipment = (typeof EQUIPMENT_VALUES)[number];
+
 export const EQUIPMENT_LABELS: Record<Equipment, string> = {
   none: "",
   pullup_bar: "турник",
@@ -61,16 +64,35 @@ export const TRAINING_LOCATION_LABELS: Record<TrainingLocation, string> = {
 };
 
 /**
- * Что имеет смысл предлагать отметить при таком месте занятий. Гантели,
- * гиря и резинки бывают и дома, поэтому их показываем всегда; штангу,
- * стойку и тренажёры — только тем, кто ходит в зал.
+ * Что предлагаем отметить при таком месте занятий. Гантели, гиря и резинки
+ * бывают и дома, поэтому их показываем всегда; штангу, стойку, скамью и
+ * тренажёры — только тем, кто ходит в зал.
+ *
+ * Турника и брусьев в списке нет: про них спрашивает отдельный вопрос с
+ * тремя ответами, включая «могу найти», а галочка выражает только «есть»
+ * или «нет». Два вопроса про одно и то же в анкете хуже, чем один точный.
  */
-export const EQUIPMENT_BY_LOCATION: Record<TrainingLocation, readonly Equipment[]> = {
-  home: ["dumbbell", "kettlebell", "resistance_band"],
-  home_bar: ["pullup_bar", "dip_bars", "dumbbell", "kettlebell", "resistance_band"],
-  gym: EQUIPMENT_VALUES,
-  home_and_gym: EQUIPMENT_VALUES,
+const HOME_EQUIPMENT: readonly SelectableEquipment[] = ["dumbbell", "kettlebell", "resistance_band"];
+const GYM_EQUIPMENT: readonly SelectableEquipment[] = [
+  "dumbbell",
+  "kettlebell",
+  "resistance_band",
+  "bench",
+  "barbell",
+  "squat_rack",
+  "cable",
+  "machine",
+];
+
+export const EQUIPMENT_BY_LOCATION: Record<TrainingLocation, readonly SelectableEquipment[]> = {
+  home: HOME_EQUIPMENT,
+  home_bar: HOME_EQUIPMENT,
+  gym: GYM_EQUIPMENT,
+  home_and_gym: GYM_EQUIPMENT,
 };
+
+/** Турник и брусья — их даёт отдельный вопрос анкеты, а не чек-лист. */
+export const BAR_EQUIPMENT: readonly SelectableEquipment[] = ["pullup_bar", "dip_bars"];
 
 /** Нужен ли упражнению снаряд. */
 export function needsEquipment(equipment: Equipment | null | undefined): boolean {
@@ -105,20 +127,20 @@ export function accessFromProfile(profile: {
   gym_equipment?: unknown;
   has_turnik?: HasTurnik | null;
 }): EquipmentAccess {
-  const listed = parseEquipmentList(profile.gym_equipment);
-  if (listed.length > 0) return { owned: listed, maybe: [] };
+  // Чек-лист отвечает за зал и домашний инвентарь, отдельный вопрос — за
+  // турник и брусья. Складываем оба: они спрашивают про разное.
+  const listed = parseEquipmentList(profile.gym_equipment).filter((e) => !BAR_EQUIPMENT.includes(e));
 
-  const bars: Equipment[] = ["pullup_bar", "dip_bars"];
-  if (profile.has_turnik === "yes") return { owned: bars, maybe: [] };
-  if (profile.has_turnik === "maybe") return { owned: [], maybe: bars };
-  return NO_EQUIPMENT;
+  if (profile.has_turnik === "yes") return { owned: [...listed, ...BAR_EQUIPMENT], maybe: [] };
+  if (profile.has_turnik === "maybe") return { owned: listed, maybe: BAR_EQUIPMENT };
+  return listed.length > 0 ? { owned: listed, maybe: [] } : NO_EQUIPMENT;
 }
 
 /** gym_equipment приходит из JSONB — чужие и неизвестные значения отбрасываем. */
-export function parseEquipmentList(value: unknown): Equipment[] {
+export function parseEquipmentList(value: unknown): SelectableEquipment[] {
   if (!Array.isArray(value)) return [];
   const known = new Set<string>(EQUIPMENT_VALUES);
-  return value.filter((v): v is Equipment => typeof v === "string" && known.has(v));
+  return value.filter((v): v is SelectableEquipment => typeof v === "string" && known.has(v));
 }
 
 /** Доступно ли упражнение в этом режиме при таком снаряжении. */

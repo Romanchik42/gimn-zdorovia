@@ -1,6 +1,7 @@
 import { GeneralForm } from "@/components/onboarding/general-form";
 import { safeNext } from "@/lib/navigation/safe-next";
 import { createClient } from "@/lib/supabase/server";
+import { parseEquipmentList } from "@/lib/workout-engine/equipment";
 import type { GeneralProfileInput } from "@/lib/schemas/diagnostics";
 
 export const metadata = { title: "Анкета — Гимн.здоровья" };
@@ -25,7 +26,10 @@ export default async function GeneralPage({ searchParams }: PageProps<"/onboardi
       supabase.from("users").select("gender, birth_date").eq("id", user.id).maybeSingle(),
       supabase
         .from("user_profiles_general")
-        .select("weight_kg, height_cm, goal, activity_level, difficulty, training_days, has_turnik")
+        // "*": training_location и gym_equipment появляются только с
+        // миграцией 0021, а перечисление колонок уронило бы весь запрос до
+        // её применения — анкета открылась бы пустой.
+        .select("*")
         .eq("user_id", user.id)
         .maybeSingle(),
     ]);
@@ -45,6 +49,8 @@ export default async function GeneralPage({ searchParams }: PageProps<"/onboardi
         difficulty: general.difficulty,
         training_days: general.training_days,
         has_turnik: general.has_turnik,
+        training_location: general.training_location ?? "home",
+        gym_equipment: parseEquipmentList(general.gym_equipment),
       };
     }
   }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
@@ -27,7 +27,14 @@ import {
   generalProfileSchema,
   type GeneralProfileInput,
 } from "@/lib/schemas/diagnostics";
-import { HAS_TURNIK_LABELS, HAS_TURNIK_VALUES } from "@/lib/workout-engine/equipment";
+import {
+  EQUIPMENT_BY_LOCATION,
+  EQUIPMENT_LABELS,
+  HAS_TURNIK_LABELS,
+  HAS_TURNIK_VALUES,
+  TRAINING_LOCATION_LABELS,
+} from "@/lib/workout-engine/equipment";
+import { TRAINING_LOCATIONS } from "@/lib/schemas/diagnostics";
 import { DAY_NAMES } from "@/lib/workout-engine/weekly-cycle";
 import { cn } from "cn";
 
@@ -61,9 +68,17 @@ export function GeneralForm({
       difficulty: "beginner",
       training_days: [1, 3, 5],
       has_turnik: "no",
+      training_location: "home",
+      gym_equipment: [],
       ...(initial ?? {}),
     },
   });
+
+  // Читаем место занятий на уровне компонента, а не внутри render-пропа:
+  // form.watch внутри рендера заставляет React Compiler пропускать
+  // мемоизацию всего компонента.
+  const location = useWatch({ control: form.control, name: "training_location" });
+  const allowedEquipment = EQUIPMENT_BY_LOCATION[location] ?? EQUIPMENT_BY_LOCATION.home;
 
   async function onSubmit(values: GeneralProfileInput) {
     setPending(true);
@@ -195,6 +210,68 @@ export function GeneralForm({
                 ))}
               </div>
             </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="training_location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Где вы обычно занимаетесь?</FormLabel>
+              <div className="grid gap-2">
+                {TRAINING_LOCATIONS.map((value) => (
+                  <ChoiceButton
+                    key={value}
+                    active={field.value === value}
+                    onClick={() => {
+                      field.onChange(value);
+                      // Инвентарь, которого при новом месте не предлагают,
+                      // снимаем: иначе в программе остались бы упражнения
+                      // на тренажёрах у того, кто ушёл заниматься домой.
+                      const allowed = EQUIPMENT_BY_LOCATION[value];
+                      form.setValue(
+                        "gym_equipment",
+                        form.getValues("gym_equipment").filter((e) => allowed.includes(e)),
+                      );
+                    }}
+                  >
+                    {TRAINING_LOCATION_LABELS[value]}
+                  </ChoiceButton>
+                ))}
+              </div>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="gym_equipment"
+          render={({ field }) => (
+              <FormItem>
+                <FormLabel>Что у вас есть под рукой?</FormLabel>
+                <div className="grid grid-cols-2 gap-2">
+                  {allowedEquipment.map((value) => (
+                    <ChoiceButton
+                      key={value}
+                      active={field.value.includes(value)}
+                      onClick={() =>
+                        field.onChange(
+                          field.value.includes(value)
+                            ? field.value.filter((e) => e !== value)
+                            : [...field.value, value],
+                        )
+                      }
+                    >
+                      {EQUIPMENT_LABELS[value]}
+                    </ChoiceButton>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Отмечайте только то, до чего реально дотянетесь. Неотмеченное в программу не
+                  попадёт — пустая строка в занятии хуже, чем упражнение попроще.
+                </p>
+              </FormItem>
           )}
         />
 

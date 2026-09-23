@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { HAS_TURNIK_VALUES } from "@/lib/workout-engine/equipment";
+import { EQUIPMENT_VALUES, HAS_TURNIK_VALUES } from "@/lib/workout-engine/equipment";
 
 /**
  * Диагностика Бехтерева и анкета общего режима (SPEC 3.2, US-01, US-02).
@@ -67,6 +67,9 @@ export const DIFFICULTY_LABELS: Record<(typeof DIFFICULTIES)[number], string> = 
 /** Вопрос про турник (GIMN-014). Значения и подписи — в workout-engine/equipment. */
 export const hasTurnikSchema = z.enum(HAS_TURNIK_VALUES);
 
+/** Где занимается (GIMN-028). */
+export const TRAINING_LOCATIONS = ["home", "home_bar", "gym", "home_and_gym"] as const;
+
 export const generalProfileSchema = z.object({
   gender: z.enum(["male", "female"]),
   age_years: z.number().int().min(14, "Возраст от 14").max(100, "Возраст до 100"),
@@ -85,6 +88,16 @@ export const generalProfileSchema = z.object({
    * не типизируется. Экран анкеты всегда шлёт значение, стартовое — «нет».
    */
   has_turnik: hasTurnikSchema,
+  /**
+   * Где человек занимается (GIMN-028). От ответа зависит, какой инвентарь
+   * предлагаем отметить: штангу и тренажёры — только тем, кто ходит в зал.
+   */
+  training_location: z.enum(TRAINING_LOCATIONS),
+  /**
+   * Отмеченный инвентарь. Турника и брусьев здесь нет — про них спрашивает
+   * has_turnik, у которого три ответа вместо галочки.
+   */
+  gym_equipment: z.array(z.enum(EQUIPMENT_VALUES)),
   /**
    * true — анкету заполняют ради меню, режим и план не трогаем.
    * Иначе пользователь Бехтерева, открыв анкету из «Питания», незаметно

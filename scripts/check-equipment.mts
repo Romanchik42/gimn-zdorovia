@@ -236,8 +236,34 @@ console.log("\nСовместимость со старой анкетой пр�
   const maybe = accessFromProfile({ has_turnik: "maybe" as HasTurnik });
   check("'могу найти' уходит в maybe", maybe.owned.length === 0 && maybe.maybe.includes("pullup_bar"));
 
+  // Чек-лист и вопрос про турник спрашивают про разное, поэтому складываются.
   const listed = accessFromProfile({ has_turnik: "no" as HasTurnik, gym_equipment: ["barbell", "bench"] });
-  check("новый список важнее старого ответа", listed.owned.includes("barbell") && listed.owned.length === 2);
+  check(
+    "чек-лист без турника даёт только зал",
+    listed.owned.includes("barbell") && !listed.owned.includes("pullup_bar"),
+    listed.owned.join(", "),
+  );
+
+  const both = accessFromProfile({ has_turnik: "yes" as HasTurnik, gym_equipment: ["barbell"] });
+  check(
+    "чек-лист и турник складываются",
+    both.owned.includes("barbell") && both.owned.includes("pullup_bar") && both.owned.includes("dip_bars"),
+    both.owned.join(", "),
+  );
+
+  const gymPlusMaybe = accessFromProfile({ has_turnik: "maybe" as HasTurnik, gym_equipment: ["barbell"] });
+  check(
+    "'могу найти' не мешает залу: штанга своя, турник — под вопросом",
+    gymPlusMaybe.owned.includes("barbell") && gymPlusMaybe.maybe.includes("pullup_bar"),
+    `owned=${gymPlusMaybe.owned.join(",")} maybe=${gymPlusMaybe.maybe.join(",")}`,
+  );
+
+  const barsInList = accessFromProfile({ has_turnik: "no" as HasTurnik, gym_equipment: ["pullup_bar"] });
+  check(
+    "турник из чек-листа игнорируется — за него отвечает свой вопрос",
+    !barsInList.owned.includes("pullup_bar"),
+    barsInList.owned.join(", "),
+  );
 
   const dirty = accessFromProfile({ gym_equipment: ["barbell", "чужое", 42, null] });
   check("чужие значения отброшены", dirty.owned.length === 1 && dirty.owned[0] === "barbell");

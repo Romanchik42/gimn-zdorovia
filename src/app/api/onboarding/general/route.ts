@@ -6,12 +6,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createDefaultWeekPlan } from "@/lib/auth/provision";
 import { activateMode } from "@/lib/modes/server";
 import { todayIso } from "@/lib/dates";
+import { parseEquipmentList } from "@/lib/workout-engine/equipment";
 
 /**
  * POST /api/onboarding/general (US-02).
  * Считает BMR → TDEE → целевые калории (Миффлин, SPEC 5.1),
  * сохраняет анкету и раскладывает недельный план общего режима.
  */
+/** Списки инвентаря считаем одинаковыми независимо от порядка галочек. */
+function sameEquipment(before: unknown, after: string[]): boolean {
+  const a = [...parseEquipmentList(before)].sort();
+  const b = [...after].sort();
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
 export async function POST(request: Request) {
   const parsed = await parseBody(request, generalProfileSchema);
   if (parsed.error) return parsed.error;
@@ -33,11 +41,12 @@ export async function POST(request: Request) {
     goal: input.goal,
   });
 
-  // Прошлый ответ про турник нужен, чтобы понять, устарела ли собранная
+  // Прошлые ответы про снаряжение нужны, чтобы понять, устарела ли собранная
   // на сегодня тренировка: снаряд поменялся — набор упражнений другой.
+  // "*" вместо перечисления: gym_equipment появляется только с миграцией 0021.
   const { data: previous } = await supabase
     .from("user_profiles_general")
-    .select("has_turnik")
+    .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -51,6 +60,8 @@ export async function POST(request: Request) {
       difficulty: input.difficulty,
       training_days: input.training_days,
       has_turnik: input.has_turnik,
+      training_location: input.training_location,
+      gym_equipment: input.gym_equipment,
       calculated_bmr: bmr,
       calculated_tdee: tdee,
       calculated_target_calories: target,
@@ -72,10 +83,15 @@ export async function POST(request: Request) {
     .update({ gender: input.gender, birth_date: `${birthYear}-01-01` })
     .eq("id", user.id);
 
-  // Ответ про турник изменился — сегодняшняя тренировка собрана из другого
-  // набора упражнений. Удаляем её, чтобы она пересобралась при следующем
-  // открытии главной. Трогаем только не начатую: начатую прерывать нельзя.
-  if (previous && previous.has_turnik !== input.has_turnik) {
+  // Снаряжение изменилось — сегодняшняя тренировка собрана из другого набора
+  // упражнений. Удаляем её, чтобы она пересобралась при следующем открытии
+  // главной. Трогаем только не начатую: начатую прерывать нельзя.
+  const equipmentChanged =
+    previous !== null &&
+    (previous.has_turnik !== input.has_turnik ||
+      !sameEquipment(previous.gym_equipment, input.gym_equipment));
+
+  if (equipmentChanged) {
     await supabase
       .from("user_workouts")
       .delete()
