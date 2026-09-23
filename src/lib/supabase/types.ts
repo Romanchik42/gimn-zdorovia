@@ -316,11 +316,35 @@ export type MealRow = {
   created_at: string;
 };
 
+/** Разбор отзыва (0020): пока не подтверждён — баллы не начисляются. */
+export type FeedbackStatusValue = "new" | "confirmed" | "in_plan" | "rejected";
+
 export type FeedbackRow = {
   id: string;
   user_id: string;
   type: FeedbackType;
   text: string;
+  status: FeedbackStatusValue;
+  /** Сколько баллов уже дали — чтобы пересмотр статуса не начислил второй раз. */
+  points_awarded: number;
+  created_at: string;
+};
+
+/** Остаток баллов (0020). История — в points_history. */
+export type UserPointsRow = {
+  user_id: string;
+  points: number;
+  updated_at: string;
+};
+
+/** Одна запись истории баллов (0020). Минус — обмен на дни подписки. */
+export type PointsHistoryRow = {
+  id: string;
+  user_id: string;
+  amount: number;
+  reason: string;
+  reference_type: string | null;
+  reference_id: string | null;
   created_at: string;
 };
 
@@ -500,6 +524,8 @@ export type Database = {
       telegram_chats: TableDef<TelegramChatRow, "chat_id">;
       feedback: TableDef<FeedbackRow, "user_id" | "type" | "text">;
       user_modes: TableDef<UserModeRow, "user_id" | "mode">;
+      user_points: TableDef<UserPointsRow, "user_id">;
+      points_history: TableDef<PointsHistoryRow, "user_id" | "amount" | "reason">;
     };
     Views: Record<never, never>;
     Functions: {
