@@ -1,16 +1,16 @@
 import Image from "next/image";
 
 import { TelegramLoginButton } from "@/components/auth/telegram-login-button";
-import { TelegramBotLink } from "@/components/auth/telegram-bot-link";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 /**
  * Экран входа. Вход — только через Telegram (GIMN-010): ни почты, ни пароля.
  * Почту и телефон человек при желании оставляет в профиле — для связи.
  *
- * Официальный виджет работает в браузере; если он не загрузился (блокировка
- * telegram.org, встроенный браузер) — запасной путь через бота: там кнопка
- * «Открыть приложение», и вход происходит сам.
+ * Вход — одной кнопкой в бота (GIMN-026): там кнопка «Открыть приложение»
+ * впускает сама. Официального виджета telegram.org здесь больше нет — он
+ * вставлял пустой iframe там, где домен недоступен, и человек видел вместо
+ * кнопки чёрный прямоугольник.
  */
 export function TelegramAuthScreen({ title, subtitle }: { title: string; subtitle: string }) {
   // Имя бота читаем на сервере, чтобы не заводить лишнюю NEXT_PUBLIC-переменную.
@@ -20,17 +20,22 @@ export function TelegramAuthScreen({ title, subtitle }: { title: string; subtitl
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm space-y-6">
         <header className="flex flex-col items-center gap-3 text-center">
-          <Image src="/logo/logo-mark.svg" alt="" width={56} height={56} className="rounded-2xl" priority />
+          <Image
+            src="/logo/logo-mark.svg"
+            alt=""
+            width={56}
+            height={56}
+            unoptimized
+            className="rounded-2xl"
+            priority
+          />
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
             <p className="text-sm text-muted-foreground">{subtitle}</p>
           </div>
         </header>
 
-        <div className="space-y-3">
-          <TelegramLoginButton botUsername={botUsername} />
-          <TelegramBotLink botUsername={botUsername} />
-        </div>
+        <TelegramLoginButton botUsername={botUsername} />
 
         <section className="space-y-2 rounded-xl border border-info-border bg-info p-4 text-sm text-info-foreground" aria-label="О приложении">
           <p className="font-medium">

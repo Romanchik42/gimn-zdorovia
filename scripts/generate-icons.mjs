@@ -77,6 +77,31 @@ ico.writeUInt32LE(fav.length, 14);
 ico.writeUInt32LE(22, 18);
 fs.writeFileSync("src/app/favicon.ico", Buffer.concat([ico, fav]));
 
+
+// Превью для соцсетей и Telegram (1200×630). Раньше картинка лежала готовой
+// и несла на себе букву «Г» — заглушку, оставшуюся с тех пор, когда знака ещё
+// не было. Теперь собирается здесь же, из той же фигуры, что и все ярлыки:
+// иначе «Г» рано или поздно снова разойдётся с логотипом (GIMN-026).
+const MUTED = "#6B7A6F";
+const SAND = "#C8A87C";
+const BG = "#FAFAF7";
+const FONT = "Inter, 'Segoe UI', 'DejaVu Sans', Arial, sans-serif";
+
+const ogBody = [
+  `<rect width="1200" height="630" fill="${BG}"/>`,
+  `<g transform="translate(96 215)">${mark({ size: 200, radius: 44, scale: 0.68 })}</g>`,
+  `<text x="352" y="286" font-family="${FONT}" font-size="76" font-weight="700" fill="${TEXT}">Гимн.здоровья</text>`,
+  `<text x="356" y="342" font-family="${FONT}" font-size="34" fill="${MUTED}">гимнастика для здоровья</text>`,
+  `<rect x="352" y="390" width="700" height="66" rx="33" fill="${SAGE}"/>`,
+  `<text x="384" y="431" font-family="${FONT}" font-size="26" fill="#FFFFFF">При болезни Бехтерева и для формы · 30 минут в день</text>`,
+  `<rect x="0" y="616" width="840" height="14" fill="${SAGE}"/>`,
+  `<rect x="840" y="616" width="360" height="14" fill="${SAND}"/>`,
+].join("");
+
+await sharp(Buffer.from(svg(1200, 630, ogBody)), { density: 300 })
+  .png({ compressionLevel: 9 })
+  .toFile("public/marketing/og-image.png");
+
 for (const f of [
   "public/logo/logo-mark.svg",
   "public/icons/icon-192.png",
@@ -84,6 +109,7 @@ for (const f of [
   "public/icons/icon-maskable-512.png",
   "public/icons/apple-touch-icon.png",
   "src/app/favicon.ico",
+  "public/marketing/og-image.png",
 ]) {
   console.log(f.padEnd(40), fs.statSync(f).size, "B");
 }

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -5,8 +6,8 @@ import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 /**
- * Лендинг-заглушка (Этап 1). Логотип намеренно не рисуем —
- * на его месте нейтральный плейсхолдер до готовности знака (БЛОК 7).
+ * Лендинг-заглушка (Этап 1). Знак теперь готов, поэтому на месте прежнего
+ * плейсхолдера с буквой «Г» стоит сам логотип (GIMN-026).
  *
  * Вход с главной (GIMN-023): до этого на `/` не было ни одной ссылки, и войти
  * можно было только из бота или по приглашению `/i/КОД`. Кто набирал адрес
@@ -18,13 +19,16 @@ export default function LandingPage() {
   return (
     <main className="flex flex-1 flex-col items-center justify-between gap-10 px-4 py-10 sm:py-16">
       <div className="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 text-center">
-        {/* плейсхолдер логотипа */}
-        <div
-          aria-hidden
-          className="flex size-16 items-center justify-center rounded-2xl bg-primary/15 text-2xl font-semibold text-primary"
-        >
-          Г
-        </div>
+        {/* next/image не отдаёт SVG без dangerouslyAllowSVG — просим не оптимизировать. */}
+        <Image
+          src="/logo/logo-mark.svg"
+          alt=""
+          width={64}
+          height={64}
+          unoptimized
+          priority
+          className="rounded-2xl"
+        />
 
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">

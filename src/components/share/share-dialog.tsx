@@ -16,22 +16,18 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const LOGO_SRC = "/logo/logo-mark.svg";
-const FALLBACK_COLOR = "#2D3E33";
 
 /**
- * Цвет модулей QR — тёмный тон текущей темы (--foreground).
+ * Цвет модулей QR — чистый чёрный на белом, как на визитке (GIMN-026).
  *
- * SPEC 4.6 предлагает брендовый --logo-primary, но это светлые цвета, и QR
- * в них читается хуже: проверка декодером на экране, в 1024px и в «распечатке»
- * с шумом дала 22/27 для брендовых цветов против 27/27 для --foreground.
- * Критерий US-12 — «читается с экрана и с распечатки», поэтому берём тёмный
- * тон темы, а брендовый цвет остаётся у логотипа в центре.
+ * Раньше брали тёмный тон темы (--foreground). На светлых палитрах это
+ * работало, но в «Графите» --foreground равен #E9ECEF — почти белый, и QR
+ * выходил светло-серым на белом поле: на экране бледный, с распечатки не
+ * читался вовсе. Тема не должна решать, отсканируется код или нет, поэтому
+ * цвет зафиксирован. Брендовый цвет остаётся у логотипа в центре.
  */
-function themeQrColor(): string {
-  if (typeof window === "undefined") return FALLBACK_COLOR;
-  const value = getComputedStyle(document.documentElement).getPropertyValue("--foreground").trim();
-  return value || FALLBACK_COLOR;
-}
+const QR_FG = "#000000";
+const QR_BG = "#FFFFFF";
 
 /**
  * «Поделиться приложением» (US-12, SPEC 4.6): QR с логотипом в цветах темы,
@@ -51,9 +47,6 @@ export function ShareDialog({
 }) {
   const [invited, setInvited] = useState<number | null>(null);
 
-  // Содержимое диалога монтируется только на клиенте после открытия, поэтому
-  // читать цвет темы и возможности браузера можно прямо при рендере.
-  const color = open ? themeQrColor() : FALLBACK_COLOR;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const link = `${appUrl}/i/${referralCode}`;
@@ -146,8 +139,8 @@ export function ShareDialog({
               value={qrLink}
               size={220}
               level="H"
-              fgColor={color}
-              bgColor="#FFFFFF"
+              fgColor={QR_FG}
+              bgColor={QR_BG}
               marginSize={2}
               imageSettings={logo(44)}
               title="QR-код приглашения"
@@ -167,8 +160,8 @@ export function ShareDialog({
             value={qrLink}
             size={1024}
             level="H"
-            fgColor={color}
-            bgColor="#FFFFFF"
+            fgColor={QR_FG}
+            bgColor={QR_BG}
             marginSize={4}
             imageSettings={logo(200)}
             className="hidden"

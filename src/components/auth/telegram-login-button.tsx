@@ -1,108 +1,44 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useSyncExternalStore } from "react";
 import { SendIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { clearReferralCode, readReferralCode, readReferralSource } from "@/lib/referral/storage";
+import { readReferralCode } from "@/lib/referral/storage";
 
 /**
- * Telegram Login Widget. Скрипт виджета грузится с telegram.org и вызывает
- * глобальный колбэк — поэтому он вешается на window, а не передаётся внутрь.
+ * Кнопка входа через Telegram (GIMN-026).
  *
- * Если telegram.org недоступен или виджет не отрисовался за WIDGET_TIMEOUT_MS,
- * вместо пустого места показываем кнопку «Войти через Telegram» — она
- * открывает бота, а там кнопка приложения входит сама (GIMN-010).
+ * Было: официальный виджет telegram.org, который вставляет на страницу свой
+ * iframe. Там, где telegram.org недоступен, iframe всё равно создаётся —
+ * пустой, и на его месте оставался чёрный прямоугольник. Запасной путь при
+ * этом не срабатывал: он проверял, появился ли iframe, а iframe появлялся
+ * всегда, просто без содержимого.
+ *
+ * Стало: обычная ссылка на бота — она не зависит от доступности telegram.org
+ * и не может отрисоваться пустым местом. В боте кнопка «Открыть приложение»
+ * впускает сама (GIMN-010), так что для человека путь короче, чем был.
+ *
+ * Код приглашения уходит боту в /start, чтобы не терять, кто кого позвал.
  */
-declare global {
-  interface Window {
-    onTelegramAuth?: (user: Record<string, unknown>) => void;
-  }
-}
 
-const WIDGET_TIMEOUT_MS = 5000;
+// Код приглашения лежит в localStorage и не меняется, пока открыта страница.
+const subscribe = () => () => {};
 
 export function TelegramLoginButton({ botUsername }: { botUsername: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [widgetFailed, setWidgetFailed] = useState(false);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    window.onTelegramAuth = async (user) => {
-      setPending(true);
-      try {
-        const res = await fetch("/api/auth/telegram", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...user,
-            referral_code: readReferralCode() ?? undefined,
-            referral_source: readReferralSource() ?? undefined,
-          }),
-        });
-        const json = await res.json();
-
-        if (!json.success) {
-          toast.error(json.error ?? "Не удалось войти через Telegram");
-          return;
-        }
-
-        if (json.data.is_new_user) clearReferralCode();
-        router.replace(json.data.next_step === "app" ? "/app" : "/onboarding/welcome");
-        router.refresh();
-      } catch {
-        toast.error("Сеть недоступна. Попробуйте ещё раз.");
-      } finally {
-        setPending(false);
-      }
-    };
-
-    const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.async = true;
-    script.setAttribute("data-telegram-login", botUsername);
-    script.setAttribute("data-size", "large");
-    script.setAttribute("data-radius", "12");
-    script.setAttribute("data-onauth", "onTelegramAuth(user)");
-    script.setAttribute("data-request-access", "write");
-    script.onerror = () => setWidgetFailed(true);
-    container.appendChild(script);
-
-    // Виджет — это iframe; не появился вовремя — считаем, что telegram.org недоступен.
-    const timer = setTimeout(() => {
-      if (!container.querySelector("iframe")) setWidgetFailed(true);
-    }, WIDGET_TIMEOUT_MS);
-
-    return () => {
-      clearTimeout(timer);
-      container.replaceChildren();
-      delete window.onTelegramAuth;
-    };
-  }, [botUsername, router]);
-
-  if (widgetFailed) {
-    const code = readReferralCode();
-    return (
-      <Button asChild size="lg" className="h-12 w-full">
-        <a href={`https://t.me/${botUsername}${code ? `?start=${code}` : ""}`} target="_blank" rel="noopener noreferrer">
-          <SendIcon className="size-4" aria-hidden />
-          Войти через Telegram
-        </a>
-      </Button>
-    );
-  }
+  const code = useSyncExternalStore(subscribe, readReferralCode, () => null);
+  const href = `https://t.me/${botUsername}${code ? `?start=${code}` : ""}`;
 
   return (
-    <div className="flex min-h-[48px] items-center justify-center">
-      {pending ? <Skeleton className="h-12 w-56 rounded-xl" /> : null}
-      <div ref={containerRef} className={pending ? "hidden" : undefined} />
-    </div>
+    <Button
+      asChild
+      size="lg"
+      className="h-14 w-full bg-white text-base font-medium text-neutral-900 shadow-sm ring-1 ring-foreground/10 hover:bg-white hover:shadow-md"
+    >
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        <SendIcon className="size-5" aria-hidden />
+        Войти через Telegram
+      </a>
+    </Button>
   );
 }

@@ -18,6 +18,8 @@ import {
   progressText,
   todayText,
   webAppUrl,
+  welcomeButtons,
+  welcomeText,
 } from "@/lib/telegram/messages";
 import { isValidReferralCode, normalizeReferralCode } from "@/lib/referral/code-generator";
 import { firstName } from "@/lib/referral/format";
@@ -200,10 +202,14 @@ async function start(admin: Admin, chatId: number, from: TgUser, arg: string, us
   if (!user && isValidReferralCode(code)) {
     // IP не сохраняем (152-ФЗ): только код и источник.
     await admin.from("referral_clicks").insert({ referral_code: code, source: "telegram", user_agent: "telegram-bot" });
-    return showHome(chatId, HOME_TEXT.invited, openAppButton("Открыть приложение", webAppUrl("/app", code)));
+    return showHome(chatId, welcomeText(from.first_name, true), welcomeButtons(code));
   }
 
-  // 3. Обычный старт.
+  // 3. Первое знакомство: подробное приветствие с описанием (GIMN-026).
+  //    Зарегистрированному оно ни к чему — он уже всё видел, ему короткое.
+  if (!user) return showHome(chatId, welcomeText(from.first_name), welcomeButtons());
+
+  // 4. Обычный старт зарегистрированного.
   return showHome(chatId, ...defaultHome(user));
 }
 
