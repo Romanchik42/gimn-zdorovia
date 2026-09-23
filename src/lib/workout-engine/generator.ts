@@ -3,7 +3,6 @@ import "server-only";
 import type {
   ExerciseRow,
   ExerciseSnapshot,
-  HasTurnik,
   Level,
   Mode,
   SequenceIntensity,
@@ -11,10 +10,12 @@ import type {
   WorkoutLength,
 } from "@/lib/supabase/types";
 import {
+  NO_EQUIPMENT,
   equipmentAvailable,
   equipmentNote,
   equipmentOptional,
   needsEquipment,
+  type EquipmentAccess,
 } from "@/lib/workout-engine/equipment";
 import { estimateMinutes } from "@/lib/workout-engine/duration";
 import { cutToLength } from "@/lib/workout-engine/length";
@@ -91,8 +92,8 @@ export type BuildArgs = {
   excludeExerciseIds?: string[];
   /** Зоны, исключённые после побочки (skip_joint). */
   excludeJoints?: string[];
-  /** Ответ анкеты про турник (GIMN-014). Нет ответа — считаем «нет». */
-  hasTurnik?: HasTurnik | null;
+  /** Снаряжение человека (GIMN-028). Не передали — считаем, что снаряда нет. */
+  access?: EquipmentAccess;
 };
 
 export type BuildResult = {
@@ -144,7 +145,7 @@ export function buildWorkout(args: BuildArgs): BuildResult {
     // турниковых упражнений не содержат, это защита на случай, если однажды
     // будут: показать подтягивание человеку без турника хуже, чем не показать.
     // В режиме Бехтерева отсекается по режиму, независимо от ответа (GIMN-022).
-    if (!equipmentAvailable(exercise.equipment, args.mode, args.hasTurnik)) {
+    if (!equipmentAvailable(exercise.equipment, args.mode, args.access ?? NO_EQUIPMENT)) {
       skipped.push({ slug: item.slug, reason: "нужен снаряд, которого нет" });
       continue;
     }
@@ -169,10 +170,10 @@ export function buildWorkout(args: BuildArgs): BuildResult {
       order: exercises.length + 1,
       warning: joinNotes(
         warningFor(exercise, blocked),
-        equipmentNote(exercise.equipment, args.mode, args.hasTurnik),
+        equipmentNote(exercise.equipment, args.mode, args.access ?? NO_EQUIPMENT),
       ),
       equipment: exercise.equipment,
-      optional: equipmentOptional(exercise.equipment, args.mode, args.hasTurnik),
+      optional: equipmentOptional(exercise.equipment, args.mode, args.access ?? NO_EQUIPMENT),
     });
   }
 
@@ -229,8 +230,8 @@ export type FitPlanArgs = {
   struggling?: string[];
   /** Выводы углублённой диагностики: недоступные положения, ограниченные зоны. */
   restrictions?: Restrictions;
-  /** Ответ анкеты про турник (GIMN-014). Нет ответа — считаем «нет». */
-  hasTurnik?: HasTurnik | null;
+  /** Снаряжение человека (GIMN-028). Не передали — считаем, что снаряда нет. */
+  access?: EquipmentAccess;
 };
 
 /**
@@ -270,7 +271,7 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
       !isContraindicated(e, blocked) &&
       !blockedPositions.has(e.position) &&
       !tooHardForZone(e) &&
-      equipmentAvailable(e.equipment, args.mode, args.hasTurnik) &&
+      equipmentAvailable(e.equipment, args.mode, args.access ?? NO_EQUIPMENT) &&
     !(excludeJoints.has(e.target_joint) && e.type !== "breathing" && e.type !== "stretch");
   const inMode = (e: ExerciseRow) => e.mode === args.mode || e.mode === "both";
   const safe = args.pool.filter((e) => allowed(e) && inMode(e) && LEVEL_RANK[e.level] <= levelCap);
@@ -299,9 +300,9 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
     duration_sec: scale(e.duration_sec, factor, 15),
     repetitions: scale(e.repetitions, factor, 4),
     order: 0,
-    warning: joinNotes(warningFor(e, blocked), equipmentNote(e.equipment, args.mode, args.hasTurnik)),
+    warning: joinNotes(warningFor(e, blocked), equipmentNote(e.equipment, args.mode, args.access ?? NO_EQUIPMENT)),
     equipment: e.equipment,
-    optional: equipmentOptional(e.equipment, args.mode, args.hasTurnik),
+    optional: equipmentOptional(e.equipment, args.mode, args.access ?? NO_EQUIPMENT),
   });
 
   const list = [...exercises];
@@ -426,8 +427,13 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
 
   // «Могу найти» — не «есть»: турниковые уходят в конец очереди, и занятие
   // набирается из них, только когда без них до нужной длительности не хватило.
-  if (args.mode === "general" && args.hasTurnik === "maybe") {
-    queue.sort((a, b) => Number(needsEquipment(a.equipment)) - Number(needsEquipment(b.equipment)));
+  // «Могу найти» — не «есть»: такие упражнения уходят в конец очереди, и
+  // занятие набирается из них, только когда без них до длительности не хватило.
+  const maybeOnly = args.mode === "general" && (args.access?.maybe.length ?? 0) > 0;
+  if (maybeOnly) {
+    const isMaybe = (e: ExerciseRow) =>
+      needsEquipment(e.equipment) && (args.access?.maybe ?? []).includes(e.equipment);
+    queue.sort((a, b) => Number(isMaybe(a)) - Number(isMaybe(b)));
   }
 
   // Убираем с конца основной части, потом разминки; каждая часть остаётся хотя бы с одним.

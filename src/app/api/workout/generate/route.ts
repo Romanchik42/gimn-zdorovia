@@ -11,11 +11,11 @@ import {
 import { resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
 import { addDays, dayOfWeek as dayOfWeekOf, todayIso, weekStartOf } from "@/lib/dates";
 import { resolveWorkoutLength } from "@/lib/workout-engine/length";
+import { accessFromProfile } from "@/lib/workout-engine/equipment";
 import { deriveRestrictions, type ExtendedAnswers } from "@/lib/diagnostics/extended";
 import { isMode, type Mode } from "@/lib/modes";
 import type {
   ExerciseRow,
-  HasTurnik,
   Level,
   SequenceIntensity,
   SequenceItem,
@@ -193,16 +193,16 @@ export async function POST(request: Request) {
     supabase.from("exercises").select("*"),
     supabase
       .from("user_profiles_general")
-      .select("difficulty, has_turnik")
+      .select("difficulty, has_turnik, gym_equipment")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);
 
-  // Турник — вопрос анкеты общего режима (GIMN-014). Ответ передаём как есть,
-  // а отсекает турниковые в режиме Бехтерева сам подбор, по режиму (GIMN-022):
-  // анкета общего режима может быть заполнена и у того, кто сейчас занимается
-  // по Бехтерева — режимов у человека бывает два сразу.
-  const hasTurnik = (generalProfile?.has_turnik as HasTurnik | undefined) ?? null;
+  // Снаряжение — вопрос анкеты общего режима (GIMN-014, GIMN-028). Передаём
+  // как есть, а отсекает снаряд в режиме Бехтерева сам подбор, по режиму
+  // (GIMN-022): анкета общего режима может быть заполнена и у того, кто
+  // сейчас занимается по Бехтерева — режимов у человека бывает два сразу.
+  const access = accessFromProfile(generalProfile ?? {});
 
   const bySlug = new Map<string, ExerciseRow>(
     ((exercises ?? []) as ExerciseRow[]).map((e) => [e.slug, e]),
@@ -232,7 +232,7 @@ export async function POST(request: Request) {
     bloodPressureOk,
     excludeExerciseIds,
     excludeJoints,
-    hasTurnik,
+    access,
   });
 
   if (built.exercises.length === 0) {
@@ -264,7 +264,7 @@ export async function POST(request: Request) {
     length,
     struggling,
     restrictions,
-    hasTurnik,
+    access,
   });
 
   const { data: created, error } = await supabase

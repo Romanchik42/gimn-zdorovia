@@ -4,12 +4,16 @@ import type {
   ExerciseRow,
   ExerciseSnapshot,
   ExerciseType,
-  HasTurnik,
   Intensity,
   Level,
   Mode,
 } from "@/lib/supabase/types";
-import { equipmentAvailable, equipmentHint } from "@/lib/workout-engine/equipment";
+import {
+  NO_EQUIPMENT,
+  equipmentAvailable,
+  equipmentHint,
+  type EquipmentAccess,
+} from "@/lib/workout-engine/equipment";
 import { DEFAULT_REST_SEC, SEC_PER_REP, estimateMinutes } from "@/lib/workout-engine/duration";
 
 /**
@@ -76,8 +80,8 @@ export type CustomBuildArgs = {
   intensity: Intensity;
   difficulty: Level | null;
   userContraindications: string[];
-  /** Есть ли турник (GIMN-014): чего нечем делать, того в конструкторе нет. */
-  hasTurnik?: HasTurnik | null;
+  /** Снаряжение человека (GIMN-028): чего нечем делать, того в конструкторе нет. */
+  access?: EquipmentAccess;
 };
 
 export function buildCustomWorkout(args: CustomBuildArgs): {
@@ -93,7 +97,7 @@ export function buildCustomWorkout(args: CustomBuildArgs): {
   // Фильтр стоит ДО деления на свой режим и запас: иначе турниковые пролезали
   // бы в занятие Бехтерева через crossGentle, где режим упражнения как раз
   // чужой (GIMN-022).
-  const pool = args.pool.filter((e) => equipmentAvailable(e.equipment, args.mode, args.hasTurnik));
+  const pool = args.pool.filter((e) => equipmentAvailable(e.equipment, args.mode, args.access ?? NO_EQUIPMENT));
   const eligible = pool.filter((e) => inMode(e) && LEVEL_RANK[e.level] <= levelCap);
 
   const picked: ExerciseRow[] = [];

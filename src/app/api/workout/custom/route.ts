@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     intensity: parsed.data.intensity,
     difficulty: ctx.difficulty,
     userContraindications: ctx.contraindications,
-    hasTurnik: ctx.hasTurnik,
+    access: ctx.access,
   });
 
   if (built.exercises.length === 0) {

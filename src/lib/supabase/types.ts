@@ -31,8 +31,22 @@ export type SequenceIntensity = "low" | "medium" | "normal";
 export type ExerciseType = "breathing" | "warmup" | "main" | "stretch" | "massage";
 export type TargetJoint = "spine" | "shoulder" | "neck" | "legs" | "hips" | "core" | "full_body";
 export type Level = "beginner" | "intermediate" | "advanced";
-/** Снаряд, без которого упражнение не сделать (0017). */
-export type Equipment = "none" | "pullup_bar" | "dip_bars";
+/** Снаряд, без которого упражнение не сделать (0017, расширен в 0021). */
+export type Equipment =
+  | "none"
+  | "pullup_bar"
+  | "dip_bars"
+  | "dumbbell"
+  | "barbell"
+  | "bench"
+  | "kettlebell"
+  | "resistance_band"
+  | "cable"
+  | "machine"
+  | "squat_rack";
+
+/** Где человек занимается (0021). От этого зависит, что ему предлагают отметить. */
+export type TrainingLocation = "home" | "home_bar" | "gym" | "home_and_gym";
 /** Ответ анкеты про турник (0017). maybe — «могу найти». */
 export type HasTurnik = "yes" | "no" | "maybe";
 export type FeedbackStatus = "done" | "difficult" | "skipped";
@@ -124,6 +138,10 @@ export type UserProfileGeneralRow = {
   training_days: number[];
   /** Есть ли турник (0017). Влияет на подбор, не на калории. */
   has_turnik: HasTurnik;
+  /** Где занимается (0021). */
+  training_location: TrainingLocation;
+  /** Отмеченное снаряжение (0021). Пусто — читаем has_turnik. */
+  gym_equipment: Equipment[];
   calculated_bmr: number;
   calculated_tdee: number;
   calculated_target_calories: number;
