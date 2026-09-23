@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "check:equipment": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-equipment.mts",
-    "check:points": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-points.mts"
+    "check:points": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-points.mts",
+    "check:dosage": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-dosage.mts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

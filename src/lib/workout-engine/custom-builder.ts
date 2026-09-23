@@ -166,8 +166,20 @@ export function buildCustomWorkout(args: CustomBuildArgs): {
 /**
  * Сколько упражнений брать под длительность. US-05 ждёт 10-14 на обычное
  * занятие; короткое — меньше, длинное — чуть больше, но не бесконечно.
+ *
+ * Силовое занятие короче по списку и длиннее по времени: одно упражнение
+ * в три-четыре подхода с отдыхом занимает пять минут, а не сорок секунд
+ * (GIMN-028). Поэтому для зала счёт другой — 4-6 упражнений, как в любой
+ * базовой программе, а не тринадцать.
  */
-export function exerciseCount(durationMin: number): number {
+export function exerciseCount(durationMin: number, strength = false): number {
+  if (strength) {
+    if (durationMin <= 20) return 3;
+    if (durationMin <= 35) return 4;
+    if (durationMin <= 50) return 5;
+    return 6;
+  }
+
   if (durationMin <= 15) return 6;
   if (durationMin <= 30) return 10;
   if (durationMin <= 45) return 13;

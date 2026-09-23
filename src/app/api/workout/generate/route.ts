@@ -12,6 +12,7 @@ import { resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
 import { addDays, dayOfWeek as dayOfWeekOf, todayIso, weekStartOf } from "@/lib/dates";
 import { resolveWorkoutLength } from "@/lib/workout-engine/length";
 import { accessFromProfile } from "@/lib/workout-engine/equipment";
+import { applyDosageAll, loadDosage } from "@/lib/workout-engine/dosage";
 import { deriveRestrictions, type ExtendedAnswers } from "@/lib/diagnostics/extended";
 import { isMode, type Mode } from "@/lib/modes";
 import type {
@@ -270,6 +271,13 @@ export async function POST(request: Request) {
     access,
   });
 
+  // Дозировка накладывается последней: подбор решает, ЧТО делать, дозировка —
+  // сколько подходов и с каким весом. Для гимнастики строк нет, и занятие
+  // остаётся таким, каким его собрал подбор.
+  const level = (generalProfile?.difficulty as Level | undefined) ?? "beginner";
+  const dosage = await loadDosage(supabase, snapshot.map((e) => e.exercise_id), level, mode);
+  const dosed = applyDosageAll(snapshot, dosage);
+
   const { data: created, error } = await supabase
     .from("user_workouts")
     .insert({
@@ -279,7 +287,7 @@ export async function POST(request: Request) {
       status: "planned",
       generated_from_sequence_id: sequence.id,
       source: "plan",
-      exercises_snapshot: snapshot,
+      exercises_snapshot: dosed,
     })
     .select("id")
     .single();
@@ -291,8 +299,8 @@ export async function POST(request: Request) {
 
   return ok({
     workout_id: created.id,
-    exercises: snapshot,
-    total_duration_min: estimateMinutes(snapshot),
+    exercises: dosed,
+    total_duration_min: estimateMinutes(dosed),
     focus: planDay?.focus ?? sequence.focus_joint,
     intensity,
     is_rest_day: planDay?.is_rest_day ?? false,

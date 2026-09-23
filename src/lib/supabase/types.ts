@@ -177,6 +177,42 @@ export type ExerciseRow = {
   created_at: string;
 };
 
+/**
+ * Дозировка упражнения по уровню и режиму (0023). Гимнастика описывается
+ * временем или повторами, силовая работа — подходами.
+ */
+export type ExerciseDosageRow = {
+  id: string;
+  exercise_id: string;
+  level: Level;
+  mode: Mode;
+  duration_sec: number | null;
+  repetitions: number | null;
+  rest_sec: number | null;
+  sets: number | null;
+  reps_per_set: number | null;
+  rest_between_sets_sec: number | null;
+  weight_pct_1rm: number | null;
+  weight_kg_default: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
+/** Факт выполнения: один подход (0023). Основа прогрессии. */
+export type WorkoutSetRow = {
+  id: string;
+  user_id: string;
+  user_workout_id: string | null;
+  exercise_id: string;
+  date: string;
+  set_number: number;
+  reps: number;
+  weight_kg: number | null;
+  /** Тяжесть по ощущению 1-10. Нужнее веса там, где веса нет. */
+  rpe: number | null;
+  created_at: string;
+};
+
 /** Элемент последовательности. duration_sec и repetitions взаимоисключающи. */
 export type SequenceItem = {
   order: number;
@@ -260,6 +296,14 @@ export type ExerciseSnapshot = {
   priority?: boolean;
   /** Нужный снаряд (0017) — карточка показывает пометку. */
   equipment?: Equipment | null;
+  /** Подходов в упражнении (0023). Есть — значит силовое, а не круг. */
+  sets?: number | null;
+  /** Повторов в подходе (0023). */
+  reps_per_set?: number | null;
+  /** Отдых между подходами (0023). */
+  rest_between_sets_sec?: number | null;
+  /** С какого веса начать (0023). Пусто — по самочувствию или без веса. */
+  weight_kg?: number | null;
   /** «Могу найти»: упражнение стоит второй опцией, его можно пропустить. */
   optional?: boolean;
 };
@@ -544,6 +588,8 @@ export type Database = {
       user_modes: TableDef<UserModeRow, "user_id" | "mode">;
       user_points: TableDef<UserPointsRow, "user_id">;
       points_history: TableDef<PointsHistoryRow, "user_id" | "amount" | "reason">;
+      exercise_dosage: TableDef<ExerciseDosageRow, "exercise_id" | "level" | "mode">;
+      workout_sets: TableDef<WorkoutSetRow, "user_id" | "exercise_id" | "set_number" | "reps">;
     };
     Views: Record<never, never>;
     Functions: {
