@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { SYMPTOMS, SYMPTOM_LABELS } from "@/lib/schemas/workout-feedback";
 import { cn } from "cn";
 
@@ -39,8 +40,10 @@ export function SideEffectDialog({
   const [pending, setPending] = useState(false);
   const [advice, setAdvice] = useState<Advice[] | null>(null);
   const [doctorMessage, setDoctorMessage] = useState<string | null>(null);
+  // «Свой вариант»: список симптомов закрыт, а сказать можно что угодно.
+  const [ownText, setOwnText] = useState<string | null>(null);
 
-  async function report(symptom: string) {
+  async function report(symptom: string, description?: string) {
     setPending(true);
     try {
       const res = await fetch("/api/workout/side-effect", {
@@ -50,6 +53,7 @@ export function SideEffectDialog({
           user_workout_id: workoutId,
           exercise_id: exerciseId,
           symptom,
+          description: description?.trim() || undefined,
           action_taken: "paused",
         }),
       });
@@ -72,6 +76,7 @@ export function SideEffectDialog({
   function reset() {
     setAdvice(null);
     setDoctorMessage(null);
+    setOwnText(null);
   }
 
   return (
@@ -107,6 +112,40 @@ export function SideEffectDialog({
                   {SYMPTOM_LABELS[symptom]}
                 </button>
               ))}
+
+              {ownText === null ? (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setOwnText("")}
+                  className={cn(
+                    "min-h-12 w-full rounded-lg border border-dashed border-border px-3 py-2 text-left text-sm font-medium",
+                    "text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50",
+                  )}
+                >
+                  Свой вариант…
+                </button>
+              ) : (
+                <div className="space-y-2 rounded-lg border border-border bg-card p-3">
+                  <Textarea
+                    autoFocus
+                    rows={3}
+                    maxLength={500}
+                    value={ownText}
+                    disabled={pending}
+                    onChange={(e) => setOwnText(e.target.value)}
+                    placeholder="Опишите, что не так — разберёмся"
+                  />
+                  <Button
+                    type="button"
+                    className="h-11 w-full"
+                    disabled={pending || ownText.trim().length < 3}
+                    onClick={() => report("other", ownText)}
+                  >
+                    Отправить
+                  </Button>
+                </div>
+              )}
               {pending ? (
                 <p className="flex items-center justify-center gap-2 pt-1 text-sm text-muted-foreground">
                   <Loader2Icon className="size-4 animate-spin" /> Сохраняем…
