@@ -20,6 +20,8 @@ import { AuthorBlock } from "@/components/settings/author-block";
 import { CustomColorsSection, InfoTintSection } from "@/components/settings/appearance-builder";
 import { FeedbackSection } from "@/components/settings/feedback-section";
 import { ModesSection } from "@/components/settings/modes-section";
+import { TariffsSection } from "@/components/settings/tariffs-section";
+import { PointsSection } from "@/components/settings/points-section";
 import { ShareButton } from "@/components/share/share-button";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 import { createClient } from "@/lib/supabase/server";
@@ -155,6 +157,9 @@ export default async function SettingsPage() {
         </div>
 
         <FeedbackSection />
+
+        <TariffsSection />
+        <PointsSection />
 
         <AuthorBlock siteUrl={publicEnv.authorSiteUrl} />
 
