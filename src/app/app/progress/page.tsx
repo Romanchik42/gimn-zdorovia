@@ -7,6 +7,7 @@ import { CalendarClockIcon, HistoryIcon, LightbulbIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProgressChart, type ChartPoint } from "@/components/progress/progress-chart";
 import { MeasurementForm } from "@/components/progress/measurement-form";
+import { BodyMeasurements } from "@/components/progress/body-measurements";
 import { createClient } from "@/lib/supabase/server";
 import { currentMode } from "@/lib/modes/server";
 import { addDays, datesFrom, todayIso, weekStartOf } from "@/lib/dates";
@@ -62,7 +63,9 @@ export default async function ProgressPage() {
     supabase.from("users").select("mode, next_report_date").eq("id", user.id).maybeSingle(),
     supabase
       .from("user_progress")
-      .select("date, weight_kg, shober_test_cm, stiffness_level")
+      // "*": обхваты появляются с миграцией 0024, а деплой и миграция не
+      // атомарны — перечисление уронило бы весь запрос до её применения.
+      .select("*")
       .eq("user_id", user.id)
       .gte("date", since)
       .order("date"),
@@ -159,6 +162,8 @@ export default async function ProgressPage() {
         </section>
 
         <MeasurementForm showShober={isBehtereva} />
+
+        <BodyMeasurements rows={progress ?? []} />
 
         <ProgressChart
           title="Регулярность"

@@ -442,6 +442,16 @@ export type UserProgressRow = {
   weight_kg: number | null;
   shober_test_cm: number | null;
   stiffness_level: number | null;
+  /* Обхваты и состав тела (0024). Все необязательные: большинство
+     взвешивается, но сантиметром себя не меряет. */
+  chest_cm: number | null;
+  waist_cm: number | null;
+  hips_cm: number | null;
+  bicep_cm: number | null;
+  thigh_cm: number | null;
+  body_fat_pct: number | null;
+  resting_hr: number | null;
+  notes: string | null;
   workouts_this_week: number;
   streak_days: number;
   created_at: string;

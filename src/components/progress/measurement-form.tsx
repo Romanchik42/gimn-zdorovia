@@ -11,6 +11,17 @@ import { Label } from "@/components/ui/label";
 import { measurementSchema } from "@/lib/schemas/progress";
 import { cn } from "cn";
 
+/** Подробные замеры: обхваты, состав тела, пульс покоя. Все необязательные. */
+const DETAIL_FIELDS = [
+  { name: "chest_cm", label: "Грудь, см", placeholder: "98" },
+  { name: "waist_cm", label: "Талия, см", placeholder: "84" },
+  { name: "hips_cm", label: "Бёдра, см", placeholder: "96" },
+  { name: "bicep_cm", label: "Бицепс, см", placeholder: "34" },
+  { name: "thigh_cm", label: "Бедро, см", placeholder: "56" },
+  { name: "body_fat_pct", label: "Жир, %", placeholder: "18" },
+  { name: "resting_hr", label: "Пульс покоя", placeholder: "62" },
+] as const;
+
 function toNumber(value: string): number | null {
   if (value.trim() === "") return null;
   const n = Number(value.replace(",", "."));
@@ -25,6 +36,11 @@ export function MeasurementForm({ showShober }: { showShober: boolean }) {
   const [shober, setShober] = useState("");
   const [stiffness, setStiffness] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
+  // Обхваты и пульс свёрнуты: взвешиваются почти все, сантиметром себя
+  // меряют немногие, и разворачивать это каждому — лишние семь полей.
+  const [details, setDetails] = useState(false);
+  const [girths, setGirths] = useState<Record<string, string>>({});
+  const [note, setNote] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +48,8 @@ export function MeasurementForm({ showShober }: { showShober: boolean }) {
       weight_kg: toNumber(weight),
       shober_test_cm: showShober ? toNumber(shober) : null,
       stiffness_level: stiffness,
+      ...Object.fromEntries(DETAIL_FIELDS.map(({ name }) => [name, toNumber(girths[name] ?? "")])),
+      notes: note.trim() || null,
     };
 
     // Та же схема, что на сервере, — ошибку показываем до запроса.
@@ -53,10 +71,17 @@ export function MeasurementForm({ showShober }: { showShober: boolean }) {
         toast.error(json.error ?? "Не удалось сохранить замер");
         return;
       }
-      toast.success("Замер сохранён");
+      // Предупреждение о скачке веса показываем отдельно: замер сохранён,
+      // но значение стоит перепроверить.
+      if (json.data?.warning) toast.warning(json.data.warning, { duration: 8000 });
+      else toast.success("Замер сохранён");
+
       setWeight("");
       setShober("");
       setStiffness(null);
+      setGirths({});
+      setNote("");
+      setDetails(false);
       setOpen(false);
       router.refresh();
     } catch {
@@ -128,6 +153,46 @@ export function MeasurementForm({ showShober }: { showShober: boolean }) {
         </div>
         <p className="text-xs text-muted-foreground">1 — почти нет, 10 — очень сильная</p>
       </fieldset>
+
+      <details open={details} onToggle={(e) => setDetails(e.currentTarget.open)}>
+        <summary className="cursor-pointer text-sm font-medium select-none">
+          Обхваты, процент жира и пульс
+        </summary>
+        <div className="gz-reveal space-y-3 pt-3">
+          <div className="grid grid-cols-2 gap-3">
+            {DETAIL_FIELDS.map(({ name, label, placeholder }) => (
+              <div key={name} className="space-y-2">
+                <Label htmlFor={`m-${name}`}>{label}</Label>
+                <Input
+                  id={`m-${name}`}
+                  inputMode="decimal"
+                  value={girths[name] ?? ""}
+                  onChange={(e) => setGirths((g) => ({ ...g, [name]: e.target.value }))}
+                  className="h-12"
+                  placeholder={placeholder}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="m-notes">Заметка</Label>
+            <Input
+              id="m-notes"
+              value={note}
+              maxLength={500}
+              onChange={(e) => setNote(e.target.value)}
+              className="h-12"
+              placeholder="Мерил утром натощак"
+            />
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Меряйте в одно и то же время — лучше утром, до еды. Иначе цифры скачут от воды и
+            еды, а не от изменений в теле.
+          </p>
+        </div>
+      </details>
 
       <div className="grid grid-cols-2 gap-2">
         <Button type="button" variant="ghost" className="h-12" onClick={() => setOpen(false)}>
