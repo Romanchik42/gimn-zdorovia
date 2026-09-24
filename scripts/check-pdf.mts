@@ -209,6 +209,19 @@ for (const slug of LEGAL_SLUGS) {
     `${slug}: не опирается на стандартные шрифты PDF`,
     !all.includes("/BaseFont /Helvetica") && !all.includes("/BaseFont/Helvetica"),
   );
+
+  // Обязательный по спецификации ключ: длина несжатой программы шрифта.
+  // Без него Adobe Reader ведёт себя непредсказуемо — на телефоне документ
+  // открывался, на компьютере в части программ нет.
+  const files = all.split("/FontFile2").length - 1;
+  const lengths = all.split("/Length1").length - 1;
+  check(`${slug}: у каждого шрифта указан Length1`, files > 0 && lengths >= files, `${lengths} на ${files}`);
+
+  // Урезанный шрифт положено называть ABCDEF+Имя: по этому префиксу
+  // читалка понимает, что в файле часть шрифта, а не весь.
+  const tagged = (all.match(/\/BaseFont\s*\/[A-Z]{6}\+/g) ?? []).length;
+  const bases = (all.match(/\/BaseFont\s*\//g) ?? []).length;
+  check(`${slug}: подмножества помечены признаком урезанного шрифта`, bases > 0 && tagged === bases, `${tagged} из ${bases}`);
 }
 
 console.log("\nКириллица читается из файла:");

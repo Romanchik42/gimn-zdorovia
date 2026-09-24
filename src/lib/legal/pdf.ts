@@ -2,9 +2,20 @@ import "server-only";
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { inflateSync } from "node:zlib";
 
 import fontkit from "@pdf-lib/fontkit";
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import {
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFNumber,
+  PDFRawStream,
+  PDFRef,
+  rgb,
+  type PDFFont,
+  type PDFPage,
+} from "pdf-lib";
 
 import {
   CONTACT,
@@ -237,6 +248,79 @@ function drawBlock(layout: Layout, block: LegalBlock): void {
   layout.space(GAP.betweenParagraphs);
 }
 
+/**
+ * Приводит вложенные шрифты к букве спецификации (GIMN-029).
+ *
+ * pdf-lib оставляет две вольности, которые большинство читалок прощает, а
+ * Adobe Reader — нет. На телефоне документ открывался нормально, на
+ * компьютере в части программ капризничал: ровно тот случай, когда «у меня
+ * работает» ничего не значит.
+ *
+ * Первое: у потока со шрифтом нет ключа Length1 — длины несжатой программы
+ * шрифта. Для FontFile2 спецификация требует его прямо. Восстанавливаем
+ * распаковкой самого потока: другого источника этой длины не осталось.
+ *
+ * Второе: урезанный шрифт назван «PTSans-Regular-5466». Подмножество
+ * положено называть «ABCDEF+PTSans-Regular» — шесть заглавных букв и плюс.
+ * По этому префиксу читалка понимает, что в файле не весь шрифт, а часть;
+ * без него она вправе считать шрифт полным и вести себя как угодно,
+ * встретив отсутствующий глиф.
+ */
+function hardenEmbeddedFonts(pdf: PDFDocument): void {
+  const objects = pdf.context.enumerateIndirectObjects();
+  const dicts = objects.map(([, obj]) => obj).filter((obj): obj is PDFDict => obj instanceof PDFDict);
+
+  const renamed = new Map<string, PDFName>();
+  let tagIndex = 0;
+
+  for (const dict of dicts) {
+    if (dict.get(PDFName.of("Type"))?.toString() !== "/FontDescriptor") continue;
+
+    // Length1: длина несжатой программы шрифта.
+    const fileRef = dict.get(PDFName.of("FontFile2"));
+    if (fileRef instanceof PDFRef) {
+      const stream = pdf.context.lookup(fileRef);
+      if (stream instanceof PDFRawStream) {
+        const filter = stream.dict.get(PDFName.of("Filter"))?.toString() ?? "";
+        const raw = stream.getContents();
+        const size = filter.includes("FlateDecode") ? inflateSync(Buffer.from(raw)).length : raw.length;
+        stream.dict.set(PDFName.of("Length1"), PDFNumber.of(size));
+      }
+    }
+
+    // Имя подмножества: шесть заглавных букв, плюс, исходное имя.
+    const current = dict.get(PDFName.of("FontName"));
+    if (!current) continue;
+    const old = current.toString().replace(/^\//, "");
+    if (old.includes("+")) continue;
+
+    const tag = subsetTag(tagIndex++);
+    const clean = old.replace(/-\d+$/, "");
+    const next = PDFName.of(`${tag}+${clean}`);
+    dict.set(PDFName.of("FontName"), next);
+    renamed.set(old, next);
+  }
+
+  // BaseFont стоит и у Type0, и у CIDFontType2 — обе ссылки на то же имя.
+  for (const dict of dicts) {
+    const base = dict.get(PDFName.of("BaseFont"));
+    if (!base) continue;
+    const next = renamed.get(base.toString().replace(/^\//, ""));
+    if (next) dict.set(PDFName.of("BaseFont"), next);
+  }
+}
+
+/** Шесть заглавных букв: AAAAAA, AAAAAB и так далее. Важна только уникальность. */
+function subsetTag(index: number): string {
+  let tag = "";
+  let n = index;
+  for (let i = 0; i < 6; i++) {
+    tag = String.fromCharCode(65 + (n % 26)) + tag;
+    n = Math.floor(n / 26);
+  }
+  return tag;
+}
+
 export async function renderLegalPdf(doc: LegalDoc): Promise<Uint8Array> {
   const files = await loadFontFiles();
 
@@ -298,6 +382,12 @@ export async function renderLegalPdf(doc: LegalDoc): Promise<Uint8Array> {
       color: MUTED,
     });
   });
+
+  // flush до правок не для красоты: pdf-lib вкладывает шрифты лениво, уже
+  // на сохранении, и до этого вызова объектов шрифта в документе просто
+  // нет — первая версия правки молча ничего не находила.
+  await pdf.flush();
+  hardenEmbeddedFonts(pdf);
 
   return pdf.save();
 }
