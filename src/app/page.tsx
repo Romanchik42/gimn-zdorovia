@@ -36,18 +36,25 @@ export default function LandingPage() {
           className="rounded-2xl"
         />
 
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            Гимн.здоровья
-          </h1>
-          <p className="text-base text-muted-foreground sm:text-lg">
-            гимнастика для здоровья
-          </p>
-        </div>
+        <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          Гимн.здоровья
+        </h1>
 
-        <p className="text-pretty text-muted-foreground">
-          Реабилитация при болезни Бехтерева и поддержание формы.
-        </p>
+        {/* Подзаголовка «гимнастика для здоровья» здесь больше нет: описание
+            ниже начинается теми же словами, и подряд они читались как
+            заикание. В описании фраза несёт продолжение, в подзаголовке —
+            только повтор. */}
+        <div className="space-y-3 text-pretty text-muted-foreground">
+          <p>
+            Гимн.здоровья — гимнастика для здоровья при болезни Бехтерева и не только. Здоровым
+            людям — тренировки для мышечной массы, тонуса и поддержки формы.
+          </p>
+          <p>
+            Персональная программа на каждый день: упражнения с понятной техникой, меню и расчёт
+            продуктов на неделю. Прогресс собирается автоматически перед каждой тренировкой.
+          </p>
+          <p>Программа подстраивается под каждого индивидуально.</p>
+        </div>
 
         <div className="w-full space-y-2 rounded-xl border border-info-border bg-info p-4 text-left text-sm text-info-foreground">
           <p className="font-medium">🎁 Идёт тестовый режим — приложение бесплатно для всех участников.</p>
