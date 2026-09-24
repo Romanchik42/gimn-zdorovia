@@ -514,6 +514,19 @@ export type NotificationLogRow = {
   sent_at: string;
 };
 
+/** Одноразовый код входа (0027). Самого кода здесь нет — только его хэш. */
+export type AuthOtpRow = {
+  id: string;
+  /** Телефон в виде +7XXXXXXXXXX или почта в нижнем регистре. */
+  identifier: string;
+  channel: "sms" | "email";
+  /** scrypt в виде «соль:хэш». */
+  code_hash: string;
+  attempts: number;
+  expires_at: string;
+  created_at: string;
+};
+
 /** Одно «домашнее» сообщение бота на чат (0012). */
 export type TelegramChatRow = {
   chat_id: number;
@@ -604,6 +617,7 @@ export type Database = {
       referral_clicks: TableDef<ReferralClickRow, "referral_code">;
       notifications_log: TableDef<NotificationLogRow, "user_id" | "type" | "status">;
       telegram_chats: TableDef<TelegramChatRow, "chat_id">;
+      auth_otp: TableDef<AuthOtpRow, "identifier" | "channel" | "code_hash" | "expires_at">;
       feedback: TableDef<FeedbackRow, "user_id" | "type" | "text">;
       user_modes: TableDef<UserModeRow, "user_id" | "mode">;
       user_points: TableDef<UserPointsRow, "user_id">;

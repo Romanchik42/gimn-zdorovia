@@ -2,6 +2,10 @@ import Image from "next/image";
 
 import { TelegramLoginButton } from "@/components/auth/telegram-login-button";
 import { TelegramBotLink } from "@/components/auth/telegram-bot-link";
+import { OtherLogins } from "@/components/auth/other-logins";
+import { isEmailConfigured } from "@/lib/auth/email-code";
+import { isSmsConfigured } from "@/lib/auth/sms";
+import { OAUTH_LABELS, OAUTH_PROVIDERS, isOAuthConfigured } from "@/lib/auth/oauth";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
@@ -72,9 +76,23 @@ export default function LandingPage() {
           <ThemeSwitcher />
         </div>
 
-        <div className="w-full space-y-3 pt-2">
+        <div className="w-full space-y-3 pt-2 text-left">
           <TelegramLoginButton botUsername={botUsername} />
           <TelegramBotLink botUsername={botUsername} />
+          {/* Те же способы, что и на /auth/login (GIMN-029): большинство
+              приходит сюда, а не на страницу входа, и упираться в
+              единственную кнопку от мессенджера здесь ровно так же обидно. */}
+          <OtherLogins
+            available={{
+              sms: isSmsConfigured(),
+              email: isEmailConfigured(),
+              oauth: OAUTH_PROVIDERS.map((provider) => ({
+                provider,
+                label: OAUTH_LABELS[provider],
+                ready: isOAuthConfigured(provider),
+              })),
+            }}
+          />
         </div>
       </div>
 

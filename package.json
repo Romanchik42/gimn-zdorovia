@@ -10,7 +10,8 @@
     "check:equipment": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-equipment.mts",
     "check:points": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-points.mts",
     "check:dosage": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-dosage.mts",
-    "check:progression": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-progression.mts"
+    "check:progression": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-progression.mts",
+    "check:auth": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-auth.mts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -110,6 +110,50 @@ export function serverEnv(): ServerEnv {
   return cached;
 }
 
+/* ---------------------------------------------------------------------------
+   Подключения, которых может не быть (GIMN-029).
+
+   Отдельно от serverEnv намеренно. serverEnv бросает, если не задан токен
+   бота, — и правильно делает. Но страница входа рисуется и без SMS, и без
+   почты, и спрашивать «настроен ли SMS» через функцию, которая падает
+   из-за Telegram, значит уронить вход целиком из-за неподключённой
+   рассылки. Здесь ничего не бросается: не задано — значит канала нет.
+   --------------------------------------------------------------------------- */
+const integrationsSchema = z.object({
+  /** SMS.ru: один ключ api_id. */
+  SMS_PROVIDER_KEY: z.string().min(1).optional(),
+  /** Имя отправителя, если оно согласовано с оператором. */
+  SMS_SENDER: z.string().min(1).optional(),
+  /** Resend: ключ и адрес, с которого уходит письмо. Нужны оба. */
+  EMAIL_PROVIDER_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(1).optional(),
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  APPLE_CLIENT_ID: z.string().min(1).optional(),
+  VK_APP_ID: z.string().min(1).optional(),
+  VK_APP_SECRET: z.string().min(1).optional(),
+});
+
+export type IntegrationsEnv = z.infer<typeof integrationsSchema>;
+
+/** Читает переменные необязательных подключений. Не бросает никогда. */
+export function integrationsEnv(): IntegrationsEnv {
+  const parsed = integrationsSchema.safeParse({
+    // Пустая строка в Vercel — это «не задано», а не значение.
+    SMS_PROVIDER_KEY: process.env.SMS_PROVIDER_KEY || undefined,
+    SMS_SENDER: process.env.SMS_SENDER || undefined,
+    EMAIL_PROVIDER_KEY: process.env.EMAIL_PROVIDER_KEY || undefined,
+    EMAIL_FROM: process.env.EMAIL_FROM || undefined,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || undefined,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || undefined,
+    APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID || undefined,
+    VK_APP_ID: process.env.VK_APP_ID || undefined,
+    VK_APP_SECRET: process.env.VK_APP_SECRET || undefined,
+  });
+
+  return parsed.success ? parsed.data : {};
+}
+
 /** Мягкая проверка: настроен ли Supabase. Нужна, чтобы страницы не падали в 500. */
 export function isSupabaseConfigured(): boolean {
   return publicEnvSchema.safeParse(publicEnv).success;
