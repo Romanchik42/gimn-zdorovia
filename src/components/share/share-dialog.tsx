@@ -88,22 +88,42 @@ export function ShareDialog({
   }
 
   /**
-   * Сохранение картинки (GIMN-029).
+   * Сохранение картинки (GIMN-029, порядок исправлен в GIMN-030).
    *
-   * Было: `toDataURL` и клик по ссылке, не вставленной в документ. В iOS
-   * Safari и во встроенном браузере Telegram атрибут download игнорируется
-   * — кнопка просто ничего не делала, и понять почему было нельзя.
+   * Было в GIMN-029: сначала системный лист «Поделиться», и только если
+   * его нет — скачивание. Лист есть почти везде, поэтому «Сохранить
+   * картинку» на всех платформах предлагала отправить картинку кому-то.
+   * Кнопка называется «сохранить» — значит по умолчанию она сохраняет.
    *
-   * Стало: сначала системный лист «Поделиться», где на телефоне есть
-   * «Сохранить в Фото» — это и есть сохранение, и работает оно там, где
-   * скачивание запрещено. Если листа нет (десктоп) — обычное скачивание
-   * через blob, со ссылкой в документе.
-   *
-   * Провал скачивания в этих браузерах не бросает исключение и не даёт
-   * события, поэтому ловить его нечем. Вместо догадок — видимая кнопка
-   * «Не сохранилось?»: она показывает код картинкой, а картинку в iOS
-   * можно сохранить долгим нажатием (с SVG на экране так нельзя).
+   * Стало: сначала обычное скачивание, а лист — там, где скачивание не
+   * работает. Таких мест ровно два, и оба определяются заранее: iOS, где
+   * Safari игнорирует атрибут download, и мобильный Telegram с тем же
+   * поведением. Настольный Telegram скачивает нормально, поэтому по имени
+   * приложения его отсекать нельзя — смотрим на платформу.
    */
+  function supportsDirectDownload(): boolean {
+    if (typeof document.createElement("a").download === "undefined") return false;
+
+    const ua = navigator.userAgent;
+    // iPadOS представляется Macintosh — отличаем по наличию касаний.
+    const isApple = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    if (isApple) return false;
+
+    const platform = window.Telegram?.WebApp?.platform;
+    return platform !== "ios" && platform !== "android";
+  }
+
+  function download(blob: Blob, name: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
   async function savePng() {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -117,8 +137,15 @@ export function ShareDialog({
     }
 
     const name = `gimn-zdorovia-${referralCode}.png`;
-    const file = new File([blob], name, { type: "image/png" });
 
+    if (supportsDirectDownload()) {
+      download(blob, name);
+      return;
+    }
+
+    // iOS и мобильный Telegram: в системном листе есть «Сохранить в Фото»
+    // — это и есть сохранение там, где скачивание запрещено.
+    const file = new File([blob], name, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file] });
@@ -129,14 +156,9 @@ export function ShareDialog({
       }
     }
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    // Ни скачивания, ни листа. Пробуем всё равно: хуже уже не будет, а
+    // рядом есть кнопка «Не сохранилось?» с картинкой для долгого нажатия.
+    download(blob, name);
   }
 
   /** Показать код картинкой — её сохраняют долгим нажатием. */
