@@ -128,7 +128,7 @@ export default async function AppHomePage() {
           <ShareButton referralCode={profile.referral_code} appUrl={publicEnv.appUrl} />
         </header>
 
-        <AppTour autoStart={!profile.tour_completed} />
+        <AppTour autoStart={!profile.tour_completed} name={profile.name} />
 
         <ModeSwitcher current={modes.current} active={modes.active} />
 

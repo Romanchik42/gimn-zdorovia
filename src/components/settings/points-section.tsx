@@ -6,6 +6,7 @@ import { ru } from "date-fns/locale";
 import { GiftIcon, Loader2Icon } from "lucide-react";
 
 import { Section } from "@/components/settings/settings-sections";
+import { ContextHint } from "@/components/tour/context-hint";
 import type { PointHistoryRow } from "@/lib/points/service";
 
 /**
@@ -59,6 +60,10 @@ export function PointsSection() {
 
   return (
     <Section icon={<GiftIcon className="size-4 text-primary" aria-hidden />} title="Мои баллы">
+      {/* Подсказка про баллы (GIMN-029): показывается при первом открытии
+          раздела — раньше рассказывать о них негде и незачем. */}
+      <ContextHint id="points" />
+
       {failed ? (
         <p className="text-sm text-muted-foreground">
           Не удалось загрузить баллы. Откройте раздел заново — счёт не потеряется.

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ExtendedWizard } from "@/components/onboarding/extended-wizard";
+import { ContextHint } from "@/components/tour/context-hint";
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/navigation/safe-next";
 import type { ExtendedAnswers } from "@/lib/diagnostics/extended";
@@ -31,5 +32,12 @@ export default async function ExtendedDiagnosticsPage({ searchParams }: PageProp
   // Без базовой диагностики уточнять нечего.
   if (!diagnostics) redirect("/onboarding/behtereva");
 
-  return <ExtendedWizard next={next} initial={(diagnostics.extended_answers as ExtendedAnswers | null) ?? null} />;
+  return (
+    <div className="space-y-4">
+      {/* Подсказка при первом открытии (GIMN-029): объясняет, зачем эти
+          вопросы и что с ответами будет дальше. */}
+      <ContextHint id="diagnostics" />
+      <ExtendedWizard next={next} initial={(diagnostics.extended_answers as ExtendedAnswers | null) ?? null} />
+    </div>
+  );
 }

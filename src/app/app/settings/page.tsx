@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppTour } from "@/components/tour/app-tour";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -89,6 +90,9 @@ export default async function SettingsPage() {
   return (
     <main className="flex flex-1 flex-col px-4 py-6">
       <div className="mx-auto w-full max-w-md space-y-5">
+        {/* Тур заходит на этот экран своим шагом (GIMN-029). */}
+        <AppTour />
+
         <h1 className="text-2xl font-semibold tracking-tight">Настройки</h1>
 
         {/* Только почта, которую человек указал сам: у Telegram-аккаунтов в auth лежит служебный адрес. */}

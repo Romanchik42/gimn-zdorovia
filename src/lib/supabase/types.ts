@@ -99,6 +99,8 @@ export type UserRow = {
   tour_completed: boolean;
   tour_completed_at: string | null;
   workout_tour_completed: boolean;
+  /** Показанные контекстные подсказки (0028): ["points","modes"]. */
+  hints_seen: string[];
   referral_code: string;
   referred_by: string | null;
   referred_at: string | null;

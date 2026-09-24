@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
 
+import { ContextHint } from "@/components/tour/context-hint";
 import { MODE_SHORT_LABELS, type Mode } from "@/lib/modes";
 import { cn } from "cn";
 
@@ -18,6 +19,9 @@ export function ModeSwitcher({ current, active }: { current: Mode; active: Mode[
   const router = useRouter();
   const [shown, setShown] = useState(current);
   const [pending, startTransition] = useTransition();
+  // Подсказка про режимы (GIMN-029) — по первому переключению, а не при
+  // открытии экрана: пока человек не переключился, объяснять нечего.
+  const [switched, setSwitched] = useState(false);
 
   if (active.length < 2) return null;
 
@@ -37,6 +41,7 @@ export function ModeSwitcher({ current, active }: { current: Mode; active: Mode[
       toast.error("Не удалось переключить режим");
       return;
     }
+    setSwitched(true);
     startTransition(() => router.refresh());
   }
 
@@ -69,6 +74,8 @@ export function ModeSwitcher({ current, active }: { current: Mode; active: Mode[
           </button>
         ))}
       </div>
+
+      <ContextHint id="modes" active={switched} />
     </section>
   );
 }

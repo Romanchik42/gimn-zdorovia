@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppTour } from "@/components/tour/app-tour";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -131,6 +132,9 @@ export default async function ProgressPage() {
   return (
     <main className="flex flex-1 flex-col px-4 py-6">
       <div className="mx-auto w-full max-w-md space-y-5">
+        {/* Тур заходит на этот экран своим шагом (GIMN-029). */}
+        <AppTour />
+
         <header className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">Прогресс</h1>

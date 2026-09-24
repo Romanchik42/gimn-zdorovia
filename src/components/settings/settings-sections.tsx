@@ -293,7 +293,7 @@ export function SoundSection() {
   const packs: SoundPackId[] = [...PLAYABLE_PACKS, "none"];
 
   return (
-    <Section icon={<Volume2Icon className="size-4 text-primary" aria-hidden />} title="Звук">
+    <Section icon={<Volume2Icon className="size-4 text-primary" aria-hidden />} title="Звук" dataTour="sounds">
       <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
         Звуки при отметках
         <Switch checked={sound.enabled} onCheckedChange={(v) => void setEnabled(v)} aria-label="Звуки" />

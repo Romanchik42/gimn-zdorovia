@@ -1,4 +1,5 @@
 import { GeneralForm } from "@/components/onboarding/general-form";
+import { ContextHint } from "@/components/tour/context-hint";
 import { safeNext } from "@/lib/navigation/safe-next";
 import { createClient } from "@/lib/supabase/server";
 import { parseEquipmentList } from "@/lib/workout-engine/equipment";
@@ -56,10 +57,15 @@ export default async function GeneralPage({ searchParams }: PageProps<"/onboardi
   }
 
   return (
-    <GeneralForm
-      keepMode={keep_mode === "1"}
-      next={safeNext(next, "/onboarding/theme")}
-      initial={initial}
-    />
+    <div className="space-y-4">
+      {/* Подсказка при первом заполнении (GIMN-029). Повторно человек
+          приходит сюда из настроек — там она уже не нужна. */}
+      <ContextHint id="general-profile" active={initial === null} />
+      <GeneralForm
+        keepMode={keep_mode === "1"}
+        next={safeNext(next, "/onboarding/theme")}
+        initial={initial}
+      />
+    </div>
   );
 }

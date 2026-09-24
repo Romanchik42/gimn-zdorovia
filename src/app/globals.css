@@ -316,25 +316,48 @@ body {
 /* ---------------------------------------------------------------------------
    Ознакомительный тур (driver.js) — в цветах текущей темы (SPEC 4.5).
    --------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   Подсказка тура (US-11, переписана в GIMN-029).
+
+   Подсказка закреплена сверху, а не рядом с элементом. Причина простая:
+   подсвечиваемое часто внизу экрана — кнопки нижней навигации, — и
+   подсказка, встающая рядом, закрывает собой ровно то, на что показывает.
+   Сверху она не мешает и всегда в одном месте, так что глазам не нужно её
+   искать на каждом шаге.
+   --------------------------------------------------------------------------- */
 .driver-popover.gz-tour {
   background-color: var(--card);
   color: var(--card-foreground);
   border-radius: var(--radius);
   font-family: var(--font-sans);
-  /* На телефоне подсказка не вылезает за край экрана (US-11). */
-  max-width: min(320px, calc(100vw - 32px));
+  position: fixed !important;
+  top: max(16px, env(safe-area-inset-top)) !important;
+  left: 50% !important;
+  transform: translateX(-50%);
+  /* Шире прежнего: в подсказках теперь списки, а не одна строка. */
+  width: min(420px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  padding: 18px;
   box-shadow: 0 8px 30px rgb(0 0 0 / 0.18);
 }
 
+/* Стрелка указывала бы в пустоту: подсказка больше не стоит у элемента. */
+.driver-popover.gz-tour .driver-popover-arrow {
+  display: none !important;
+}
+
 .driver-popover.gz-tour .driver-popover-title {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
+  margin-bottom: 6px;
 }
 
 .driver-popover.gz-tour .driver-popover-description {
-  font-size: 0.9375rem;
-  line-height: 1.5;
+  font-size: 1rem;
+  line-height: 1.55;
   color: var(--card-foreground);
+  /* Переносы строк в текстах значимы: там списки через «•». */
+  white-space: pre-line;
 }
 
 .driver-popover.gz-tour .driver-popover-progress-text {
@@ -342,11 +365,18 @@ body {
 }
 
 .driver-popover.gz-tour .driver-popover-footer {
-  flex-wrap: wrap;
-  gap: 8px;
+  margin-top: 14px;
 }
 
-.driver-popover.gz-tour .driver-popover-footer button {
+/* Три кнопки одним рядом: «Пропустить тур» слева, «Дальше» справа. */
+.driver-popover.gz-tour .gz-tour-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.driver-popover.gz-tour .gz-tour-btn {
   min-height: 44px;
   padding: 0 14px;
   border-radius: calc(var(--radius) - 2px);
@@ -355,18 +385,39 @@ body {
   border: 1px solid var(--border);
   background-color: var(--card);
   color: var(--card-foreground);
+  cursor: pointer;
 }
 
-.driver-popover.gz-tour .driver-popover-footer .driver-popover-next-btn {
+/* Главная кнопка шага: яркая, крупнее и всегда справа. */
+.driver-popover.gz-tour .gz-tour-next {
+  margin-left: auto;
+  padding: 0 20px;
+  font-size: 0.9375rem;
+  font-weight: 600;
   background-color: var(--primary);
   border-color: var(--primary);
   color: var(--primary-foreground);
 }
 
 .driver-popover.gz-tour .gz-tour-skip {
-  margin-right: auto;
   border-color: transparent;
+  padding: 0 8px;
   color: var(--muted-foreground);
+}
+
+/* ---------------------------------------------------------------------------
+   Кнопка «Начать» на время тура.
+
+   Приглушена, пока тур идёт, и оживает на последнем шаге: до него
+   подсказки рассказывают про приложение, и яркая кнопка внизу тянет на
+   себя всё внимание. Отметка ставится на <body> из тура — кнопка живёт в
+   другой части дерева, и тащить туда состояние ради прозрачности незачем.
+   --------------------------------------------------------------------------- */
+body[data-tour="running"] [data-tour="start-button"] {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(1);
+  transition: opacity 200ms ease;
 }
 
 .driver-popover.gz-tour .driver-popover-close-btn {

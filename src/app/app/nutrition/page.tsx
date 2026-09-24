@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AppTour } from "@/components/tour/app-tour";
 
 import { NutritionView } from "@/components/nutrition/nutrition-view";
 import { createClient } from "@/lib/supabase/server";
@@ -30,6 +31,9 @@ export default async function NutritionPage() {
   return (
     <main className="flex flex-1 flex-col px-4 py-6">
       <div className="mx-auto w-full max-w-md space-y-5">
+        {/* Тур заходит на этот экран своим шагом (GIMN-029). */}
+        <AppTour />
+
         <header className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Питание</h1>
           <p className="text-sm text-muted-foreground">
