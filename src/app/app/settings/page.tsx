@@ -113,6 +113,7 @@ export default async function SettingsPage() {
           <Section
             icon={<ClipboardListIcon className="size-4 text-primary" aria-hidden />}
             title="Углублённая диагностика"
+            dataTour="diagnostics"
           >
             <p className="text-sm text-muted-foreground">
               {diagnostics.extended_completed_at

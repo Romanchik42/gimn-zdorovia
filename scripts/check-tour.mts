@@ -77,7 +77,7 @@ function anchorsInSource(): Set<string> {
 
 console.log("Шаги и переходы:");
 {
-  check("шесть шагов", TOUR_STEPS.length === 6, String(TOUR_STEPS.length));
+  check("девять шагов", TOUR_STEPS.length === 9, String(TOUR_STEPS.length));
 
   const unmounted = TOUR_STEPS.filter((s) => !MOUNTED.includes(s.path));
   check(
@@ -126,10 +126,10 @@ console.log("Шаги и переходы:");
 
 console.log("\nКнопка «Начать»:");
 {
-  // Приглушена на шагах 1-5, оживает на шестом: до него подсказки
-  // рассказывают про приложение, и яркая кнопка тянет внимание на себя.
+  // Приглушена до финала: пока подсказки рассказывают про приложение,
+  // яркая кнопка внизу тянет внимание на себя.
   const muted = TOUR_STEPS.map((_, i) => startButtonMuted(i));
-  check("приглушена на первых пяти шагах", muted.slice(0, 5).every(Boolean), muted.join(", "));
+  check("приглушена на всех шагах до финала", muted.slice(0, LAST_STEP).every(Boolean), muted.join(", "));
   check("на последнем шаге активна", muted[LAST_STEP] === false);
   check("вне тура активна", startButtonMuted(-1) === false);
 }
@@ -180,10 +180,25 @@ console.log("\nПриветствие:");
 
 console.log("\nПодсказки вне тура:");
 {
-  check("четыре подсказки", HINT_IDS.length === 4, String(HINT_IDS.length));
+  // Режимы и диагностика ушли в основной тур (GIMN-030): контекстными их
+  // за весь тестовый период не увидел никто — одна ждала переключения
+  // режима, вторая захода в мастер диагностики.
+  check("две подсказки", HINT_IDS.length === 2, String(HINT_IDS.length));
+  check(
+    "режимы и диагностика больше не контекстные",
+    !(HINT_IDS as readonly string[]).includes("modes") &&
+      !(HINT_IDS as readonly string[]).includes("diagnostics"),
+    HINT_IDS.join(", "),
+  );
+  // Ушедшие темы должны найтись в туре — иначе их просто потеряли.
+  const stepIds = new Set(TOUR_STEPS.map((s) => s.id));
+  check("обе переехали в тур", stepIds.has("modes") && stepIds.has("diagnostics"));
   check("у каждой есть заголовок и текст", HINT_IDS.every((id) => HINTS[id].title && HINTS[id].description));
 
   check("чужие отметки отбрасываются", parseHintsSeen(["points", "нечто", 42]).join() === "points");
+  // Старые отметки о переехавших подсказках остались у всех в БД и должны
+  // тихо обесцениться, а не всплыть где-нибудь неизвестным идентификатором.
+  check("отметки переехавших подсказок обесценились", parseHintsSeen(["modes", "diagnostics"]).length === 0);
   check("не массив — пустой список", parseHintsSeen(null).length === 0 && parseHintsSeen("points").length === 0);
 
   // Подсказки не дублируют шаги тура: это разные темы по построению.
@@ -194,12 +209,18 @@ console.log("\nПодсказки вне тура:");
 
 console.log("\nСверка текстов с батчем:");
 {
-  const batch = path.join(process.cwd(), "BATCH_GIMN029_FINAL.md");
+  // Тексты собраны из двух батчей: шесть шагов согласованы в GIMN-029,
+  // три новых — в GIMN-030. Сверяем по обоим сразу, иначе новые шаги
+  // выглядели бы отсебятиной, а старые пришлось бы переписывать в
+  // свежий батч ради проверки.
+  const batches = ["BATCH_GIMN029_FINAL.md", "BATCH_GIMN030_REVISION.md"]
+    .map((name) => path.join(process.cwd(), name))
+    .filter((file) => existsSync(file));
 
-  if (!existsSync(batch)) {
-    console.log("  —    батч не найден, сверка пропущена (это не ошибка)");
+  if (batches.length === 0) {
+    console.log("  —    батчи не найдены, сверка пропущена (это не ошибка)");
   } else {
-    const source = readFileSync(batch, "utf8");
+    const source = batches.map((file) => readFileSync(file, "utf8")).join("\n");
 
     /** Строки батча без отступов и пустых — с ними и сравниваем. */
     const batchLines = new Set(
@@ -233,12 +254,34 @@ console.log("\nСверка текстов с батчем:");
 
 console.log("\nПорядок экранов:");
 {
-  // Тур не должен метаться: на каждый экран заходим один раз подряд.
-  const visits = TOUR_STEPS.map((s) => s.path);
+  // Маршрут закреплён целиком, а не правилом «не возвращаться дважды»
+  // (GIMN-030). Правило пришлось бы отменить: батч ставит диагностику в
+  // настройки пятым шагом, режимы на главную седьмым, звуки снова в
+  // настройки восьмым — заход в настройки дважды тут согласован. А раз
+  // так, полезнее закрепить сам маршрут: тогда перестановка шага видна,
+  // а не проходит молча.
+  const APPROVED_ROUTE = [
+    "/app", // приветствие, своя тренировка
+    "/app/nutrition",
+    "/app/progress",
+    "/app/settings", // углублённая диагностика
+    "/app", // связь диагностики с тренировкой, режимы
+    "/app/settings", // звуки
+    "/app", // финал
+  ];
+
   const runs: string[] = [];
-  for (const p of visits) if (runs[runs.length - 1] !== p) runs.push(p);
-  const repeated = runs.filter((p, i) => runs.indexOf(p) !== i && p !== "/app");
-  check("на один экран не возвращаемся дважды", repeated.length === 0, repeated.join(", "));
+  for (const p of TOUR_STEPS.map((s) => s.path)) if (runs[runs.length - 1] !== p) runs.push(p);
+  check(
+    "маршрут по экранам — согласованный",
+    runs.join(" → ") === APPROVED_ROUTE.join(" → "),
+    runs.join(" → "),
+  );
+
+  // Экран, на который заходят дважды, между заходами должен что-то
+  // показать: два подряд шага на одном адресе — это один заход, а не два.
+  const settingsRuns = runs.filter((p) => p === "/app/settings").length;
+  check("в настройки заходим ровно дважды", settingsRuns === 2, String(settingsRuns));
 
   check("питание идёт до прогресса", firstStepOnPath("/app/nutrition") < firstStepOnPath("/app/progress"));
   check("прогресс идёт до настроек", firstStepOnPath("/app/progress") < firstStepOnPath("/app/settings"));
