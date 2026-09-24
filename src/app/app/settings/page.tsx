@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AppTour } from "@/components/tour/app-tour";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -26,6 +25,7 @@ import { PointsSection } from "@/components/settings/points-section";
 import { LegalSection } from "@/components/settings/legal-section";
 import { ShareButton } from "@/components/share/share-button";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
+import { AppTour } from "@/components/tour/app-tour";
 import { createClient } from "@/lib/supabase/server";
 import { publicEnv } from "@/lib/env";
 import { linkUrl } from "@/lib/telegram/link";

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AppTour } from "@/components/tour/app-tour";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -8,6 +7,7 @@ import { CalendarClockIcon, HistoryIcon, LightbulbIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProgressChart, type ChartPoint } from "@/components/progress/progress-chart";
 import { MeasurementForm } from "@/components/progress/measurement-form";
+import { AppTour } from "@/components/tour/app-tour";
 import { BodyMeasurements } from "@/components/progress/body-measurements";
 import { createClient } from "@/lib/supabase/server";
 import { currentMode } from "@/lib/modes/server";

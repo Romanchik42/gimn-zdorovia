@@ -27,8 +27,12 @@ import { TOUR_STEPS, greeting, startButtonMuted, stepAt, tourButtons } from "@/l
  * главная — «Дальше».
  */
 
-/** Ждём, пока нужный элемент появится: после перехода экран рисуется не мгновенно. */
-function waitFor(selector: string, timeoutMs = 3000): Promise<Element | null> {
+/**
+ * Ждём, пока нужный элемент появится: после перехода экран рисуется не
+ * мгновенно. Ждём недолго: если якоря нет совсем, шаг должен показаться
+ * без подсветки, а не висеть молча несколько секунд.
+ */
+function waitFor(selector: string, timeoutMs = 1200): Promise<Element | null> {
   const found = document.querySelector(selector);
   if (found) return Promise.resolve(found);
 

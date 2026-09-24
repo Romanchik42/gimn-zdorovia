@@ -93,7 +93,12 @@ export function MeasurementForm({ showShober }: { showShober: boolean }) {
 
   if (!open) {
     return (
-      <Button variant="outline" className="h-12 w-full" onClick={() => setOpen(true)}>
+      <Button
+        variant="outline"
+        className="h-12 w-full"
+        onClick={() => setOpen(true)}
+        data-tour="measurements"
+      >
         <PlusIcon className="size-4" aria-hidden />
         Добавить замер
       </Button>
@@ -101,7 +106,11 @@ export function MeasurementForm({ showShober }: { showShober: boolean }) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+    <form
+      onSubmit={submit}
+      data-tour="measurements"
+      className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-foreground/10"
+    >
       <h2 className="font-medium">Замер за сегодня</h2>
 
       <div className={cn("grid gap-3", showShober ? "grid-cols-2" : "grid-cols-1")}>

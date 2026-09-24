@@ -12,7 +12,7 @@
  *
  * Запуск: npm run check:tour
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { HINTS, HINT_IDS, parseHintsSeen } from "@/lib/tour/hints";
@@ -39,6 +39,42 @@ function check(name: string, ok: boolean, detail = ""): void {
 /** Экраны, на которых висит компонент тура. Список ведётся руками — см. ниже. */
 const MOUNTED = ["/app", "/app/nutrition", "/app/progress", "/app/settings"];
 
+/**
+ * Все якоря data-tour в коде.
+ *
+ * Нужны, потому что шаг, указывающий на несуществующий элемент, не падает
+ * и не ругается: подсказка просто выходит без подсветки, предварительно
+ * подождав элемент, которого нет. Заметить это можно только глазами и
+ * только на нужном экране — ровно то, что в этом батче и вскрылось.
+ */
+function anchorsInSource(): Set<string> {
+  const found = new Set<string>();
+
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        walk(full);
+        continue;
+      }
+      // Только разметка. Сам список шагов лежит в .ts и содержит те же
+      // селекторы строками — считая их, проверка находила бы любой якорь,
+      // включая выдуманный, и подтверждала бы сама себя.
+      if (!entry.endsWith(".tsx")) continue;
+      const text = readFileSync(full, "utf8");
+      for (const m of text.matchAll(/data-tour="([^"]+)"/g)) found.add(m[1]);
+      for (const m of text.matchAll(/dataTour="([^"]+)"/g)) found.add(m[1]);
+      // Нижняя навигация ставит якоря из списка: data-tour={tour}, где
+      // tour приходит полем записи. Без этой строки все её якоря
+      // выглядели бы несуществующими.
+      for (const m of text.matchAll(/\btour:\s*"([^"]+)"/g)) found.add(m[1]);
+    }
+  };
+
+  walk(path.join(process.cwd(), "src"));
+  return found;
+}
+
 console.log("Шаги и переходы:");
 {
   check("шесть шагов", TOUR_STEPS.length === 6, String(TOUR_STEPS.length));
@@ -62,6 +98,22 @@ console.log("Шаги и переходы:");
     "без подсветки только приветствие и финал",
     noAnchor.every(({ i }) => i === 0 || i === LAST_STEP),
     noAnchor.map(({ s }) => s.id).join(", "),
+  );
+
+  // Якорь шага должен существовать в коде. До GIMN-030 шаг про замеры
+  // указывал на раздел, который у новичка не рисуется вовсе: список
+  // прошлых замеров пуст — и подсветка вела в пустоту именно у тех, ради
+  // кого тур и сделан.
+  const anchors = anchorsInSource();
+  const broken = TOUR_STEPS.filter((s) => {
+    if (!s.element) return false;
+    const name = s.element.match(/data-tour="([^"]+)"/)?.[1];
+    return !name || !anchors.has(name);
+  });
+  check(
+    "каждый подсвечиваемый якорь есть в коде",
+    broken.length === 0,
+    broken.map((s) => `${s.id}→${s.element}`).join(", "),
   );
 
   const expand = TOUR_STEPS.filter((s) => s.expand);

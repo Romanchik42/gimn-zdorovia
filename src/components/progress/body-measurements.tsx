@@ -48,7 +48,7 @@ export function BodyMeasurements({ rows }: { rows: Row[] }) {
     older.find((r) => r[key] != null)?.[key] ?? null;
 
   return (
-    <section data-tour="measurements" className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+    <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
       <header className="flex items-baseline justify-between gap-2">
         <h2 className="flex items-center gap-2 font-medium">
           <RulerIcon className="size-4 text-primary" aria-hidden />

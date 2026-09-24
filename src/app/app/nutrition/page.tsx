@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { AppTour } from "@/components/tour/app-tour";
 
 import { NutritionView } from "@/components/nutrition/nutrition-view";
+import { AppTour } from "@/components/tour/app-tour";
 import { createClient } from "@/lib/supabase/server";
 import { ensureWeekMenu, type WeekMenu } from "@/lib/nutrition-engine/service";
 import { todayIso, weekStartOf } from "@/lib/dates";
