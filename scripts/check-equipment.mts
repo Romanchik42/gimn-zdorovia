@@ -45,6 +45,7 @@ function ex(
   mode: Mode | "both",
   level: Level,
   equipment: Equipment = "none",
+  equipmentExtra: Equipment[] = [],
 ): ExerciseRow {
   seq += 1;
   return {
@@ -57,6 +58,7 @@ function ex(
     description: "",
     technique: "",
     gif_url: null,
+    equipment_extra: equipmentExtra,
     image_url: null,
     image_credit: null,
     duration_sec: type === "main" ? null : 30,
@@ -178,7 +180,7 @@ function customWorkout(mode: Mode, access: EquipmentAccess, focus: string): Exer
 
 /** Каталог фильтрует тем же предикатом (catalog.ts) — проверяем предикат. */
 function catalogFor(mode: Mode, access: EquipmentAccess): ExerciseRow[] {
-  return POOL.filter((e) => equipmentAvailable(e.equipment, mode, access));
+  return POOL.filter((e) => equipmentAvailable(e, mode, access));
 }
 
 const LOCATIONS: TrainingLocation[] = ["home", "home_bar", "gym", "home_and_gym"];

@@ -42,8 +42,13 @@ type Dosed = {
  */
 export function exerciseSeconds(e: Dosed): number {
   if (e.sets && e.sets > 0) {
-    const reps = e.reps_per_set ?? e.repetitions ?? 8;
-    const work = e.sets * reps * SEC_PER_STRENGTH_REP;
+    // Подход на время (0026): прогулку фермера и удержания считают
+    // секундами, и умножать их на «повторы» неоткуда — повторов нет.
+    const perSet =
+      e.duration_sec && !e.reps_per_set
+        ? e.duration_sec
+        : (e.reps_per_set ?? e.repetitions ?? 8) * SEC_PER_STRENGTH_REP;
+    const work = e.sets * perSet;
     const rest = (e.sets - 1) * (e.rest_between_sets_sec ?? DEFAULT_SET_REST_SEC);
     return work + rest + (e.rest_sec ?? DEFAULT_REST_SEC);
   }

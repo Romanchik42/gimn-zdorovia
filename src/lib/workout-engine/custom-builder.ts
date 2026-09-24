@@ -97,7 +97,7 @@ export function buildCustomWorkout(args: CustomBuildArgs): {
   // Фильтр стоит ДО деления на свой режим и запас: иначе турниковые пролезали
   // бы в занятие Бехтерева через crossGentle, где режим упражнения как раз
   // чужой (GIMN-022).
-  const pool = args.pool.filter((e) => equipmentAvailable(e.equipment, args.mode, args.access ?? NO_EQUIPMENT));
+  const pool = args.pool.filter((e) => equipmentAvailable(e, args.mode, args.access ?? NO_EQUIPMENT));
   const eligible = pool.filter((e) => inMode(e) && LEVEL_RANK[e.level] <= levelCap);
 
   const picked: ExerciseRow[] = [];
@@ -154,7 +154,7 @@ export function buildCustomWorkout(args: CustomBuildArgs): {
     repetitions: e.repetitions,
     order: i + 1,
     equipment: e.equipment,
-    warning: [warningText(e, args.userContraindications), equipmentHint(e.equipment)]
+    warning: [warningText(e, args.userContraindications), equipmentHint(e)]
       .filter(Boolean)
       .join(". ") || null,
   }));

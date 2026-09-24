@@ -157,13 +157,17 @@ function value(raw) {
 }
 
 /**
- * Все упражнения из seed. Порядок сохраняется: в seed он осмысленный —
- * от простого к сложному внутри каждого блока.
+ * Все упражнения справочника. Порядок сохраняется: он осмысленный — от
+ * простого к сложному внутри каждого блока.
+ *
+ * По умолчанию читается seed. Вторым аргументом можно передать другие
+ * файлы с такими же INSERT: упражнения зала (GIMN-028, блок D) живут в
+ * миграции, а не в seed, и без этого в документ врачу не попадали бы.
  */
-export function parseExercises(root) {
-  const sql = readFileSync(path.join(root, "supabase", "seed.sql"), "utf8");
+export function parseExercises(root, sources = ["supabase/seed.sql"]) {
+  const sql = sources.map((rel) => readFileSync(path.join(root, ...rel.split("/")), "utf8")).join("\n");
   const rows = [];
-  const re = /INSERT INTO exercises \(([^)]*)\) VALUES([\s\S]*?)ON CONFLICT/g;
+  const re = /INSERT INTO exercises\s*\(([^)]*)\) VALUES([\s\S]*?)ON CONFLICT/g;
   let m;
   let block = 0;
   while ((m = re.exec(sql))) {
@@ -262,7 +266,19 @@ export const POSITION = {
   side: "лёжа на боку",
 };
 
-export const EQUIPMENT = { none: null, pullup_bar: "турник", dip_bars: "брусья" };
+export const EQUIPMENT = {
+  none: null,
+  pullup_bar: "турник",
+  dip_bars: "брусья",
+  dumbbell: "гантели",
+  barbell: "штанга",
+  bench: "скамья",
+  kettlebell: "гиря",
+  resistance_band: "резинки",
+  cable: "блок",
+  machine: "тренажёр",
+  squat_rack: "стойка",
+};
 
 export const MODE = {
   behtereva: "реабилитация",

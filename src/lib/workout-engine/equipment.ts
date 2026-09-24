@@ -143,16 +143,68 @@ export function parseEquipmentList(value: unknown): SelectableEquipment[] {
   return value.filter((v): v is SelectableEquipment => typeof v === "string" && known.has(v));
 }
 
+/**
+ * Чем упражнение описывает свои требования (0026). Раньше снаряд был один
+ * — турник, брусья или ничего. В зале так не выходит: жим лёжа требует и
+ * штангу, и скамью, а присед со штангой ещё и стойку.
+ *
+ * Функции ниже принимают упражнение целиком, а не одно поле, — иначе
+ * вызывающий код продолжил бы спрашивать про основной снаряд и молча
+ * проходить мимо второго.
+ */
+export type EquipmentNeed = {
+  equipment?: Equipment | null;
+  equipment_extra?: unknown;
+};
+
+/** Всё, без чего упражнение не сделать. Пустой список — не нужно ничего. */
+export function requiredEquipment(need: EquipmentNeed): Equipment[] {
+  const primary = needsEquipment(need.equipment) ? [need.equipment as Equipment] : [];
+  const extra = parseEquipmentList(need.equipment_extra).filter((e) => !primary.includes(e));
+  return [...primary, ...extra];
+}
+
 /** Доступно ли упражнение в этом режиме при таком снаряжении. */
-export function equipmentAvailable(
-  equipment: Equipment | null | undefined,
-  mode: Mode,
-  access: EquipmentAccess,
-): boolean {
-  if (!needsEquipment(equipment)) return true;
+export function equipmentAvailable(need: EquipmentNeed, mode: Mode, access: EquipmentAccess): boolean {
+  const items = requiredEquipment(need);
+  if (items.length === 0) return true;
   if (!equipmentAllowedInMode(mode)) return false;
-  const item = equipment as Equipment;
-  return access.owned.includes(item) || access.maybe.includes(item);
+  // Нужен каждый: скамья без штанги — это не жим лёжа.
+  return items.every((item) => access.owned.includes(item) || access.maybe.includes(item));
+}
+
+/** Снаряды, которые человек отметил как «могу найти». */
+function maybeItems(need: EquipmentNeed, mode: Mode, access: EquipmentAccess): Equipment[] {
+  if (!equipmentAllowedInMode(mode)) return [];
+  return requiredEquipment(need).filter((item) => access.maybe.includes(item));
+}
+
+/**
+ * Перечисление по-русски: «штанга и скамья», «гриф, блины и стойка».
+ * Слово «нужен» согласуется с одним снарядом; для нескольких всегда «нужны».
+ */
+const NEED_WORD: Record<Equipment, string> = {
+  none: "",
+  pullup_bar: "Нужен",
+  dip_bars: "Нужны",
+  dumbbell: "Нужны",
+  barbell: "Нужна",
+  bench: "Нужна",
+  kettlebell: "Нужна",
+  resistance_band: "Нужны",
+  cable: "Нужен",
+  machine: "Нужен",
+  squat_rack: "Нужна",
+};
+
+function listRu(parts: string[]): string {
+  if (parts.length <= 1) return parts[0] ?? "";
+  return `${parts.slice(0, -1).join(", ")} и ${parts[parts.length - 1]}`;
+}
+
+function needPhrase(items: Equipment[]): string {
+  const word = items.length === 1 ? NEED_WORD[items[0]] : "Нужны";
+  return `${word} ${listRu(items.map((i) => EQUIPMENT_LABELS[i]))}`;
 }
 
 /**
@@ -160,33 +212,22 @@ export function equipmentAvailable(
  * человек отметил снаряд как свой, напоминать об этом в каждой карточке
  * незачем.
  */
-export function equipmentNote(
-  equipment: Equipment | null | undefined,
-  mode: Mode,
-  access: EquipmentAccess,
-): string | null {
-  if (!needsEquipment(equipment) || !equipmentAllowedInMode(mode)) return null;
-  if (!access.maybe.includes(equipment as Equipment)) return null;
-  return `Нужен ${EQUIPMENT_LABELS[equipment as Equipment]} — не нашли, пропустите это упражнение`;
+export function equipmentNote(need: EquipmentNeed, mode: Mode, access: EquipmentAccess): string | null {
+  const items = maybeItems(need, mode, access);
+  if (items.length === 0) return null;
+  return `${needPhrase(items)} — не нашли, пропустите это упражнение`;
 }
 
 /**
  * Необязательное упражнение: снаряд нужен, а человек отметил его как «могу
  * найти». Занятие должно складываться и без него.
  */
-export function equipmentOptional(
-  equipment: Equipment | null | undefined,
-  mode: Mode,
-  access: EquipmentAccess,
-): boolean {
-  return (
-    needsEquipment(equipment) &&
-    equipmentAllowedInMode(mode) &&
-    access.maybe.includes(equipment as Equipment)
-  );
+export function equipmentOptional(need: EquipmentNeed, mode: Mode, access: EquipmentAccess): boolean {
+  return maybeItems(need, mode, access).length > 0;
 }
 
 /** Пометка в каталоге и конструкторе, где анкета не спрашивается по месту. */
-export function equipmentHint(equipment: Equipment | null | undefined): string | null {
-  return needsEquipment(equipment) ? `Нужен ${EQUIPMENT_LABELS[equipment as Equipment]}` : null;
+export function equipmentHint(need: EquipmentNeed): string | null {
+  const items = requiredEquipment(need);
+  return items.length > 0 ? needPhrase(items) : null;
 }

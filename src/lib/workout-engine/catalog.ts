@@ -33,7 +33,7 @@ export async function loadCatalog(
   // В режиме Бехтерева их нет при любом ответе анкеты (GIMN-022): весь
   // справочник в каталоге показывается, турниковая его часть — нет.
   const exercises = ((data ?? []) as ExerciseRow[])
-    .filter((e) => equipmentAvailable(e.equipment, ctx.mode, ctx.access))
+    .filter((e) => equipmentAvailable(e, ctx.mode, ctx.access))
     .map((e) => ({
       id: e.id,
       slug: e.slug,
@@ -51,7 +51,7 @@ export async function loadCatalog(
       // Из моей программы — или «посмотреть можно, в план не попадёт».
       in_my_mode: e.mode === ctx.mode || e.mode === "both",
       equipment: e.equipment,
-      equipment_hint: equipmentHint(e.equipment),
+      equipment_hint: equipmentHint(e),
       warning: warningText(e, ctx.contraindications),
     }));
 

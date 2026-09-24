@@ -176,6 +176,8 @@ export type ExerciseRow = {
   gentle: boolean;
   /** Нужный снаряд (0017): none — ничего, pullup_bar — турник, dip_bars — брусья. */
   equipment: Equipment;
+  /** Снаряды сверх основного (0026): жиму лёжа нужны и штанга, и скамья. */
+  equipment_extra: Equipment[];
   created_at: string;
 };
 

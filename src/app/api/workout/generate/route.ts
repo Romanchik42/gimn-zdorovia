@@ -12,6 +12,13 @@ import { resolveSequenceSlug } from "@/lib/workout-engine/weekly-cycle";
 import { addDays, dayOfWeek as dayOfWeekOf, todayIso, weekStartOf } from "@/lib/dates";
 import { resolveWorkoutLength } from "@/lib/workout-engine/length";
 import { accessFromProfile } from "@/lib/workout-engine/equipment";
+import {
+  buildGymDay,
+  gymDayLetter,
+  hasGymExercises,
+  missingText,
+  shouldBuildGymDay,
+} from "@/lib/workout-engine/gym-generator";
 import { applyDosageAll, loadDosage } from "@/lib/workout-engine/dosage";
 import { deriveRestrictions, type ExtendedAnswers } from "@/lib/diagnostics/extended";
 import { isMode, type Mode } from "@/lib/modes";
@@ -169,27 +176,9 @@ export async function POST(request: Request) {
 
   const intensity = applyAdjustment(baseIntensity, lastSideEffect?.applied_adjustment);
 
-  // Шаблон выбираем по фокусу дня из плана пользователя; если фокус не
-  // сопоставлен — берём шаблон по дню недели. Интенсивность применяем сверху.
-  const planSlug = resolveSequenceSlug(mode, planDay?.focus, planDay?.is_rest_day ?? false);
-  const sequenceQuery = supabase
-    .from("workout_sequences")
-    .select("id, slug, exercises_order, focus_joint, total_duration_min")
-    .eq("mode", mode);
-  const { data: sequence } = await (planSlug
-    ? sequenceQuery.eq("slug", planSlug)
-    : sequenceQuery.eq("day_of_week", dayOfWeek)
-  )
-    .limit(1)
-    .maybeSingle();
-
-  if (!sequence) {
-    return fail("На этот день нет шаблона тренировки. Проверьте, применён ли seed.", 404);
-  }
-
-  const items = (sequence.exercises_order ?? []) as SequenceItem[];
-
-  // Весь справочник (50 строк): из него же добираем упражнения до длительности дня.
+  // Весь справочник: из него же добираем упражнения до длительности дня.
+  // Загружается до выбора шаблона — по нему решается, будет ли сегодня день
+  // зала, а у дня зала шаблона нет вовсе.
   const [{ data: exercises }, { data: generalProfile }] = await Promise.all([
     supabase.from("exercises").select("*"),
     supabase
@@ -211,6 +200,53 @@ export async function POST(request: Request) {
   const bySlug = new Map<string, ExerciseRow>(
     ((exercises ?? []) as ExerciseRow[]).map((e) => [e.slug, e]),
   );
+
+  const level = (generalProfile?.difficulty as Level | undefined) ?? "beginner";
+
+  // День зала (GIMN-028, блок D) собирается не из шаблона, а из ролей:
+  // присед, жим, тяга, наклон, корпус. Чем именно — решает снаряжение и
+  // уровень. Подменяется только список упражнений: противопоказания,
+  // побочки и дозировка работают дальше ровно так же.
+  const isGymDay = shouldBuildGymDay({
+    mode,
+    location: (generalProfile as { training_location?: string } | null)?.training_location,
+    isRestDay: planDay?.is_rest_day ?? false,
+    gymExercisesLoaded: hasGymExercises(bySlug),
+  });
+
+  // Чередование A/B по числу уже сделанных занятий, а не по дню недели:
+  // перенесённая со вторника на среду тренировка остаётся той же тренировкой.
+  let gymDay: ReturnType<typeof buildGymDay> | null = null;
+  if (isGymDay) {
+    const { count: doneCount } = await supabase
+      .from("user_workouts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("mode", mode)
+      .eq("status", "completed");
+
+    gymDay = buildGymDay({ letter: gymDayLetter(doneCount ?? 0), bySlug, access, level });
+  }
+
+  // Шаблон выбираем по фокусу дня из плана пользователя; если фокус не
+  // сопоставлен — берём шаблон по дню недели. Интенсивность применяем сверху.
+  const planSlug = resolveSequenceSlug(mode, planDay?.focus, planDay?.is_rest_day ?? false);
+  const sequenceQuery = supabase
+    .from("workout_sequences")
+    .select("id, slug, exercises_order, focus_joint, total_duration_min")
+    .eq("mode", mode);
+  const { data: sequence } = await (planSlug
+    ? sequenceQuery.eq("slug", planSlug)
+    : sequenceQuery.eq("day_of_week", dayOfWeek)
+  )
+    .limit(1)
+    .maybeSingle();
+
+  if (!sequence && !gymDay) {
+    return fail("На этот день нет шаблона тренировки. Проверьте, применён ли seed.", 404);
+  }
+
+  const items = gymDay ? gymDay.items : ((sequence?.exercises_order ?? []) as SequenceItem[]);
 
   const adjustment = lastSideEffect?.applied_adjustment;
   const excludeExerciseIds =
@@ -248,33 +284,36 @@ export async function POST(request: Request) {
     await strugglingLastWeek(supabase, user.id, dateStr, mode),
   ];
 
-  const snapshot = fitPlanWorkout(built.exercises, {
-    pool: (exercises ?? []) as ExerciseRow[],
-    mode,
-    focus: planDay?.focus ?? sequence.focus_joint,
-    targetMin: targetMinutes(
-      planDay?.duration_min,
-      sequence.total_duration_min,
-      planIntensity ?? baseIntensity,
-      intensity,
-    ),
-    intensity,
-    difficulty: (generalProfile?.difficulty as Level | undefined) ?? null,
-    isRestDay: planDay?.is_rest_day ?? false,
-    painAreas: (diagnostics?.pain_areas as string[] | undefined) ?? [],
-    bloodPressureOk,
-    excludeExerciseIds,
-    excludeJoints,
-    length,
-    struggling,
-    restrictions,
-    access,
-  });
+  // День зала не «дотягивают» гимнастикой до времени: добрать силовой день
+  // приседаниями без веса значит превратить его в другую тренировку.
+  const snapshot = gymDay
+    ? built.exercises
+    : fitPlanWorkout(built.exercises, {
+        pool: (exercises ?? []) as ExerciseRow[],
+        mode,
+        focus: planDay?.focus ?? sequence?.focus_joint ?? "full_body",
+        targetMin: targetMinutes(
+          planDay?.duration_min,
+          sequence?.total_duration_min ?? 40,
+          planIntensity ?? baseIntensity,
+          intensity,
+        ),
+        intensity,
+        difficulty: (generalProfile?.difficulty as Level | undefined) ?? null,
+        isRestDay: planDay?.is_rest_day ?? false,
+        painAreas: (diagnostics?.pain_areas as string[] | undefined) ?? [],
+        bloodPressureOk,
+        excludeExerciseIds,
+        excludeJoints,
+        length,
+        struggling,
+        restrictions,
+        access,
+      });
 
   // Дозировка накладывается последней: подбор решает, ЧТО делать, дозировка —
   // сколько подходов и с каким весом. Для гимнастики строк нет, и занятие
   // остаётся таким, каким его собрал подбор.
-  const level = (generalProfile?.difficulty as Level | undefined) ?? "beginner";
   const dosage = await loadDosage(supabase, snapshot.map((e) => e.exercise_id), level, mode);
   const dosed = applyDosageAll(snapshot, dosage);
 
@@ -285,7 +324,7 @@ export async function POST(request: Request) {
       mode,
       scheduled_date: dateStr,
       status: "planned",
-      generated_from_sequence_id: sequence.id,
+      generated_from_sequence_id: sequence?.id ?? null,
       source: "plan",
       exercises_snapshot: dosed,
     })
@@ -301,7 +340,9 @@ export async function POST(request: Request) {
     workout_id: created.id,
     exercises: dosed,
     total_duration_min: estimateMinutes(dosed),
-    focus: planDay?.focus ?? sequence.focus_joint,
+    focus: gymDay ? "gym" : (planDay?.focus ?? sequence?.focus_joint),
+    gym_day: gymDay ? true : undefined,
+    gym_missing: gymDay ? missingText(gymDay.missing) : undefined,
     intensity,
     is_rest_day: planDay?.is_rest_day ?? false,
     skipped: built.skipped,

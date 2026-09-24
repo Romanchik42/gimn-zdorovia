@@ -145,7 +145,7 @@ export function buildWorkout(args: BuildArgs): BuildResult {
     // турниковых упражнений не содержат, это защита на случай, если однажды
     // будут: показать подтягивание человеку без турника хуже, чем не показать.
     // В режиме Бехтерева отсекается по режиму, независимо от ответа (GIMN-022).
-    if (!equipmentAvailable(exercise.equipment, args.mode, args.access ?? NO_EQUIPMENT)) {
+    if (!equipmentAvailable(exercise, args.mode, args.access ?? NO_EQUIPMENT)) {
       skipped.push({ slug: item.slug, reason: "нужен снаряд, которого нет" });
       continue;
     }
@@ -170,10 +170,10 @@ export function buildWorkout(args: BuildArgs): BuildResult {
       order: exercises.length + 1,
       warning: joinNotes(
         warningFor(exercise, blocked),
-        equipmentNote(exercise.equipment, args.mode, args.access ?? NO_EQUIPMENT),
+        equipmentNote(exercise, args.mode, args.access ?? NO_EQUIPMENT),
       ),
       equipment: exercise.equipment,
-      optional: equipmentOptional(exercise.equipment, args.mode, args.access ?? NO_EQUIPMENT),
+      optional: equipmentOptional(exercise, args.mode, args.access ?? NO_EQUIPMENT),
     });
   }
 
@@ -271,7 +271,7 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
       !isContraindicated(e, blocked) &&
       !blockedPositions.has(e.position) &&
       !tooHardForZone(e) &&
-      equipmentAvailable(e.equipment, args.mode, args.access ?? NO_EQUIPMENT) &&
+      equipmentAvailable(e, args.mode, args.access ?? NO_EQUIPMENT) &&
     !(excludeJoints.has(e.target_joint) && e.type !== "breathing" && e.type !== "stretch");
   const inMode = (e: ExerciseRow) => e.mode === args.mode || e.mode === "both";
   const safe = args.pool.filter((e) => allowed(e) && inMode(e) && LEVEL_RANK[e.level] <= levelCap);
@@ -300,9 +300,9 @@ export function fitPlanWorkout(exercises: ExerciseSnapshot[], args: FitPlanArgs)
     duration_sec: scale(e.duration_sec, factor, 15),
     repetitions: scale(e.repetitions, factor, 4),
     order: 0,
-    warning: joinNotes(warningFor(e, blocked), equipmentNote(e.equipment, args.mode, args.access ?? NO_EQUIPMENT)),
+    warning: joinNotes(warningFor(e, blocked), equipmentNote(e, args.mode, args.access ?? NO_EQUIPMENT)),
     equipment: e.equipment,
-    optional: equipmentOptional(e.equipment, args.mode, args.access ?? NO_EQUIPMENT),
+    optional: equipmentOptional(e, args.mode, args.access ?? NO_EQUIPMENT),
   });
 
   const list = [...exercises];

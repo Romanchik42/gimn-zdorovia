@@ -60,10 +60,14 @@ export function applyDosage(snapshot: ExerciseSnapshot, dosage: ExerciseDosageRo
   if (!dosage) return snapshot;
 
   if (dosage.sets && dosage.sets > 0) {
+    // Подход бывает и на время: прогулка фермера считается секундами, и
+    // «восемь повторов ходьбы» — бессмыслица. Тогда время остаётся, а
+    // повторов нет; в остальных случаях наоборот.
+    const timed = !dosage.reps_per_set && Boolean(dosage.duration_sec);
     return {
       ...snapshot,
-      duration_sec: null,
-      repetitions: dosage.reps_per_set ?? dosage.repetitions,
+      duration_sec: timed ? dosage.duration_sec : null,
+      repetitions: timed ? null : (dosage.reps_per_set ?? dosage.repetitions),
       sets: dosage.sets,
       reps_per_set: dosage.reps_per_set,
       rest_between_sets_sec: dosage.rest_between_sets_sec,
