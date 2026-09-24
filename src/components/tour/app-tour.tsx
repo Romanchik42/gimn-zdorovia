@@ -7,7 +7,7 @@ import "driver.js/dist/driver.css";
 
 import { markTourDone } from "@/components/tour/run-tour";
 import { clearStep, readStep, setStartMuted, writeStep } from "@/lib/tour/state";
-import { TOUR_STEPS, greeting, startButtonMuted, stepAt, tourButtons } from "@/lib/tour/steps";
+import { LAST_STEP, TOUR_STEPS, greeting, startButtonMuted, stepAt, tourButtons } from "@/lib/tour/steps";
 
 /**
  * Ознакомительный тур (US-11, переписан в GIMN-029).
@@ -85,7 +85,16 @@ export function AppTour({ autoStart = false, name }: { autoStart?: boolean; name
 
     setStartMuted(startButtonMuted(index));
 
+    // Слушатели, живущие ровно один шаг: перехват клика по подсвеченному.
+    // Снимаются при любом уходе с шага, иначе прошлый шаг продолжал бы
+    // отвечать на клики уже на следующем.
+    const cleanups: (() => void)[] = [];
+    const dropListeners = () => {
+      while (cleanups.length) cleanups.pop()?.();
+    };
+
     const finish = (completed: boolean) => {
+      dropListeners();
       driverRef.current?.destroy();
       driverRef.current = null;
       shownRef.current = null;
@@ -95,6 +104,7 @@ export function AppTour({ autoStart = false, name }: { autoStart?: boolean; name
     };
 
     const goTo = (next: number) => {
+      dropListeners();
       driverRef.current?.destroy();
       driverRef.current = null;
       shownRef.current = null;
@@ -175,12 +185,46 @@ export function AppTour({ autoStart = false, name }: { autoStart?: boolean; name
         allowClose: false,
         popoverClass: "gz-tour",
         stagePadding: 6,
-        overlayOpacity: 0.55,
+        // Затемнения нет (GIMN-030). Тур рассказывает про экран — а экран
+        // был погашен на 55%, и человек читал про то, чего не видел.
+        // Слой оставляем прозрачным, а не убираем: он ловит клики мимо
+        // подсветки, и приложение не разъезжается под пальцем во время тура.
+        overlayOpacity: 0,
+        overlayColor: "transparent",
+        // Клик мимо — ничего. Выйти можно только кнопкой «Пропустить тур»:
+        // случайный тап по краю не должен обрывать знакомство.
+        overlayClickBehavior: () => {},
+        // Страница под подсказкой остаётся прокручиваемой: подсвеченное
+        // бывает ниже сгиба, и без прокрутки его не разглядеть.
+        allowScroll: true,
+        // Подсвеченное остаётся живым для указателя — иначе клик по нему
+        // не долетел бы до нас и шаг вперёд по элементу не сработал.
+        disableActiveInteraction: false,
         onPopoverRender: (popover) => buttons(popover, at),
       });
 
       driverRef.current = instance;
       instance.drive();
+
+      // Клик по подсвеченному — шаг вперёд (GIMN-030).
+      //
+      // Перехватываем на document в фазе погружения и гасим событие: у
+      // подсвеченного своя работа — «Своя тренировка» ведёт на другой
+      // экран, кнопка звука разворачивает блок. Дай событию дойти — и
+      // тур увели бы со своего шага тем самым тапом, которым человек
+      // отвечает подсказке.
+      if (element) {
+        const advance = (event: MouseEvent) => {
+          const target = event.target;
+          if (!(target instanceof Node) || !element.contains(target)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (at >= LAST_STEP) finish(true);
+          else goTo(at + 1);
+        };
+        document.addEventListener("click", advance, true);
+        cleanups.push(() => document.removeEventListener("click", advance, true));
+      }
     }
 
     // Небольшая пауза: экран после перехода дорисовывается, и подсветка,
@@ -190,6 +234,7 @@ export function AppTour({ autoStart = false, name }: { autoStart?: boolean; name
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      dropListeners();
     };
   }, [autoStart, name, pathname, router]);
 

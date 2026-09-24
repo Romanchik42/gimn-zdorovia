@@ -431,11 +431,53 @@ body {
   color: var(--muted-foreground);
 }
 
-/* Подсказка не должна быть выше экрана: в Telegram окно низкое, и длинный
-   текст уводил бы кнопки за край — тот же тупик, только по вертикали. */
+/* Подсказка занимает полосу сверху, не больше 40% экрана (GIMN-030).
+   Раньше потолком была вся высота окна, и длинный шаг про режимы вырастал
+   на весь экран — приложение под ним переставало быть видно, ровно та
+   жалоба, из-за которой убрали и затемнение. Текст длиннее полосы
+   прокручивается внутри карточки, кнопки остаются на месте. */
 .driver-popover.gz-tour {
-  max-height: calc(100dvh - 32px);
+  max-height: 40dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---------------------------------------------------------------------------
+   Подсветка без затемнения (GIMN-030).
+
+   Затемнение убрано (overlayOpacity: 0), и вырез в нём больше ничего не
+   показывает. Значит, подсвеченное должно выделяться само: рамка цветом
+   темы плюс медленная пульсация — она ловит взгляд, но не мельтешит.
+   --------------------------------------------------------------------------- */
+.driver-active .driver-active-element {
+  position: relative;
+  z-index: 10000;
+  border-radius: calc(var(--radius) + 2px);
+  animation: gz-tour-pulse 2s ease-in-out infinite;
+  /* Подсвеченное отвечает на тап шагом вперёд — курсор это обещает. */
+  cursor: pointer;
+}
+
+@keyframes gz-tour-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px var(--primary),
+      0 0 0 6px color-mix(in oklab, var(--primary) 30%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px var(--primary),
+      0 0 0 12px color-mix(in oklab, var(--primary) 0%, transparent);
+  }
+}
+
+/* Кому анимация мешает — остаётся рамка: она и несёт смысл. */
+@media (prefers-reduced-motion: reduce) {
+  .driver-active .driver-active-element {
+    animation: none;
+    box-shadow: 0 0 0 3px var(--primary);
+  }
 }
 
 /* ---------------------------------------------------------------------------
