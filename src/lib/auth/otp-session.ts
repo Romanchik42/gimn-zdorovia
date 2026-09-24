@@ -76,13 +76,19 @@ export async function openOtpSession(
     if (created.error) {
       // Аккаунт в auth мог остаться от прерванной регистрации — без строки
       // в users. Тогда входим в него, а не заводим второй.
-      const list = await admin.auth.admin.listUsers();
-      const found = list.data?.users.find((u) => u.email === authEmail);
+      //
+      // Ищем не через listUsers: он отдаёт первую страницу (50 записей), и
+      // на пятьдесят первом пользователе такой поиск начал бы молча не
+      // находить существующие аккаунты и отвечать «не удалось создать».
+      // generateLink спрашивает по адресу и отдаёт сам аккаунт — точно и
+      // при любом их числе.
+      const lookup = await admin.auth.admin.generateLink({ type: "magiclink", email: authEmail });
+      const found = lookup.data?.user?.id;
       if (!found) {
         console.error("otp session: createUser failed", created.error.message);
         return { ok: false, error: "Не удалось создать аккаунт", status: 500 };
       }
-      authUserId = found.id;
+      authUserId = found;
     } else {
       authUserId = created.data.user.id;
     }
