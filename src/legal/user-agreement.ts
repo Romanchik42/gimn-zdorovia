@@ -1,4 +1,4 @@
-import { APP_NAME, CONTACT, LegalDocument, OWNER_PLACEHOLDER, type LegalDoc } from "@/legal/document";
+import { APP_NAME, CONTACT, OWNER_PLACEHOLDER, type LegalDoc } from "@/legal/document";
 
 /**
  * Пользовательское соглашение (GIMN-027).
@@ -9,7 +9,7 @@ import { APP_NAME, CONTACT, LegalDocument, OWNER_PLACEHOLDER, type LegalDoc } fr
  * главное: это не медицинская помощь и не замена врачу.
  */
 
-const DOC: LegalDoc = {
+export const DOC: LegalDoc = {
   title: "Пользовательское соглашение",
   lead: `Условия использования приложения «${APP_NAME}». Проект редакции на время тестового периода.`,
   clauses: [
@@ -314,7 +314,3 @@ const DOC: LegalDoc = {
     },
   ],
 };
-
-export function UserAgreement() {
-  return <LegalDocument doc={DOC} />;
-}

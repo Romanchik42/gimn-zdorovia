@@ -8,6 +8,15 @@ const nextConfig: NextConfig = {
     "*": ["secrets/**", "**/*.env"],
   },
 
+  // Шрифт для PDF (GIMN-029). Он читается с диска во время запроса, и без
+  // этой строки файл не попадёт в serverless-функцию: трассировка видит
+  // только то, что импортировано, а путь, собранный из строк, — не импорт.
+  // В public/ шрифт класть нельзя: оттуда файлы раздаются через CDN, а на
+  // диске функции их может не быть.
+  outputFileTracingIncludes: {
+    "/api/legal/[document]": ["assets/fonts/*.ttf"],
+  },
+
   // GIF/картинки упражнений позже переедут в Supabase Storage.
   images: {
     remotePatterns: [

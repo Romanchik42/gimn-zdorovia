@@ -1,4 +1,4 @@
-import { APP_NAME, CONTACT, LegalDocument, OWNER_PLACEHOLDER, type LegalDoc } from "@/legal/document";
+import { APP_NAME, CONTACT, OWNER_PLACEHOLDER, type LegalDoc } from "@/legal/document";
 
 /**
  * Согласие на обработку персональных данных (GIMN-027).
@@ -8,7 +8,7 @@ import { APP_NAME, CONTACT, LegalDocument, OWNER_PLACEHOLDER, type LegalDoc } fr
  * с перечнем данных, целей и действий. Здесь оно и перечислено.
  */
 
-const DOC: LegalDoc = {
+export const DOC: LegalDoc = {
   title: "Согласие на обработку персональных данных",
   lead: "Что именно разрешает пользователь, давая согласие, и как его отозвать.",
   clauses: [
@@ -210,7 +210,3 @@ const DOC: LegalDoc = {
     },
   ],
 };
-
-export function DataConsent() {
-  return <LegalDocument doc={DOC} />;
-}

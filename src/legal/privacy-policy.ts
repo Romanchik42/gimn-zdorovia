@@ -1,4 +1,4 @@
-import { APP_NAME, CONTACT, LegalDocument, OWNER_PLACEHOLDER, type LegalDoc } from "@/legal/document";
+import { APP_NAME, CONTACT, OWNER_PLACEHOLDER, type LegalDoc } from "@/legal/document";
 
 /**
  * Политика конфиденциальности (GIMN-027).
@@ -10,7 +10,7 @@ import { APP_NAME, CONTACT, LegalDocument, OWNER_PLACEHOLDER, type LegalDoc } fr
  * есть речь о трансграничной передаче.
  */
 
-const DOC: LegalDoc = {
+export const DOC: LegalDoc = {
   title: "Политика конфиденциальности",
   lead: `Какие данные собирает «${APP_NAME}», зачем, кому передаёт и как их удалить.`,
   clauses: [
@@ -390,7 +390,3 @@ const DOC: LegalDoc = {
     },
   ],
 };
-
-export function PrivacyPolicy() {
-  return <LegalDocument doc={DOC} />;
-}
