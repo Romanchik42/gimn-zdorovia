@@ -41,11 +41,16 @@ function keyboard(buttons?: InlineButton[][]) {
 }
 
 export class TelegramError extends Error {
-  constructor(
-    message: string,
-    readonly code?: number,
-  ) {
+  /** Код ошибки Telegram. Поле объявлено отдельно от конструктора не из
+   *  вкуса: сокращённая запись «readonly code» в параметрах — единственный
+   *  синтаксис во всём этом файле, который node при запуске скриптов
+   *  проверки не умеет стирать, и любая проверка, чей импорт досюда
+   *  дотянется, падала бы разбором вместо работы. */
+  readonly code?: number;
+
+  constructor(message: string, code?: number) {
     super(message);
+    this.code = code;
   }
 
   /** Пользователь заблокировал бота или удалил чат — слать ему больше нечего. */

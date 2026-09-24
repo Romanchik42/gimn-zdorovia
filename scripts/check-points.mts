@@ -13,6 +13,7 @@
  * Запуск: node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-points.mts
  */
 import { awardPoints, EXCHANGE_DAYS, EXCHANGE_RATES, MAX_FREE_DAYS_PER_YEAR } from "@/lib/points/service";
+import { pointsAwardedMessage, pointsWord } from "@/lib/points/format";
 
 /* ------------------------- поддельный клиент базы ------------------------- */
 
@@ -155,6 +156,46 @@ console.log("\nТаблица обмена:");
   check(
     `годовой потолок ${MAX_FREE_DAYS_PER_YEAR} дн. меньше года подписки`,
     MAX_FREE_DAYS_PER_YEAR < EXCHANGE_DAYS.YEAR_PLUS,
+  );
+}
+
+console.log("\nСообщение о начислении (GIMN-030):");
+{
+  // Уведомление — единственное, что человек про начисление видит: в
+  // приложение за баллами специально не ходят. Поэтому сверяем весь текст,
+  // а не факт отправки.
+  const text = pointsAwardedMessage({
+    name: "Роман",
+    amount: 50,
+    reason: "подтверждённый баг «QR не сохраняется на iPhone»",
+    balance: 350,
+  });
+
+  check("обращается по имени", text.startsWith("🎁 Роман, вам начислено +50 баллов!"), text.split("\n")[0]);
+  check("говорит, за что", text.includes("За что: подтверждённый баг «QR не сохраняется на iPhone»"));
+  check("показывает остаток", text.includes("Ваш баланс: 350 баллов"));
+  check(
+    "предупреждает, что тариф ещё не запущен",
+    text.includes("Баллы применятся при выборе тарифа") &&
+      text.includes("после запуска платного режима."),
+  );
+
+  const noName = pointsAwardedMessage({ name: null, amount: 1, reason: "отзыв", balance: 1 });
+  check("без имени не выдумывает его", noName.startsWith("🎁 Вам начислено +1 балл!"), noName.split("\n")[0]);
+  check(
+    "пустое имя — тоже без имени",
+    pointsAwardedMessage({ name: "  ", amount: 5, reason: "-", balance: 5 }) ===
+      pointsAwardedMessage({ amount: 5, reason: "-", balance: 5 }),
+  );
+
+  // Склонение живёт в одном месте на сервер и на браузер: раньше таблица
+  // окончаний была своей копией в разделе «Мои баллы».
+  const forms = [1, 2, 5, 11, 14, 21, 22, 25, 100, 101].map((n) => `${n} ${pointsWord(n)}`);
+  check(
+    "склонение слова «балл»",
+    forms.join(", ") ===
+      "1 балл, 2 балла, 5 баллов, 11 баллов, 14 баллов, 21 балл, 22 балла, 25 баллов, 100 баллов, 101 балл",
+    forms.join(", "),
   );
 }
 

@@ -1,6 +1,8 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendNotification } from "@/lib/notifications/channels";
+import { pointsAwardedMessage } from "@/lib/points/format";
 
 /**
  * Баллы за вклад в тестовый период (GIMN-027).
@@ -76,6 +78,11 @@ const UNIQUE_VIOLATION = "23505";
  * Порядок важен: сначала запись в историю. Если она не прошла из-за дубля,
  * остаток не трогаем — иначе повторный вызов раздувал бы баланс, не оставляя
  * следа в истории.
+ *
+ * После удачного начисления уходит сообщение в Telegram (GIMN-030) — но
+ * только в боевом вызове. Подставленный client означает проверку без живой
+ * базы: слать оттуда некуда и некому, а падение отправки выглядело бы как
+ * сломанное начисление.
  */
 export async function awardPoints(
   userId: string,
@@ -117,7 +124,42 @@ export async function awardPoints(
     return { ok: false, error: "Не удалось обновить баланс" };
   }
 
+  // Уведомление — здесь, а не у вызывающих (GIMN-030). Начисляют из
+  // четырёх мест (админ-панель, рефералы, стрик, сотая тренировка), и
+  // сообщение, приклеенное к каждому из них, рано или поздно забыли бы
+  // в пятом. Начисление молча — худший вид молчания: человек нашёл баг,
+  // его подтвердили, а он об этом никогда не узнает.
+  if (amount > 0 && !client) await notifyAward(admin, userId, amount, reason, next);
+
   return { ok: true };
+}
+
+/**
+ * Сообщение о начислении в Telegram.
+ *
+ * Ничего не бросает и ничего не возвращает: баллы уже начислены и в
+ * истории, и в остатке. Упавшее уведомление не повод сообщать вызывающему
+ * об ошибке — он откатит то, что откатывать не нужно.
+ *
+ * Отправку берём у общих каналов: они сами достают telegram_id, шлют через
+ * рабочий бот и пишут в журнал. Второй бот и второй журнал этому месту ни
+ * к чему.
+ */
+async function notifyAward(
+  admin: PointsClient,
+  userId: string,
+  amount: number,
+  reason: string,
+  balance: number,
+): Promise<void> {
+  try {
+    const { data: user } = await admin.from("users").select("name").eq("id", userId).maybeSingle();
+    const text = pointsAwardedMessage({ name: user?.name, amount, reason, balance });
+    const sent = await sendNotification(userId, "telegram", "points_awarded", text);
+    if (!sent.ok && !sent.unavailable) console.error("points notify failed:", sent.error);
+  } catch (e) {
+    console.error("points notify failed:", e);
+  }
 }
 
 /** Остаток баллов. Строки может не быть — это ноль, а не ошибка. */

@@ -508,6 +508,8 @@ export type NotificationLogRow = {
     | "doctor_advice"
     /** Предложение следующего уровня (0025). */
     | "level_up"
+    /** Начислены баллы за подтверждённый баг, идею или приглашение (0029). */
+    | "points_awarded"
     | "other";
   /** Доставляет только telegram; остальные каналы — задел (0025). */
   channel: "telegram" | "push" | "email" | "sms" | "vk" | "apple" | "google";
