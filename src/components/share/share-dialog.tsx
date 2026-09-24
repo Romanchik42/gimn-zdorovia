@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 const LOGO_SRC = "/logo/logo-mark.svg";
 
@@ -46,6 +45,10 @@ export function ShareDialog({
   appUrl: string;
 }) {
   const [invited, setInvited] = useState<number | null>(null);
+  // Картинка кода для ручного сохранения и сама ссылка — оба запасных
+  // выхода показываются только тогда, когда основной путь не сработал.
+  const [pngUrl, setPngUrl] = useState<string | null>(null);
+  const [showLink, setShowLink] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -76,22 +79,81 @@ export function ShareDialog({
       await navigator.clipboard.writeText(link);
       toast.success("Скопировано");
     } catch {
-      toast.error("Не получилось скопировать — выделите ссылку вручную");
+      // Буфер закрыт политикой браузера — показываем ссылку, чтобы её
+      // можно было выделить пальцем. Совет «выделите вручную» без самой
+      // ссылки на экране был бы издевательством.
+      setShowLink(true);
+      toast.error("Не получилось скопировать — ссылка ниже, выделите её");
     }
   }
 
-  function downloadPng() {
+  /**
+   * Сохранение картинки (GIMN-029).
+   *
+   * Было: `toDataURL` и клик по ссылке, не вставленной в документ. В iOS
+   * Safari и во встроенном браузере Telegram атрибут download игнорируется
+   * — кнопка просто ничего не делала, и понять почему было нельзя.
+   *
+   * Стало: сначала системный лист «Поделиться», где на телефоне есть
+   * «Сохранить в Фото» — это и есть сохранение, и работает оно там, где
+   * скачивание запрещено. Если листа нет (десктоп) — обычное скачивание
+   * через blob, со ссылкой в документе.
+   *
+   * Провал скачивания в этих браузерах не бросает исключение и не даёт
+   * события, поэтому ловить его нечем. Вместо догадок — видимая кнопка
+   * «Не сохранилось?»: она показывает код картинкой, а картинку в iOS
+   * можно сохранить долгим нажатием (с SVG на экране так нельзя).
+   */
+  async function savePng() {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    try {
-      const a = document.createElement("a");
-      a.href = canvas.toDataURL("image/png");
-      a.download = `gimn-zdorovia-${referralCode}.png`;
-      a.click();
-    } catch {
-      toast.error("Не удалось сохранить картинку");
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/png"),
+    );
+    if (!blob) {
+      toast.error("Не удалось подготовить картинку");
+      return;
     }
+
+    const name = `gimn-zdorovia-${referralCode}.png`;
+    const file = new File([blob], name, { type: "image/png" });
+
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        return;
+      } catch (e) {
+        // Закрыл лист сам — это не ошибка и не повод что-то скачивать.
+        if (e instanceof DOMException && e.name === "AbortError") return;
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
+
+  /** Показать код картинкой — её сохраняют долгим нажатием. */
+  async function showAsImage() {
+    const canvas = canvasRef.current;
+    if (!canvas || pngUrl) return;
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (blob) setPngUrl(URL.createObjectURL(blob));
+  }
+
+  // Объект-ссылка живёт, пока открыт диалог: пока картинка на экране,
+  // освобождать её нельзя — иначе она пропадёт прямо под пальцем.
+  useEffect(() => {
+    return () => {
+      if (pngUrl) URL.revokeObjectURL(pngUrl);
+    };
+  }, [pngUrl]);
 
   /**
    * «Отправить» — выбор, кому: системное меню (мессенджеры, контакты); внутри
@@ -150,10 +212,33 @@ export function ShareDialog({
             <SendIcon className="size-4" aria-hidden />
             Отправить
           </Button>
-          <Button variant="outline" className="h-11 w-full" onClick={downloadPng}>
+          <Button variant="outline" className="h-11 w-full" onClick={() => void savePng()}>
             <DownloadIcon className="size-4" aria-hidden />
             Сохранить картинку
           </Button>
+
+          {pngUrl ? (
+            <figure className="space-y-2">
+              {/* Обычный img вместо next/image: это blob из холста, оптимизировать нечего. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={pngUrl}
+                alt="QR-код приглашения"
+                className="w-48 rounded-xl ring-1 ring-foreground/10"
+              />
+              <figcaption className="text-center text-xs text-muted-foreground">
+                Нажмите на код и удерживайте — «Сохранить в Фото».
+              </figcaption>
+            </figure>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void showAsImage()}
+              className="text-xs text-muted-foreground underline underline-offset-2"
+            >
+              Не сохранилось?
+            </button>
+          )}
           {/* Скрытый холст 1024×1024 для PNG — с полем тишины, чтобы читался с распечатки. */}
           <QRCodeCanvas
             ref={canvasRef}
@@ -169,16 +254,17 @@ export function ShareDialog({
           />
         </div>
 
-        <Or />
-
         <div className="space-y-2">
-          <p className="rounded-lg bg-muted px-3 py-2 text-center font-mono text-sm break-all select-all">
-            {displayLink}
-          </p>
-          <Button variant="outline" className="h-11 w-full" onClick={copy}>
+          <Button variant="outline" className="h-11 w-full" onClick={() => void copy()}>
             <CopyIcon className="size-4" aria-hidden />
             Копировать ссылку
           </Button>
+          {/* Ссылка текстом — только когда копирование не сработало. */}
+          {showLink ? (
+            <p className="rounded-lg bg-muted px-3 py-2 text-center font-mono text-sm break-all select-all">
+              {displayLink}
+            </p>
+          ) : null}
         </div>
 
         <p className="flex items-center justify-center gap-2 pt-1 text-sm text-muted-foreground">
@@ -190,12 +276,3 @@ export function ShareDialog({
   );
 }
 
-function Or() {
-  return (
-    <div className="flex items-center gap-3">
-      <Separator className="flex-1" />
-      <span className="text-xs text-muted-foreground">или</span>
-      <Separator className="flex-1" />
-    </div>
-  );
-}
