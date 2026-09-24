@@ -113,6 +113,13 @@ export default async function AdminStatsPage() {
           </div>
         </header>
 
+        {/* Разбор отзывов — вторая админская страница (GIMN-030). Ссылка
+            отсюда, а не из настроек: в настройках её увидел бы каждый, кто
+            откроет исходник страницы, и адрес перестал бы быть неприметным. */}
+        <Button asChild variant="outline" className="h-11 w-full">
+          <Link href="/admin/feedback">Отзывы пользователей — разобрать и начислить баллы</Link>
+        </Button>
+
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Всего пользователей" value={total} />
           <Stat label="Новых за 7 дней" value={newWeek} />
