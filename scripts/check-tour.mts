@@ -16,7 +16,14 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { HINTS, HINT_IDS, parseHintsSeen } from "@/lib/tour/hints";
-import { LAST_STEP, TOUR_STEPS, firstStepOnPath, greeting, startButtonMuted } from "@/lib/tour/steps";
+import {
+  LAST_STEP,
+  TOUR_STEPS,
+  firstStepOnPath,
+  greeting,
+  startButtonMuted,
+  tourButtons,
+} from "@/lib/tour/steps";
 
 let failed = 0;
 
@@ -73,6 +80,43 @@ console.log("\nКнопка «Начать»:");
   check("приглушена на первых пяти шагах", muted.slice(0, 5).every(Boolean), muted.join(", "));
   check("на последнем шаге активна", muted[LAST_STEP] === false);
   check("вне тура активна", startButtonMuted(-1) === false);
+}
+
+console.log("\nКнопки шага:");
+{
+  // Тупик на первом шаге (GIMN-030): кнопок не было вовсе — ни дальше, ни
+  // пропустить. Поэтому здесь проверяется не «есть ли кнопка вперёд», а
+  // что на КАЖДОМ шаге их ровно три и каждая при деле.
+  const rows = TOUR_STEPS.map((_, i) => tourButtons(i));
+
+  check("на каждом шаге три кнопки", rows.every((r) => r.length === 3), rows.map((r) => r.length).join(", "));
+
+  check(
+    "порядок один и тот же: пропустить, назад, дальше",
+    rows.every((r) => r[0].id === "skip" && r[1].id === "back" && r[2].id === "next"),
+  );
+
+  check(
+    "главная кнопка ровно одна и это «дальше»",
+    rows.every((r) => r.filter((b) => b.primary).length === 1 && r[2].primary === true),
+  );
+
+  const first = tourButtons(0);
+  check("на первом шаге «Назад» видна", first.some((b) => b.id === "back"));
+  check("и при этом не нажимается", first.find((b) => b.id === "back")?.disabled === true);
+  check("«Пропустить» на первом шаге работает", first[0].disabled !== true);
+  check("«Дальше» на первом шаге работает", first[2].disabled !== true && first[2].action === "next");
+
+  const middle = tourButtons(2);
+  check("на средних шагах «Назад» нажимается", middle[1].disabled !== true && middle[1].action === "prev");
+
+  const last = tourButtons(LAST_STEP);
+  check("на последнем шаге кнопка закрывает тур", last[2].label === "Закрыть тур" && last[2].action === "finish");
+  check("и остаётся главной", last[2].primary === true);
+  check("«Пропустить» ведёт к завершению на любом шаге", rows.every((r) => r[0].action === "finish"));
+
+  const labels = rows.flat().map((b) => b.label);
+  check("у кнопок есть подписи", labels.every((l) => l.trim().length > 0));
 }
 
 console.log("\nПриветствие:");

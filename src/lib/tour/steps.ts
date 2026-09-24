@@ -122,6 +122,46 @@ export function startButtonMuted(index: number): boolean {
   return index >= 0 && index < LAST_STEP;
 }
 
+/**
+ * Кнопки шага (GIMN-030).
+ *
+ * Описание кнопок вынесено из компонента в чистую функцию, и не ради
+ * красоты. На первом шаге тура кнопок не было вовсе — человек попадал в
+ * тупик: ни дальше, ни пропустить. Поймать это в коде было нечем,
+ * потому что кнопки собирались прямо в обработчике отрисовки и проверить
+ * их можно было только глазами на живом устройстве.
+ *
+ * Теперь состав кнопок — данные, и check:tour смотрит на них на каждом
+ * шаге.
+ */
+export type TourButton = {
+  id: "skip" | "back" | "next";
+  label: string;
+  /** Главная кнопка шага: яркая заливка, всегда справа. */
+  primary?: boolean;
+  /**
+   * Видна, но нажать нельзя. На первом шаге так стоит «Назад»: убрать её
+   * совсем — значит менять число кнопок от шага к шагу, и ряд прыгал бы.
+   */
+  disabled?: boolean;
+  /** Что делает: шаг вперёд, шаг назад или конец тура. */
+  action: "prev" | "next" | "finish";
+};
+
+export function tourButtons(index: number): TourButton[] {
+  const last = index >= LAST_STEP;
+  return [
+    { id: "skip", label: "Пропустить тур", action: "finish" },
+    { id: "back", label: "Назад", disabled: index <= 0, action: "prev" },
+    {
+      id: "next",
+      label: last ? "Закрыть тур" : "Дальше →",
+      primary: true,
+      action: last ? "finish" : "next",
+    },
+  ];
+}
+
 export function stepAt(index: number): TourStep | null {
   return TOUR_STEPS[index] ?? null;
 }

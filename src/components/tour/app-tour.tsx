@@ -7,7 +7,7 @@ import "driver.js/dist/driver.css";
 
 import { markTourDone } from "@/components/tour/run-tour";
 import { clearStep, readStep, setStartMuted, writeStep } from "@/lib/tour/state";
-import { LAST_STEP, TOUR_STEPS, greeting, startButtonMuted, stepAt } from "@/lib/tour/steps";
+import { TOUR_STEPS, greeting, startButtonMuted, stepAt, tourButtons } from "@/lib/tour/steps";
 
 /**
  * Ознакомительный тур (US-11, переписан в GIMN-029).
@@ -101,40 +101,38 @@ export function AppTour({ autoStart = false, name }: { autoStart?: boolean; name
     };
 
     function buttons(popover: { footer: HTMLElement }, current: number): void {
+      // driver.js прячет футер, если не показывает ни одной своей кнопки:
+      //   p = showButtons.includes("next") || ... ;
+      //   p ? footer.style.display = "flex" : footer.style.display = "none";
+      // Мы рисуем кнопки сами, поэтому своих у него нет — и футер вместе с
+      // нашими кнопками уезжал в display:none. На первом шаге это был
+      // тупик: ни дальше, ни пропустить. Возвращаем показ явно.
+      popover.footer.style.display = "flex";
       popover.footer.replaceChildren();
 
       const row = document.createElement("div");
       row.className = "gz-tour-row";
 
-      const skip = document.createElement("button");
-      skip.type = "button";
-      skip.className = "gz-tour-btn gz-tour-skip";
-      skip.textContent = "Пропустить тур";
-      // Пропуск — это осознанный ответ, а не побег: тур отмечается
-      // пройденным, иначе он встретил бы человека снова на каждом входе.
-      skip.addEventListener("click", () => finish(true));
-      row.append(skip);
+      for (const button of tourButtons(current)) {
+        const el = document.createElement("button");
+        el.type = "button";
+        el.className = `gz-tour-btn gz-tour-${button.id}${button.primary ? " gz-tour-primary" : ""}`;
+        el.textContent = button.label;
 
-      if (current > 0) {
-        const back = document.createElement("button");
-        back.type = "button";
-        back.className = "gz-tour-btn";
-        back.textContent = "Назад";
-        back.addEventListener("click", () => goTo(current - 1));
-        row.append(back);
-      }
+        if (button.disabled) {
+          el.disabled = true;
+        } else if (button.action === "finish") {
+          // Пропуск — осознанный ответ, а не побег: тур отмечается
+          // пройденным, иначе встретил бы человека снова на каждом входе.
+          el.addEventListener("click", () => finish(true));
+        } else if (button.action === "prev") {
+          el.addEventListener("click", () => goTo(current - 1));
+        } else {
+          el.addEventListener("click", () => goTo(current + 1));
+        }
 
-      const next = document.createElement("button");
-      next.type = "button";
-      next.className = "gz-tour-btn gz-tour-next";
-      if (current === LAST_STEP) {
-        next.textContent = "Закрыть тур";
-        next.addEventListener("click", () => finish(true));
-      } else {
-        next.textContent = "Дальше →";
-        next.addEventListener("click", () => goTo(current + 1));
+        row.append(el);
       }
-      row.append(next);
 
       popover.footer.append(row);
     }
@@ -163,7 +161,10 @@ export function AppTour({ autoStart = false, name }: { autoStart?: boolean; name
             popover: {
               title: at === 0 ? greeting(name) : current.title,
               description: current.description,
-              showButtons: [],
+              // Просим показать кнопку «дальше» — ради футера: без единой
+              // своей кнопки driver.js прячет его целиком. Саму кнопку мы
+              // тут же заменяем своим рядом в onPopoverRender.
+              showButtons: ["next"],
             },
           },
         ],
