@@ -164,7 +164,7 @@ export default async function SettingsPage() {
 
         <FeedbackSection />
 
-        <TariffsSection />
+        <TariffsSection appUrl={publicEnv.appUrl} />
         <PointsSection />
         <LegalSection />
 

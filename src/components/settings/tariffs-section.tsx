@@ -1,5 +1,6 @@
 import { CheckIcon, WalletIcon } from "lucide-react";
 
+import { FamilyManagement } from "@/components/family/family-management";
 import { Section } from "@/components/settings/settings-sections";
 
 /**
@@ -57,7 +58,7 @@ const TARIFFS: Tariff[] = [
   },
 ];
 
-export function TariffsSection() {
+export function TariffsSection({ appUrl }: { appUrl: string }) {
   return (
     <Section icon={<WalletIcon className="size-4 text-primary" aria-hidden />} title="Тарифы и подписка">
       <div className="space-y-3">
@@ -65,6 +66,11 @@ export function TariffsSection() {
           <TariffCard key={tariff.title} {...tariff} />
         ))}
       </div>
+
+      {/* Пока платного тарифа нет, приглашать может любой: механизм нужен
+          уже сегодня, чтобы было что тестировать, а проверять оплату
+          неоткуда. Привязка к тарифу появится вместе с оплатой. */}
+      <FamilyManagement appUrl={appUrl} />
 
       <div className="space-y-1 rounded-lg border border-info-border bg-info p-4 text-sm text-info-foreground">
         <p className="font-medium">Пока идёт тестирование, пользование бесплатное.</p>

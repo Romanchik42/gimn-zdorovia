@@ -396,6 +396,26 @@ export type FeedbackRow = {
   created_at: string;
 };
 
+/** Кто в чьей семье (0030). Владелец подразумевается как owner_id. */
+export type FamilyMemberRow = {
+  id: string;
+  owner_id: string;
+  member_id: string;
+  invited_at: string;
+  accepted_at: string | null;
+};
+
+/** Ссылка-приглашение в семью (0030). Одноразовая, живёт 7 дней. */
+export type FamilyInviteRow = {
+  id: string;
+  owner_id: string;
+  invite_code: string;
+  created_at: string;
+  expires_at: string;
+  used_by: string | null;
+  used_at: string | null;
+};
+
 /** Остаток баллов (0020). История — в points_history. */
 export type UserPointsRow = {
   user_id: string;
@@ -628,6 +648,8 @@ export type Database = {
       points_history: TableDef<PointsHistoryRow, "user_id" | "amount" | "reason">;
       exercise_dosage: TableDef<ExerciseDosageRow, "exercise_id" | "level" | "mode">;
       workout_sets: TableDef<WorkoutSetRow, "user_id" | "exercise_id" | "set_number" | "reps">;
+      family_members: TableDef<FamilyMemberRow, "owner_id" | "member_id">;
+      family_invites: TableDef<FamilyInviteRow, "owner_id" | "invite_code" | "expires_at">;
     };
     Views: Record<never, never>;
     Functions: {
