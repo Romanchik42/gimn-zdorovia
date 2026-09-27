@@ -25,9 +25,21 @@ export async function POST(request: Request) {
   if (!user) return fail("Нужно войти", 401);
 
   const done = !parsed.data.reset;
+
+  // «Показать тур заново» возвращает и контекстные подсказки (GIMN-030).
+  //
+  // До этого сброс чистил только tour_completed, а hints_seen оставался, —
+  // и подсказки про баллы и анкету, однажды закрытые, не возвращались
+  // никогда. Именно поэтому их «никто не видел»: проверить их после
+  // первого прохода было нечем, и выглядело это как будто они не работают
+  // вовсе. Кнопка обещает тур заново — значит, заново целиком.
   const patch =
     parsed.data.tour_type === "app"
-      ? { tour_completed: done, tour_completed_at: done ? new Date().toISOString() : null }
+      ? {
+          tour_completed: done,
+          tour_completed_at: done ? new Date().toISOString() : null,
+          ...(parsed.data.reset ? { hints_seen: [] } : {}),
+        }
       : { workout_tour_completed: done };
 
   const { error } = await supabase.from("users").update(patch).eq("id", user.id);

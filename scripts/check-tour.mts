@@ -205,6 +205,64 @@ console.log("\nПодсказки вне тура:");
   const stepTitles = new Set(TOUR_STEPS.map((s) => s.title));
   const overlap = HINT_IDS.filter((id) => stepTitles.has(HINTS[id].title));
   check("подсказки не повторяют шаги тура", overlap.length === 0, overlap.join(", "));
+
+  // Подсказка, описанная в hints.ts и нигде не выведенная, не показывается
+  // никому и ничем об этом не сообщает (GIMN-030). Ровно так и вышло бы,
+  // если при переезде режимов и диагностики в тур забыть убрать одну из них
+  // из списка — или, наоборот, оставить в списке, но снять с экрана.
+  const mounted = new Set<string>();
+  const walkSrc = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        walkSrc(full);
+        continue;
+      }
+      if (!entry.endsWith(".tsx")) continue;
+      const text = readFileSync(full, "utf8");
+      // <ContextHint id="points" ... /> — только в разметке, не в самом
+      // hints.ts: иначе проверка подтверждала бы сама себя.
+      for (const m of text.matchAll(/<ContextHint\s[^>]*id="([^"]+)"/g)) mounted.add(m[1]);
+    }
+  };
+  walkSrc(path.join(process.cwd(), "src"));
+
+  const orphans = HINT_IDS.filter((id) => !mounted.has(id));
+  check("каждая подсказка где-то выведена", orphans.length === 0, orphans.join(", "));
+
+  const stale = [...mounted].filter((id) => !(HINT_IDS as readonly string[]).includes(id));
+  check("на экранах не осталось переехавших подсказок", stale.length === 0, stale.join(", "));
+}
+
+console.log("\n«Показать тур заново»:");
+{
+  // Сброс чистил только tour_completed, а hints_seen оставался — и
+  // подсказки, однажды закрытые, не возвращались никогда. Именно поэтому
+  // их «никто не видел»: проверить их после первого прохода было нечем.
+  const route = readFileSync(path.join(process.cwd(), "src/app/api/tour/complete/route.ts"), "utf8");
+  check("сброс возвращает и контекстные подсказки", route.includes("hints_seen: []"));
+  check(
+    "и только при сбросе, а не при прохождении",
+    /reset\s*\?\s*\{\s*hints_seen:\s*\[\]\s*\}/.test(route),
+  );
+
+  // Без права на колонку запись молча не проходит: человек нажал
+  // «показать заново», а подсказки не вернулись (основание — 0011, 0028).
+  const grant = readFileSync(path.join(process.cwd(), "supabase/migrations/0028_tour_hints.sql"), "utf8");
+  check("право на запись отметок выдано", grant.includes("GRANT UPDATE (hints_seen) ON public.users TO authenticated"));
+}
+
+console.log("\nПропавший якорь слышно:");
+{
+  // check:tour ловит выдуманные якоря, но не те, что есть в коде и не
+  // дошли до экрана: у новичка блок замеров не рисуется вовсе. Такой шаг
+  // выходит без подсветки и молчит — теперь хотя бы пишет в консоль.
+  const tour = readFileSync(path.join(process.cwd(), "src/components/tour/app-tour.tsx"), "utf8");
+  check("тур предупреждает о ненайденном якоре", /console\.warn\(`\[tour:/.test(tour));
+
+  const hint = readFileSync(path.join(process.cwd(), "src/components/tour/context-hint.tsx"), "utf8");
+  check("подсказка не молчит об отказе", (hint.match(/console\.warn\(/g) ?? []).length >= 2);
+  check("пустых catch в подсказке не осталось", !/catch\s*\(\s*\)\s*\{\s*\/\//.test(hint));
 }
 
 console.log("\nСверка текстов с батчем:");

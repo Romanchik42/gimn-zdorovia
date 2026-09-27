@@ -164,6 +164,15 @@ export function AppTour({ autoStart = false, name }: { autoStart?: boolean; name
       const element = current.element ? await waitFor(current.element) : undefined;
       if (cancelled) return;
 
+      // Якорь не нашёлся — шаг всё равно покажется, но без подсветки, и
+      // заметить это можно было только глазами на нужном экране (GIMN-030).
+      // Ровно так шаг про замеры и указывал в пустоту у новичка: список
+      // прошлых замеров у него не рисуется вовсе. check:tour ловит
+      // выдуманные якоря, но не те, что есть в коде и не дошли до экрана.
+      if (current.element && !element) {
+        console.warn(`[tour:${current.id}] якорь ${current.element} не появился на ${current.path}`);
+      }
+
       shownRef.current = at;
 
       const instance = driver({

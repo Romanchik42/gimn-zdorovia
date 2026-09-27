@@ -28,12 +28,18 @@ export function ContextHint({ id, active = true }: { id: HintId; active?: boolea
     fetch("/api/tour/hint")
       .then((r) => r.json())
       .then((json) => {
-        if (cancelled || !json.success) return;
+        if (cancelled) return;
+        if (!json.success) {
+          console.warn(`[hint:${id}] не удалось узнать отметки:`, json.error);
+          return;
+        }
         if (!(json.data.seen as string[]).includes(id)) setShow(true);
       })
-      .catch(() => {
-        // Не узнали — не показываем. Лишняя подсказка раздражает сильнее,
-        // чем её отсутствие.
+      .catch((e) => {
+        // Не узнали — не показываем: лишняя подсказка раздражает сильнее,
+        // чем её отсутствие. Но молчать об этом нельзя (GIMN-030): именно
+        // так подсказки и «пропали» — отказ выглядел ровно как «уже видел».
+        console.warn(`[hint:${id}] отметки недоступны:`, e);
       });
 
     return () => {

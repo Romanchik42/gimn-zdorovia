@@ -10,6 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/lib/auth/admin";
 import { ResetAccountButton } from "@/components/admin/reset-account-button";
 import { addDays, todayIso } from "@/lib/dates";
+import { HINTS, HINT_IDS, parseHintsSeen } from "@/lib/tour/hints";
 
 export const metadata = { title: "Статистика — Гимн.здоровья" };
 
@@ -64,6 +65,14 @@ export default async function AdminStatsPage() {
       .gte("scheduled_date", addDays(today, -6)),
   ]);
 
+  // Тур и подсказки — отдельным запросом, и падение его не роняет страницу
+  // (GIMN-030). Смысл цифр: подсказки про режимы и диагностику за весь
+  // тестовый период не увидел никто, и узнать это было неоткуда — молчание
+  // выглядело ровно как «всё работает». Теперь оно выглядит как ноль.
+  // Ошибку не разбираем: supabase её возвращает, а не бросает, и в этом
+  // случае data просто пустая — блок покажет «отметки недоступны».
+  const { data: tour } = await admin.from("users").select("tour_completed, hints_seen");
+
   const all = users ?? [];
   const byId = new Map(all.map((u) => [u.id, u]));
   const total = all.length;
@@ -95,6 +104,12 @@ export default async function AdminStatsPage() {
 
   const workoutsWeek = workouts?.length ?? 0;
   const activeUsers = new Set((workouts ?? []).map((w) => w.user_id)).size;
+
+  const tourDone = (tour ?? []).filter((u) => u.tour_completed).length;
+  const hintSeen = new Map<string, number>();
+  for (const u of tour ?? []) {
+    for (const id of parseHintsSeen(u.hints_seen)) hintSeen.set(id, (hintSeen.get(id) ?? 0) + 1);
+  }
 
   const nameOf = (id: string) => byId.get(id)?.name ?? "—";
 
@@ -197,6 +212,20 @@ export default async function AdminStatsPage() {
             </ul>
           )}
         </section>
+
+        <Table
+          title="Тур и подсказки"
+          rows={[
+            ["Прошли ознакомительный тур", `${tourDone} из ${total} · ${pct(tourDone, total)}`],
+            ...HINT_IDS.map(
+              (id): [string, string] => [
+                `Видели подсказку «${HINTS[id].title}»`,
+                `${hintSeen.get(id) ?? 0} из ${total} · ${pct(hintSeen.get(id) ?? 0, total)}`,
+              ],
+            ),
+          ]}
+          empty="Отметки недоступны — возможно, не применена миграция 0028"
+        />
 
         <section className="space-y-2 rounded-xl bg-card p-4 ring-1 ring-destructive/30">
           <h2 className="font-medium">Тестирование</h2>
