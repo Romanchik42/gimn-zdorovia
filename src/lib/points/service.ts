@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendNotification } from "@/lib/notifications/channels";
 import { pointsAwardedMessage } from "@/lib/points/format";
+import { applyPoints } from "@/lib/points/pricing";
 
 /**
  * Баллы за вклад в тестовый период (GIMN-027).
@@ -226,4 +227,49 @@ export async function exchangePoints(
   // защищать от дублей — за него отвечает проверка остатка.
   const result = await awardPoints(userId, -cost, `Обмен на ${days} дн. подписки`, target);
   return result.ok ? { ok: true } : { ok: false, error: result.error };
+}
+
+/**
+ * Частичная оплата подписки баллами (GIMN-030).
+ *
+ * Обмен выше берёт баллы только целыми пакетами — день, неделя, месяц.
+ * Человеку с 350 баллами это не давало ничего: на день не хватает
+ * четверти, а копить до месяца — полгода. Здесь списывается любое число,
+ * а остаток суммы человек платит картой.
+ *
+ * Годовой потолок бесплатных дней тут не при чём: подписка оплачивается,
+ * просто часть суммы закрыта баллами. Ограничение другое — не больше
+ * MAX_POINTS_PERCENT от суммы, и его считает applyPoints.
+ *
+ * Вызывать это будет обработчик платежа, которого пока нет: приём денег
+ * не подключён. До тех пор функция живёт под проверкой check:points —
+ * арифметика денег должна быть верной раньше, чем появятся деньги.
+ */
+export async function spendPointsOnPayment(
+  userId: string,
+  priceRub: number,
+  requestedPoints: number,
+  client?: PointsClient,
+): Promise<{ ok: boolean; discountRub?: number; payRub?: number; points?: number; error?: string }> {
+  const balance = await getUserPoints(userId, client);
+  const plan = applyPoints(priceRub, balance, requestedPoints);
+
+  if (plan.points === 0) {
+    return { ok: false, error: "Баллы к этой сумме применить нечем" };
+  }
+
+  // Списываем ровно то, что прижалось к пределу, а не то, что попросили:
+  // запрос мог прийти из старой вкладки с устаревшим остатком.
+  const result = await awardPoints(
+    userId,
+    -plan.points,
+    `Частичная оплата: скидка ${plan.discountRub} ₽`,
+    "PARTIAL_PAYMENT",
+    undefined,
+    client,
+  );
+
+  if (!result.ok) return { ok: false, error: result.error };
+
+  return { ok: true, points: plan.points, discountRub: plan.discountRub, payRub: plan.payRub };
 }

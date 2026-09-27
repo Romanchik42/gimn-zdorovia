@@ -12,8 +12,21 @@
  *
  * Запуск: node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-points.mts
  */
-import { awardPoints, EXCHANGE_DAYS, EXCHANGE_RATES, MAX_FREE_DAYS_PER_YEAR } from "@/lib/points/service";
+import {
+  awardPoints,
+  spendPointsOnPayment,
+  EXCHANGE_DAYS,
+  EXCHANGE_RATES,
+  MAX_FREE_DAYS_PER_YEAR,
+} from "@/lib/points/service";
 import { pointsAwardedMessage, pointsWord } from "@/lib/points/format";
+import {
+  MAX_POINTS_PERCENT,
+  POINT_KOPECKS,
+  applyPoints,
+  pointsDiscountRub,
+  pointsWorthRub,
+} from "@/lib/points/pricing";
 
 /* ------------------------- поддельный клиент базы ------------------------- */
 
@@ -197,6 +210,91 @@ console.log("\nСообщение о начислении (GIMN-030):");
       "1 балл, 2 балла, 5 баллов, 11 баллов, 14 баллов, 21 балл, 22 балла, 25 баллов, 100 баллов, 101 балл",
     forms.join(", "),
   );
+}
+
+console.log("\nЧастичная оплата баллами (GIMN-030):");
+{
+  const PLUS = 799;
+
+  // Цена балла округлена от таблицы обмена (2000 баллов = 799 ₽, то есть
+  // 39.95 копейки). Расхождение допустимо, но только в нашу пользу и
+  // только на сотые: иначе один и тот же балл стоит по-разному в обмене
+  // на дни и в частичной оплате.
+  const fromTable = (PLUS * 100) / EXCHANGE_RATES.MONTH_PLUS;
+  check("цена балла сверена с таблицей обмена", POINT_KOPECKS >= fromTable && POINT_KOPECKS - fromTable < 0.1, `${POINT_KOPECKS} против ${fromTable}`);
+
+  check("пример из батча: 350 баллов = 140 ₽", pointsWorthRub(350) === 140, String(pointsWorthRub(350)));
+
+  const example = applyPoints(PLUS, 350, 350);
+  check("к оплате картой 659 ₽", example.payRub === 659, String(example.payRub));
+  check("скидка 140 ₽", example.discountRub === 140, String(example.discountRub));
+
+  // Потолок доли: больше 30% суммы баллами не закрыть, иначе тестер
+  // получал бы подписку бесплатно навсегда.
+  const rich = applyPoints(PLUS, 100_000, 100_000);
+  check("богатый баланс упирается в потолок доли", rich.maxPoints === 599, String(rich.maxPoints));
+  check(
+    `скидка не больше ${MAX_POINTS_PERCENT}% от суммы`,
+    rich.discountRub * 100 <= PLUS * MAX_POINTS_PERCENT,
+    `${rich.discountRub} ₽ из ${PLUS} ₽`,
+  );
+  check("баллами нельзя закрыть всю сумму", rich.payRub > 0 && rich.payRub === PLUS - rich.discountRub);
+
+  // Округление вниз до рубля: копейки в пользу приложения, а не человека,
+  // — иначе на каждой оплате терялось бы по рублю.
+  check("округление вниз: 3 балла — рубль, не два", pointsDiscountRub(3) === 1, String(pointsDiscountRub(3)));
+  check("2 балла — ноль рублей", pointsDiscountRub(2) === 0, String(pointsDiscountRub(2)));
+  check("скидка всегда целая", [1, 7, 13, 99, 351].every((n) => Number.isInteger(pointsDiscountRub(n))));
+
+  // Слайдер может прийти с любым числом — из старой вкладки, из
+  // подставленного запроса. Прижимаем, а не падаем.
+  check("больше остатка не применить", applyPoints(PLUS, 100, 500).points === 100);
+  check("отрицательное — ноль", applyPoints(PLUS, 100, -50).points === 0);
+  check("дробное округляется вниз", applyPoints(PLUS, 100, 10.9).points === 10);
+  check("мусор вместо числа — ноль", applyPoints(PLUS, 100, Number.NaN).points === 0);
+  check("нулевая цена — применять нечего", applyPoints(0, 1000, 1000).maxPoints === 0);
+  check("пустой баланс — применять нечего", applyPoints(PLUS, 0, 100).maxPoints === 0);
+
+  // Дешёвый тариф: потолок считается от его цены, а не от «Плюса».
+  const basic = applyPoints(399, 100_000, 100_000);
+  check("у Базового свой потолок", basic.maxPoints === 299, String(basic.maxPoints));
+  check(
+    "и он тоже не выше доли",
+    basic.discountRub * 100 <= 399 * MAX_POINTS_PERCENT,
+    `${basic.discountRub} ₽ из 399 ₽`,
+  );
+}
+
+console.log("\nСписание при частичной оплате:");
+{
+  const db = fakeClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const c = db.client as any;
+
+  await awardPoints(USER, 350, "Начисление", undefined, undefined, c);
+  const paid = await spendPointsOnPayment(USER, 799, 350, c);
+
+  check("списание прошло", paid.ok === true, paid.error ?? "");
+  check("скидка 140 ₽", paid.discountRub === 140, String(paid.discountRub));
+  check("к оплате 659 ₽", paid.payRub === 659, String(paid.payRub));
+  check("остаток обнулился", db.balance(USER) === 0, `сейчас ${db.balance(USER)}`);
+
+  // Списываем прижатое к пределу, а не запрошенное: запрос мог прийти из
+  // вкладки, открытой до того, как баллы потратили.
+  const db2 = fakeClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const c2 = db2.client as any;
+  await awardPoints(USER, 100, "Начисление", undefined, undefined, c2);
+  const clamped = await spendPointsOnPayment(USER, 799, 5000, c2);
+  check("больше остатка не списали", clamped.ok === true && db2.balance(USER) === 0);
+  check("скидка по фактическому остатку", clamped.points === 100 && clamped.discountRub === 40, String(clamped.discountRub));
+
+  const empty = fakeClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const c3 = empty.client as any;
+  const nothing = await spendPointsOnPayment(USER, 799, 100, c3);
+  check("без баллов списание отказывает", nothing.ok === false, nothing.error ?? "");
+  check("и баланс не уходит в минус", empty.balance(USER) === 0);
 }
 
 console.log(failed === 0 ? "\nВсё сошлось." : `\nНе сошлось: ${failed}.`);

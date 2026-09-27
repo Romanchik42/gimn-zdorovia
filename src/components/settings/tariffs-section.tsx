@@ -1,6 +1,7 @@
 import { CheckIcon, WalletIcon } from "lucide-react";
 
 import { FamilyManagement } from "@/components/family/family-management";
+import { PointsSlider } from "@/components/settings/points-slider";
 import { Section } from "@/components/settings/settings-sections";
 
 /**
@@ -13,7 +14,8 @@ import { Section } from "@/components/settings/settings-sections";
 type Tariff = {
   emoji: string;
   title: string;
-  monthly: string;
+  /** Рубли числом, а не строкой: слайдер баллов считает от этой цены. */
+  monthlyRub: number;
   yearly: string;
   features: string[];
   highlight?: boolean;
@@ -23,7 +25,7 @@ const TARIFFS: Tariff[] = [
   {
     emoji: "🟢",
     title: "Базовый",
-    monthly: "399 ₽",
+    monthlyRub: 399,
     yearly: "3990 ₽ в год — экономия 17%",
     features: [
       "Все упражнения: Бехтерева и общий режим без турника",
@@ -36,7 +38,7 @@ const TARIFFS: Tariff[] = [
   {
     emoji: "🔵",
     title: "Плюс",
-    monthly: "799 ₽",
+    monthlyRub: 799,
     yearly: "7990 ₽ в год — экономия 17%",
     highlight: true,
     features: [
@@ -52,7 +54,7 @@ const TARIFFS: Tariff[] = [
   {
     emoji: "🟣",
     title: "Семейный",
-    monthly: "1490 ₽",
+    monthlyRub: 1490,
     yearly: "14 900 ₽ в год — экономия 17%",
     features: ["Всё из «Плюс»", "До 4 профилей в одном аккаунте", "Общий календарь и список покупок"],
   },
@@ -81,7 +83,7 @@ export function TariffsSection({ appUrl }: { appUrl: string }) {
   );
 }
 
-function TariffCard({ emoji, title, monthly, yearly, features, highlight }: Tariff) {
+function TariffCard({ emoji, title, monthlyRub, yearly, features, highlight }: Tariff) {
   return (
     <article
       className={
@@ -95,7 +97,7 @@ function TariffCard({ emoji, title, monthly, yearly, features, highlight }: Tari
           <span aria-hidden>{emoji}</span> {title}
         </h3>
         <p className="font-mono text-lg font-semibold">
-          {monthly}
+          {monthlyRub} ₽
           <span className="text-sm font-normal text-muted-foreground">/мес</span>
         </p>
       </header>
@@ -110,6 +112,10 @@ function TariffCard({ emoji, title, monthly, yearly, features, highlight }: Tari
           </li>
         ))}
       </ul>
+
+      {/* Расчёт частичной оплаты (GIMN-030). Показывается только тем, у
+          кого баллы уже есть: пустой слайдер ничего не объясняет. */}
+      <PointsSlider priceRub={monthlyRub} title={title} />
     </article>
   );
 }
