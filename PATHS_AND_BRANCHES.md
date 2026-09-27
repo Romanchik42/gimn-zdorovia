@@ -3,7 +3,7 @@
 Где что лежит, как устроен репозиторий и как код попадает на прод. Написано
 так, чтобы новый человек нашёл нужный файл, не спрашивая.
 
-Актуально на 24 сентября 2026 (GIMN-030).
+Актуально на 27 сентября 2026 (GIMN-030).
 
 ---
 
@@ -38,6 +38,8 @@ F:\Project gimn zdorovia\
 │   │   ├── onboarding/       welcome → mode → анкета режима → тема
 │   │   ├── auth/             вход и регистрация (только Telegram)
 │   │   ├── admin/stats/      статистика, только для админа
+│   │   ├── admin/feedback/   разбор отзывов и начисление баллов кнопкой
+│   │   ├── family/[code]/    страница приглашения в семейный аккаунт
 │   │   ├── i/[code]/         страница приглашения
 │   │   ├── tg/               вход из приложения внутри Telegram
 │   │   ├── layout.tsx        корневой каркас: шрифты, тема, Toaster, PWA
@@ -49,7 +51,8 @@ F:\Project gimn zdorovia\
 │   │   │                     dosage, duration
 │   │   ├── progression/      уровень и вес: level-check, weight, offer
 │   │   ├── notifications/    каналы уведомлений (работает telegram)
-│   │   ├── points/           баллы за вклад тестеров
+│   │   ├── points/           баллы за вклад тестеров, цена балла, разбор отзывов
+│   │   ├── family/           семейный тариф: правила и приглашения
 │   │   ├── nutrition-engine/ калории и меню
 │   │   ├── diagnostics/      углублённая диагностика и выводы из неё
 │   │   ├── schemas/          Zod-схемы — одни на клиент и на сервер
@@ -86,6 +89,8 @@ F:\Project gimn zdorovia\
 |---|---|
 | `src/lib/points/service.ts` | Начисление и обмен баллов, защита от дублей |
 | `src/app/api/points/`, `src/app/api/points/history/` | Остаток баллов и история, только свои |
+| `src/app/api/admin/feedback/`, `.../[id]/action/` | Разбор отзывов админом: список и решение |
+| `src/app/api/family/{invite,members,join}/` | Семейный тариф: ссылка, состав, присоединение |
 | `src/components/settings/tariffs-section.tsx` | Витрина тарифов, без кнопок оплаты |
 | `src/components/settings/points-section.tsx` | Счётчик баллов, за что начисляем, история |
 | `src/components/settings/legal-section.tsx` | Три документа в сворачиваемых блоках |
@@ -95,7 +100,7 @@ F:\Project gimn zdorovia\
 | `scripts/check-turnik.mts`, `scripts/check-points.mts` | Проверки логики, запускаются через `npm run check:*` |
 | `scripts/lib/ts-resolve-hook.mjs` | Учит Node алиасу `@/` и `server-only` — на нём работают проверки |
 
-### Появилось в GIMN-029 и GIMN-030
+### Появилось в GIMN-029
 
 | Путь | Что там |
 |---|---|
@@ -110,6 +115,27 @@ F:\Project gimn zdorovia\
 | `src/lib/tour/steps.ts`, `state.ts`, `hints.ts` | Шаги тура, его состояние и контекстные подсказки |
 | `src/components/tour/context-hint.tsx` | Подсказка, которая приходит при первом открытии экрана |
 | `supabase/migrations/0027`, `0028` | Одноразовые коды, отметки показанных подсказок |
+
+### Появилось в GIMN-030
+
+| Путь | Что там |
+|---|---|
+| `src/app/admin/feedback/page.tsx` | Разбор отзывов: подтвердить баг, взять идею в план, отклонить |
+| `src/app/api/admin/feedback/` | Список отзывов для админа. Чужому — 404, а не 403 |
+| `src/app/api/admin/feedback/[id]/action/` | Решение по отзыву: статус, баллы, сообщение автору |
+| `src/components/admin/feedback-review.tsx` | Карточки с фильтром. Разобранная сереет на месте, а не уезжает |
+| `src/lib/points/feedback-review.ts` | Что делает каждая кнопка: статус, сумма, текст для уведомления |
+| `src/lib/points/format.ts` | Текст сообщения о начислении и склонение слова «балл» (одно на сервер и браузер) |
+| `src/lib/points/pricing.ts` | Цена балла и потолок 30%. Вся арифметика в целых копейках |
+| `src/components/settings/points-slider.tsx` | Слайдер частичной оплаты и пересчёт «к оплате картой» |
+| `src/lib/family/rules.ts` | Потолок четырёх профилей, срок ссылки, код приглашения. Чистые функции |
+| `src/lib/family/service.ts` | Приглашения и состав семьи. Пишет только служебный ключ |
+| `src/app/api/family/` | invite (POST/DELETE), members (GET), members/[id] (DELETE), join (POST) |
+| `src/components/family/family-management.tsx` | «Моя семья (2 из 4)»: состав, ссылка, вывод участника |
+| `src/components/family/join-family-button.tsx` | Кнопка «Присоединиться» на странице приглашения |
+| `supabase/migrations/0029_points_notification.sql` | Новый тип записи в журнале уведомлений |
+| `supabase/migrations/0030_family.sql` | Таблицы `family_members` и `family_invites` |
+| `scripts/check-admin.mts`, `check-family.mts` | Проверки прав админки и правил семейного тарифа |
 
 ### Появилось в GIMN-028
 
@@ -173,13 +199,15 @@ F:\Project gimn zdorovia\
 | `node scripts/generate-sounds.mjs` | Синтезирует 6 наборов звуков |
 | `node scripts/apply-migration.mjs <файл.sql>` | Применяет одну миграцию к базе одной транзакцией. Строка подключения — `DATABASE_URL` из `secrets/.env` |
 | `npm run check:equipment` | Режимы и снаряд: снаряд не протекает в режим Бехтерева (45 проверок). Бывший `check:turnik` |
-| `npm run check:points` | Баллы: нет двойного начисления за одну и ту же ссылку (13 проверок) |
+| `npm run check:points` | Баллы: нет двойного начисления, текст уведомления, арифметика частичной оплаты (46 проверок) |
 | `npm run check:dosage` | Время занятия: силовое считается подходами, а не повторами (21 проверка) |
 | `npm run check:progression` | Уровень и вес: пороги зафиксированы числами, уровень идёт только вверх (45 проверок) |
 | `npm run check:gym` | Только в ветке `feature/gym-exercises-mvp`: день зала, два снаряда, уровни (50 проверок) |
 | `npm run check:auth` | Вход по коду: одноразовость, перебор, частота запросов (41 проверка) |
 | `npm run check:pdf` | Печатные документы: кириллица читается из файла, текст не теряется (51 проверка) |
-| `npm run check:tour` | Тур: кнопки на каждом шаге, якоря существуют, тексты сверены с батчем (54 проверки) |
+| `npm run check:tour` | Тур: девять шагов, маршрут по экранам, кнопки, якоря, тексты по двум батчам (68 проверок) |
+| `npm run check:family` | Семья: потолок четырёх профилей, срок ссылки, запись только служебным ключом (38 проверок) |
+| `npm run check:admin` | Админка: права спрашиваются до чтения данных, чужому 404, баллы не удваиваются (20 проверок) |
 
 Ежедневные команды разработки:
 
