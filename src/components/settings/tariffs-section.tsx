@@ -5,7 +5,7 @@ import { TariffCheckout } from "@/components/settings/tariff-checkout";
 import { Section } from "@/components/settings/settings-sections";
 import type { PaymentTariff } from "@/lib/payments/provider";
 import { TARIFF_PRICES, isTariff } from "@/lib/payments/rules";
-import { isPaymentsEnabled } from "@/lib/payments/service";
+import { isPaymentsEnabled, syncPendingPayments } from "@/lib/payments/service";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -70,13 +70,17 @@ type Subscription = { tariff: PaymentTariff; until: Date } | null;
  * если миграция 0031 ещё не применена, колонок нет, и общий запрос профиля
  * упал бы вместе со всей страницей настроек. Здесь ошибка — просто «нет подписки».
  */
-async function loadSubscription(): Promise<Subscription> {
+async function loadSubscription(paymentReturn: boolean): Promise<Subscription> {
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return null;
+
+    // Вернулись с оплаты — сначала сами спрашиваем ЮKassa о статусе, не
+    // дожидаясь уведомления: оно может прийти позже или не прийти вовсе.
+    if (paymentReturn) await syncPendingPayments(user.id);
 
     const { data, error } = await supabase
       .from("users")
@@ -103,7 +107,7 @@ export async function TariffsSection({
   paymentReturn?: boolean;
 }) {
   const enabled = isPaymentsEnabled();
-  const subscription = await loadSubscription();
+  const subscription = await loadSubscription(Boolean(paymentReturn));
 
   return (
     <Section icon={<WalletIcon className="size-4 text-primary" aria-hidden />} title="Тарифы и подписка">

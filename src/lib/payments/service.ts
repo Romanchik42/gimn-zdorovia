@@ -154,6 +154,36 @@ export async function handleNotification(
   return { retry: false };
 }
 
+/**
+ * Досверка своих незавершённых платежей — когда человек вернулся со
+ * страницы оплаты.
+ *
+ * Страховка на случай, если уведомление не пришло: у магазина ЮKassa один
+ * адрес для уведомлений, а магазин общий с Кузней, и её адрес может стоять
+ * там вместо нашего. Ходим тем же путём, что и вебхук, поэтому повторной
+ * активации не будет: обработанный платёж уже не в статусе pending.
+ */
+export async function syncPendingPayments(userId: string): Promise<void> {
+  if (!isPaymentsEnabled()) return;
+
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - 86_400_000).toISOString();
+  const { data: pending } = await admin
+    .from("payments")
+    .select("provider_payment_id")
+    .eq("user_id", userId)
+    .eq("app", "gimn")
+    .eq("status", "pending")
+    .gte("created_at", since)
+    .not("provider_payment_id", "is", null)
+    .limit(5);
+
+  for (const row of pending ?? []) {
+    if (!row.provider_payment_id) continue;
+    await handleNotification({ event: "return.sync", paymentId: row.provider_payment_id, app: "gimn" });
+  }
+}
+
 type ClaimedPayment = {
   id: string;
   user_id: string;
