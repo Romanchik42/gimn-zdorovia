@@ -2,6 +2,7 @@ import Script from "next/script";
 
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SoundProvider } from "@/components/layout/sound-provider";
+import { TelegramViewport } from "@/components/layout/telegram-viewport";
 import { ThemeSync } from "@/components/layout/theme-sync";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_SOUND_PACK, type SoundPackId } from "@/lib/sound/sound-packs";
@@ -42,7 +43,18 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
       />
       {/* Внутри Telegram даёт «Отправить» через выбор чата; в браузере ничего не делает. */}
       <Script src="https://telegram.org/js/telegram-web-app.js" strategy="lazyOnload" />
-      <div className="flex min-h-full flex-1 flex-col">
+      {/* Полноэкран в Telegram (expand + requestFullscreen), вне Telegram — no-op. */}
+      <TelegramViewport />
+      <div
+        className="flex min-h-full flex-1 flex-col"
+        // В полноэкранном Telegram кнопки клиента висят сверху: сдвигаем контент
+        // вниз на его безопасную зону. Переменные задаёт сам Telegram (8.0+);
+        // в обычном браузере/PWA их нет → fallback 0px, на вёрстку не влияет.
+        style={{
+          paddingTop:
+            "calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))",
+        }}
+      >
         <div className="flex flex-1 flex-col">{children}</div>
         <BottomNav />
       </div>

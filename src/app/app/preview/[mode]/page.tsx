@@ -49,7 +49,7 @@ export default async function ModePreviewPage({ params }: PageProps<"/app/previe
             </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">{MODE_LABELS[mode]}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{MODE_LABELS[mode]}</h1>
             <p className="text-sm text-muted-foreground">Как это выглядит</p>
           </div>
         </header>

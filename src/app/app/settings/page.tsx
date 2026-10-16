@@ -134,7 +134,7 @@ export default async function SettingsPage() {
             title="Анкета общего режима"
           >
             <p className="text-sm text-muted-foreground">
-              Цель, уровень подготовки, дни занятий и турник. Турник сейчас:{" "}
+              Цель, уровень подготовки, дни тренировок и турник. Турник сейчас:{" "}
               {HAS_TURNIK_LABELS[(generalProfile.has_turnik as HasTurnik) ?? "no"].toLowerCase()}.
             </p>
             <Button asChild variant="outline" className="h-11 w-full">

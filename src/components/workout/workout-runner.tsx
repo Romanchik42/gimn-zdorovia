@@ -212,7 +212,7 @@ export function WorkoutRunner({
       {length && markedCount === 0 && index === 0 ? (
         <div className="space-y-1.5">
           <p className="text-xs text-muted-foreground">Сколько сегодня потянете?</p>
-          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Длина занятия">
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Длина тренировки">
             {WORKOUT_LENGTHS.map((option) => (
               <button
                 key={option}

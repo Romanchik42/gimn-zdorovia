@@ -52,7 +52,7 @@ export function ThemeStep() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight">Выберите оформление</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Выберите оформление</h1>
         <p className="text-sm text-muted-foreground">
           Нажмите — приложение перекрасится сразу. Потом можно сменить в настройках.
         </p>

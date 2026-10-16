@@ -119,7 +119,7 @@ export function BehterevaWizard({ afterDone = "/onboarding/theme" }: { afterDone
     return (
       <div className="space-y-6">
         <header className="space-y-2">
-          <h1 className="text-xl font-semibold tracking-tight">Подобрать занятия точнее?</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Подобрать тренировки точнее?</h1>
           <p className="text-muted-foreground">
             Ответьте ещё на несколько вопросов о положениях тела и подвижности — это 2-3 минуты.
             Мы уберём неудобные позы и дадим бережные упражнения туда, где движения даются трудно.
@@ -329,7 +329,7 @@ function Step({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         <p className="text-sm text-muted-foreground">{hint}</p>
       </div>
       {children}

@@ -404,7 +404,7 @@ export function WorkoutLengthSection({ value, isDefault }: { value: WorkoutLengt
     const prev = current;
     setCurrent(next);
     if (await saveSettings({ workout_length: next })) {
-      toast.success("Длина занятия сохранена — со следующей тренировки");
+      toast.success("Длина тренировки сохранена — со следующей тренировки");
       router.refresh();
     } else {
       setCurrent(prev);
@@ -412,8 +412,8 @@ export function WorkoutLengthSection({ value, isDefault }: { value: WorkoutLengt
   }
 
   return (
-    <Section icon={<TimerIcon className="size-4 text-primary" aria-hidden />} title="Длина занятия">
-      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Длина занятия">
+    <Section icon={<TimerIcon className="size-4 text-primary" aria-hidden />} title="Длина тренировки">
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Длина тренировки">
         {WORKOUT_LENGTHS.map((length) => {
           const active = current === length;
           return (
@@ -436,8 +436,8 @@ export function WorkoutLengthSection({ value, isDefault }: { value: WorkoutLengt
       </div>
       <p className="text-xs text-muted-foreground">
         {isDefault
-          ? "Подобрано автоматически (при тяжёлой диагностике — короткое). Структура занятия сохраняется в любой длине: дыхание, разминка, основное, растяжка."
-          : "Структура занятия сохраняется в любой длине: дыхание, разминка, основное, растяжка."}
+          ? "Подобрано автоматически (при тяжёлой диагностике — короткое). Структура тренировки сохраняется в любой длине: дыхание, разминка, основное, растяжка."
+          : "Структура тренировки сохраняется в любой длине: дыхание, разминка, основное, растяжка."}
       </p>
     </Section>
   );

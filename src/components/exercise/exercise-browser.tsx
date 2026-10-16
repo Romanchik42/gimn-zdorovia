@@ -50,16 +50,28 @@ export type CatalogExercise = {
  * до раскрытия. Схема рисуется кодом, поэтому 60 значков ничего не грузят.
  */
 function CatalogThumb({ exercise }: { exercise: CatalogExercise }) {
+  const [errored, setErrored] = useState(false);
   const src = exercise.gif_url ?? exercise.image_url ?? null;
 
-  if (src) {
+  if (src && !errored) {
     // Превью вместо оригинала: анимация дыхания весит 417 КБ, а значку
     // хватает полутора. Полная картинка открывается в самой тренировке.
-    // Файлы делает scripts/build-exercise-thumbs.mjs.
+    // Файлы делает scripts/build-exercise-thumbs.mjs. Если превью не собрали/
+    // не загрузилось — onError роняет нас на схему или пустой значок, а не на
+    // иконку «битое изображение» (аудит).
     const thumb = src.replace(/\.(gif|webp|png|jpg)$/i, "-thumb.webp");
     return (
       <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-primary/8">
-        <Image src={thumb} alt="" fill unoptimized loading="lazy" sizes="48px" className="object-contain p-0.5" />
+        <Image
+          src={thumb}
+          alt=""
+          fill
+          unoptimized
+          loading="lazy"
+          sizes="48px"
+          className="object-contain p-0.5"
+          onError={() => setErrored(true)}
+        />
       </span>
     );
   }

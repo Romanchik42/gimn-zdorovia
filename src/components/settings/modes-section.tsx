@@ -54,7 +54,7 @@ export function ModesSection({ current, active }: { current: Mode; active: Mode[
   }
 
   return (
-    <Section icon={<LayersIcon className="size-4 text-primary" aria-hidden />} title="Режимы занятий">
+    <Section icon={<LayersIcon className="size-4 text-primary" aria-hidden />} title="Режимы тренировок">
       {active.length > 1 ? (
         <>
           <p className="text-xs text-muted-foreground">

@@ -28,7 +28,7 @@ export default async function CustomWorkoutPage() {
               <ChevronLeftIcon className="size-5" />
             </Link>
           </Button>
-          <h1 className="text-xl font-semibold tracking-tight">Своя тренировка</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Своя тренировка</h1>
         </header>
 
         <WorkoutBuilder catalog={exercises} />

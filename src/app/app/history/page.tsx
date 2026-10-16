@@ -98,7 +98,7 @@ export default async function HistoryPage() {
               <ChevronLeftIcon className="size-5" />
             </Link>
           </Button>
-          <h1 className="text-xl font-semibold tracking-tight">История занятий</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">История тренировок</h1>
         </header>
 
         {(workouts ?? []).length === 0 ? (

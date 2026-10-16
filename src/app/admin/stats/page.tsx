@@ -123,7 +123,7 @@ export default async function AdminStatsPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Статистика</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Статистика</h1>
             <p className="text-xs text-muted-foreground">Только для администратора · данные без кеша</p>
           </div>
         </header>

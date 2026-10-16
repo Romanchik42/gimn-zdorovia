@@ -82,9 +82,12 @@ export function ExerciseCard({
  */
 function ExerciseMedia({ exercise }: { exercise: ExerciseSnapshot }) {
   const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
   const src = exercise.gif_url ?? exercise.image_url ?? null;
 
-  if (!src) {
+  // Нет картинки ИЛИ она не загрузилась (битый URL/сеть) → показываем схему
+  // или заглушку, а не бесконечный скелетон (аудит: onError отсутствовал).
+  if (!src || errored) {
     return hasScheme(exercise.slug) ? (
       <ExerciseSchemeCard slug={exercise.slug} />
     ) : (
@@ -105,6 +108,7 @@ function ExerciseMedia({ exercise }: { exercise: ExerciseSnapshot }) {
           sizes="(max-width: 640px) 100vw, 480px"
           className={cn("object-contain p-2 transition-opacity", loaded ? "opacity-100" : "opacity-0")}
           onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
         />
       </div>
       {/* Атрибуция источника — требование лицензии картинки. */}

@@ -110,7 +110,7 @@ export function GeneralForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <header className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight">Немного о вас</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Немного о вас</h1>
           <p className="text-sm text-muted-foreground">
             Нужно, чтобы посчитать норму калорий и подобрать нагрузку.
           </p>
@@ -269,7 +269,7 @@ export function GeneralForm({
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Отмечайте только то, до чего реально дотянетесь. Неотмеченное в программу не
-                  попадёт — пустая строка в занятии хуже, чем упражнение попроще.
+                  попадёт — пустая строка в тренировке хуже, чем упражнение попроще.
                 </p>
               </FormItem>
           )}

@@ -53,7 +53,7 @@ export default async function PlanPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Недельный план</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Недельный план</h1>
             <p className="text-sm text-muted-foreground">Какая группа мышц в какой день</p>
           </div>
         </header>

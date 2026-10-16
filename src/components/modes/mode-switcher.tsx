@@ -49,7 +49,7 @@ export function ModeSwitcher({ current, active }: { current: Mode; active: Mode[
       <div
         className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
         role="radiogroup"
-        aria-label="Режим занятий"
+        aria-label="Режим тренировок"
       >
         {active.map((mode) => (
           <button

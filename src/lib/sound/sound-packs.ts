@@ -26,7 +26,7 @@ export const SOUND_PACK_DESCRIPTIONS: Record<SoundPackId, string> = {
   nature: "Капли воды и мягкие деревянные тона",
   digital: "Чистые электронные сигналы, как у приборов",
   warm: "Маримба: округлое дерево, без резких краёв",
-  none: "Тишина: для занятий под свою музыку",
+  none: "Тишина: для тренировок под свою музыку",
 };
 
 export function soundUrl(pack: PlayablePack, event: SoundEvent): string {

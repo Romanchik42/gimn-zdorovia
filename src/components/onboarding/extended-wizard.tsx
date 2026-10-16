@@ -58,7 +58,7 @@ export function ExtendedWizard({ next, initial }: { next: string; initial: Exten
           <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/12 text-primary">
             <CheckIcon className="size-7" aria-hidden />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">Спасибо, подбор уточнён</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Спасибо, подбор уточнён</h1>
         </div>
         <ul className="space-y-2 rounded-xl bg-card p-4 text-sm ring-1 ring-foreground/10">
           {result.length ? (
@@ -69,7 +69,7 @@ export function ExtendedWizard({ next, initial }: { next: string; initial: Exten
               </li>
             ))
           ) : (
-            <li>Ограничений не нашлось — занятия остаются как есть.</li>
+            <li>Ограничений не нашлось — тренировки остаются как есть.</li>
           )}
         </ul>
         <Button size="lg" className="h-12 w-full" onClick={() => router.push(next)}>
@@ -97,7 +97,7 @@ export function ExtendedWizard({ next, initial }: { next: string; initial: Exten
       </div>
 
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight">{block.title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{block.title}</h1>
         <p className="text-sm text-muted-foreground">{block.hint}</p>
       </header>
 
