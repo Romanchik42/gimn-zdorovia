@@ -198,7 +198,13 @@ export function ProfileSection({ name, email, phone, modeLabel, children }: Prof
 
 /* ----------------------------- оформление ------------------------------ */
 
-export function AppearanceSection({ autoTheme }: { autoTheme: boolean }) {
+export function AppearanceSection({
+  autoTheme,
+  children,
+}: {
+  autoTheme: boolean;
+  children?: React.ReactNode;
+}) {
   const { theme, setTheme } = useTheme();
   const [auto, setAuto] = useState(autoTheme);
 
@@ -220,7 +226,7 @@ export function AppearanceSection({ autoTheme }: { autoTheme: boolean }) {
   }
 
   return (
-    <Section icon={<PaletteIcon className="size-4 text-primary" aria-hidden />} title="Оформление" defaultOpen>
+    <Section icon={<PaletteIcon className="size-4 text-primary" aria-hidden />} title="Оформление">
       <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Тема оформления">
         {THEMES.map((name) => {
           const active = theme === name;
@@ -263,6 +269,8 @@ export function AppearanceSection({ autoTheme }: { autoTheme: boolean }) {
         </span>
         <Switch checked={auto} onCheckedChange={(v) => void toggleAuto(v)} aria-label="Авто-смена темы" />
       </label>
+      {/* Вложенные настройки оформления: свой выбор цветов, тон табличек, звук. */}
+      {children}
     </Section>
   );
 }

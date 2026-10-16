@@ -105,6 +105,9 @@ export default async function SettingsPage() {
           <AvatarPicker value={profile.avatar} name={profile.name} photoUrl={profile.avatar_url} />
         </ProfileSection>
 
+        {/* Тарифы и подписка — сразу после профиля, чтобы не терялись в конце списка. */}
+        <TariffsSection appUrl={publicEnv.appUrl} />
+
         <ModesSection current={modes.current} active={modes.active} />
 
         <WorkoutLengthSection value={workoutLength} isDefault={profile.workout_length === null} />
@@ -143,12 +146,7 @@ export default async function SettingsPage() {
           </Section>
         ) : null}
 
-        <AppearanceSection autoTheme={profile.auto_theme} />
-        <CustomColorsSection initial={profile.custom_theme} />
-        <InfoTintSection initial={profile.info_card_tint} />
-
-        <SoundSection />
-
+        {/* Напоминания — выше оформления (запрос Романа). */}
         <ReminderSettings
           enabled={profile.reminders_enabled}
           morning={profile.morning_reminder_time}
@@ -157,6 +155,13 @@ export default async function SettingsPage() {
           telegramLinkUrl={profile.telegram_id ? null : safeLinkUrl(user.id)}
         />
 
+        {/* Оформление: раскрыл — внутри свой выбор цветов, тон табличек и звук. */}
+        <AppearanceSection autoTheme={profile.auto_theme}>
+          <CustomColorsSection initial={profile.custom_theme} />
+          <InfoTintSection initial={profile.info_card_tint} />
+          <SoundSection />
+        </AppearanceSection>
+
         <div className="space-y-2">
           <ShareButton referralCode={profile.referral_code} appUrl={publicEnv.appUrl} variant="full" />
           <TourResetButton />
@@ -164,7 +169,6 @@ export default async function SettingsPage() {
 
         <FeedbackSection />
 
-        <TariffsSection appUrl={publicEnv.appUrl} />
         <PointsSection />
         <LegalSection />
 

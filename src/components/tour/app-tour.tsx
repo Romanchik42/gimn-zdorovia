@@ -158,7 +158,18 @@ export function AppTour({ autoStart = false, name }: { autoStart?: boolean; name
       // Секция настроек свёрнута — подсвечивать было бы нечего.
       if (current.expand) {
         const box = await waitFor(current.expand);
-        if (box instanceof HTMLDetailsElement) box.open = true;
+        if (box instanceof HTMLDetailsElement) {
+          box.open = true;
+          // Открываем и все родительские <details>: секция может быть вложена
+          // (например «Звук» внутри «Оформления») — иначе якорь остаётся скрыт.
+          for (
+            let parent = box.parentElement?.closest("details") ?? null;
+            parent;
+            parent = parent.parentElement?.closest("details") ?? null
+          ) {
+            parent.open = true;
+          }
+        }
       }
 
       const element = current.element ? await waitFor(current.element) : undefined;
