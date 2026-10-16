@@ -15,6 +15,7 @@ import {
   exerciseMeta,
 } from "@/lib/exercise-labels";
 import { ExerciseScheme, hasScheme } from "@/components/exercise/exercise-scheme";
+import { ContraindicationNote } from "@/components/exercise/contraindication-note";
 import type { Equipment, ExerciseType, TargetJoint } from "@/lib/supabase/types";
 import { MODE_SHORT_LABELS, type Mode } from "@/lib/modes";
 import { cn } from "cn";
@@ -298,12 +299,7 @@ export function ExerciseBrowser({
                   ) : null}
                   <p className="text-muted-foreground">{e.description}</p>
                   <p className="leading-relaxed whitespace-pre-line">{e.technique}</p>
-                  {e.warning && !isConfirming ? (
-                    <p className="flex items-start gap-2 rounded-lg bg-accent/12 p-2">
-                      <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
-                      {e.warning}
-                    </p>
-                  ) : null}
+                  {e.warning && !isConfirming ? <ContraindicationNote warning={e.warning} /> : null}
                 </div>
               ) : null}
             </li>

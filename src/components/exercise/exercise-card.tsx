@@ -7,6 +7,7 @@ import { CheckIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExercisePlaceholder } from "@/components/exercise/exercise-placeholder";
 import { ExerciseSchemeCard, hasScheme } from "@/components/exercise/exercise-scheme";
+import { ContraindicationNote } from "@/components/exercise/contraindication-note";
 import { cn } from "cn";
 import type { ExerciseSnapshot, FeedbackStatus } from "@/lib/supabase/types";
 import { exerciseMeta } from "@/lib/exercise-labels";
@@ -40,12 +41,7 @@ export function ExerciseCard({
         {exercise.technique}
       </p>
 
-      {exercise.warning ? (
-        <p className="flex items-start gap-2 rounded-lg bg-accent/12 p-3 text-sm text-foreground">
-          <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
-          <span>{exercise.warning}</span>
-        </p>
-      ) : null}
+      {exercise.warning ? <ContraindicationNote warning={exercise.warning} /> : null}
 
       <div className="space-y-2" data-tour="feedback-buttons">
         <FeedbackButton
