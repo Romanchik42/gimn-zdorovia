@@ -47,7 +47,12 @@ function safeLinkUrl(userId: string): string | null {
 }
 
 /** Настройки (SPEC 0.4): профиль, оформление, звук, напоминания, поделиться, об авторе. */
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  /** ?payment=return — вернулись со страницы оплаты ЮKassa. */
+  searchParams: Promise<{ payment?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -106,7 +111,11 @@ export default async function SettingsPage() {
         </ProfileSection>
 
         {/* Тарифы и подписка — сразу после профиля, чтобы не терялись в конце списка. */}
-        <TariffsSection appUrl={publicEnv.appUrl} />
+        <TariffsSection
+          appUrl={publicEnv.appUrl}
+          email={profile.email}
+          paymentReturn={(await searchParams).payment === "return"}
+        />
 
         <ModesSection current={modes.current} active={modes.active} />
 

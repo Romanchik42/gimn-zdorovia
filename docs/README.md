@@ -18,6 +18,7 @@
 | Нижняя навигация | `src/components/layout/bottom-nav.tsx` |
 | Полноэкран в Telegram | `src/components/layout/telegram-viewport.tsx` + `src/app/app/layout.tsx` |
 | Скелетоны при переходах | `src/app/app/loading.tsx`, `src/app/onboarding/loading.tsx` |
+| Оплата ЮKassa | правила и цены — `src/lib/payments/rules.ts`, сервис — `service.ts`, API — `src/app/api/payments/{create,webhook}/`, кнопка — `src/components/settings/tariff-checkout.tsx`, таблица — миграция `0031_payments.sql`. Кнопки живые, только когда в Vercel заданы `YOOKASSA_SHOP_ID` и `YOOKASSA_SECRET_KEY`; вебхук в кабинете ЮKassa: `https://gimn-zdorovia.vercel.app/api/payments/webhook` |
 
 ## Документы (в корне репозитория)
 
@@ -43,7 +44,7 @@
 | Что | Команда |
 |---|---|
 | Типы / линт / сборка | `npx tsc --noEmit`, `npx eslint .`, `npm run build` |
-| Доменные проверки (9 шт.) | `npm run check:equipment|points|dosage|progression|auth|pdf|tour|admin|family` |
+| Доменные проверки (10 шт.) | `npm run check:equipment|points|dosage|progression|auth|pdf|tour|admin|family|payments` |
 | Деплой на прод | **пуш в ветку `main`** = автодеплой Vercel (CLI не нужен; см. `PATHS_AND_BRANCHES.md §6`) |
 
 Remote: `github.com/Romanchik42/gimn-zdorovia`.

@@ -107,6 +107,10 @@ export type UserRow = {
   registered_at: string;
   next_report_date: string;
   is_admin: boolean;
+  /** Действующая подписка (0031): basic | plus | family, null — не оплачено. */
+  subscription_tariff: string | null;
+  /** До какой даты оплачено (0031). */
+  subscription_until: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -416,6 +420,24 @@ export type FamilyInviteRow = {
   used_at: string | null;
 };
 
+/** Платёж ЮKassa (0031). Пишет только сервер — политик RLS нет. */
+export type PaymentRow = {
+  id: string;
+  user_id: string;
+  /** Источник платежа: магазин общий с Кузней, наши помечены "gimn". */
+  app: string;
+  provider: string;
+  provider_payment_id: string | null;
+  tariff: string;
+  period: string;
+  amount_rub: number;
+  points_spent: number;
+  email: string | null;
+  status: "pending" | "succeeded" | "canceled";
+  created_at: string;
+  paid_at: string | null;
+};
+
 /** Остаток баллов (0020). История — в points_history. */
 export type UserPointsRow = {
   user_id: string;
@@ -650,6 +672,7 @@ export type Database = {
       workout_sets: TableDef<WorkoutSetRow, "user_id" | "exercise_id" | "set_number" | "reps">;
       family_members: TableDef<FamilyMemberRow, "owner_id" | "member_id">;
       family_invites: TableDef<FamilyInviteRow, "owner_id" | "invite_code" | "expires_at">;
+      payments: TableDef<PaymentRow, "user_id" | "tariff" | "amount_rub">;
     };
     Views: Record<never, never>;
     Functions: {

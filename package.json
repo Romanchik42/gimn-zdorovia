@@ -15,7 +15,8 @@
     "check:pdf": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-pdf.mts",
     "check:tour": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-tour.mts",
     "check:admin": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-admin.mts",
-    "check:family": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-family.mts"
+    "check:family": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-family.mts",
+    "check:payments": "node --import ./scripts/lib/ts-resolve-hook.mjs scripts/check-payments.mts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
