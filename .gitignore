@@ -50,3 +50,11 @@ secrets/*
 
 # Временные замки Word и Excel: появляются, пока документ открыт
 ~$*
+
+# Windows
+desktop.ini
+Thumbs.db
+**/desktop.ini
+
+# Архивы-бинарники в доках не храним в истории (лежат просто файлом)
+docs/batches/files.zip

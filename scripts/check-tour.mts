@@ -272,7 +272,7 @@ console.log("\nСверка текстов с батчем:");
   // выглядели бы отсебятиной, а старые пришлось бы переписывать в
   // свежий батч ради проверки.
   const batches = ["BATCH_GIMN029_FINAL.md", "BATCH_GIMN030_REVISION.md"]
-    .map((name) => path.join(process.cwd(), name))
+    .map((name) => path.join(process.cwd(), "docs", "batches", name))
     .filter((file) => existsSync(file));
 
   if (batches.length === 0) {
