@@ -1,6 +1,7 @@
 import "server-only";
 
 import { publicEnv } from "@/lib/env";
+import { awardReferralPaid } from "@/lib/points/achievements";
 import { awardPoints, getUserPoints } from "@/lib/points/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -230,6 +231,9 @@ async function activateSubscription(
     );
     if (!spent.ok) console.error("points spend failed:", spent.error);
   }
+
+  // Пригласившему — за первую оплату друга (один раз за друга, см. achievements).
+  await awardReferralPaid(payment.user_id);
 
   return true;
 }

@@ -11,6 +11,7 @@ import {
 } from "@/lib/referral/code-generator";
 import type { Mode, ReferralSource } from "@/lib/supabase/types";
 import { DEFAULT_WEEK_PLAN } from "@/lib/workout-engine/weekly-cycle";
+import { awardReferralRegistered } from "@/lib/points/achievements";
 
 /**
  * Создание профиля пользователя: реферальный код, привязка пригласившего,
@@ -131,6 +132,9 @@ export async function provisionUser(args: ProvisionArgs): Promise<ProvisionResul
       source: args.referralSource ?? "link",
     });
     if (error) console.error("referrals insert failed:", error.message);
+    // Баллы пригласившему — только за настоящую новую связь: при ошибке
+    // записи приглашения начислять не за что.
+    else await awardReferralRegistered(referrerId, args.authUserId);
 
     await admin
       .from("referral_clicks")

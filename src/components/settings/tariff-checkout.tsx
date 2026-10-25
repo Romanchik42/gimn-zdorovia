@@ -37,6 +37,7 @@ export function TariffCheckout({
   const [period, setPeriod] = useState<PaymentPeriod>("month");
   const [requested, setRequested] = useState<number | null>(null);
   const [email, setEmail] = useState(defaultEmail);
+  const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +70,7 @@ export function TariffCheckout({
       const res = await fetch("/api/payments/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tariff, period, points: amount.points, email }),
+        body: JSON.stringify({ tariff, period, points: amount.points, email, consent }),
       });
       const json = await res.json();
       if (!json.success) {
@@ -156,6 +157,33 @@ export function TariffCheckout({
         </div>
       ) : null}
 
+      {enabled ? (
+        // Согласие с документами — при оформлении подписки (так обещает
+        // раздел «Условия и документы»). Без галочки сервер платёж не создаст.
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5 size-5 shrink-0 accent-[var(--primary)]"
+          />
+          <span>
+            Принимаю{" "}
+            <a href="/api/legal/user-agreement.pdf" target="_blank" rel="noreferrer" className="underline">
+              пользовательское соглашение
+            </a>
+            , соглашаюсь с{" "}
+            <a href="/api/legal/privacy-policy.pdf" target="_blank" rel="noreferrer" className="underline">
+              политикой конфиденциальности
+            </a>{" "}
+            и даю{" "}
+            <a href="/api/legal/data-consent.pdf" target="_blank" rel="noreferrer" className="underline">
+              согласие на обработку данных
+            </a>
+          </span>
+        </label>
+      ) : null}
+
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
@@ -164,7 +192,7 @@ export function TariffCheckout({
 
       <Button
         className="h-11 w-full"
-        disabled={!enabled || busy || !email.trim()}
+        disabled={!enabled || busy || !email.trim() || !consent}
         onClick={pay}
         title={enabled ? undefined : "Приём платежей ещё не подключён — пользование пока бесплатное"}
       >

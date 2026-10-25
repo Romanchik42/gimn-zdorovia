@@ -1,4 +1,7 @@
+import { after } from "next/server";
+
 import { fail, ok, parseBody } from "@/lib/api";
+import { awardWorkoutMilestones } from "@/lib/points/achievements";
 import { workoutFeedbackSchema } from "@/lib/schemas/workout-feedback";
 import { createClient } from "@/lib/supabase/server";
 import { maybeOfferLevelUp, type LevelUpOffer } from "@/lib/progression/offer";
@@ -76,6 +79,11 @@ export async function POST(request: Request) {
       .eq("id", user_workout_id);
 
     levelUp = await maybeOfferLevelUp(supabase, user.id);
+
+    // Серия 30 дней и сотая тренировка (обещаны в разделе «Баллы»). После
+    // ответа: последняя отметка не должна ждать подсчёта истории.
+    const userId = user.id;
+    after(() => awardWorkoutMilestones(userId));
   }
 
   // Для «⚠️ Плохо» клиент отдельно откроет модалку симптомов (US-04).

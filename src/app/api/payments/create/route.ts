@@ -13,6 +13,8 @@ const createSchema = z.object({
   points: z.number().int().min(0).max(1_000_000).default(0),
   // Почту спрашиваем на оплате: на неё ЮKassa пришлёт чек.
   email: z.string().trim().email("Проверьте адрес почты").max(200),
+  // Согласие с соглашением, политикой и обработкой данных — обязательное условие оплаты.
+  consent: z.literal(true, { message: "Нужно принять условия и дать согласие на обработку данных" }),
 });
 
 /**
@@ -36,7 +38,8 @@ export async function POST(request: Request) {
     return fail("Слишком много попыток. Подождите минуту.", 429);
   }
 
-  const result = await createCheckout({ userId: user.id, ...parsed.data });
+  const { tariff, period, points, email } = parsed.data;
+  const result = await createCheckout({ userId: user.id, tariff, period, points, email });
   if (!result.ok) return fail(result.error, result.status);
 
   return ok({ confirmationUrl: result.confirmationUrl });

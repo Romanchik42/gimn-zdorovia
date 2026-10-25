@@ -20,6 +20,8 @@ import {
   MAX_FREE_DAYS_PER_YEAR,
 } from "@/lib/points/service";
 import { pointsAwardedMessage, pointsWord } from "@/lib/points/format";
+import { STREAK_TARGET_DAYS, completionDay, currentStreak } from "@/lib/points/milestones";
+import { addDays } from "@/lib/dates";
 import {
   MAX_POINTS_PERCENT,
   POINT_KOPECKS,
@@ -295,6 +297,32 @@ console.log("\nСписание при частичной оплате:");
   const nothing = await spendPointsOnPayment(USER, 799, 100, c3);
   check("без баллов списание отказывает", nothing.ok === false, nothing.error ?? "");
   check("и баланс не уходит в минус", empty.balance(USER) === 0);
+}
+
+console.log("\nСерия дней подряд (достижение «30 дней»):");
+{
+  const today = "2026-10-25";
+  const run = (n: number, from = today) => Array.from({ length: n }, (_, k) => addDays(from, -k));
+
+  const full = currentStreak(run(STREAK_TARGET_DAYS), today);
+  check("30 дней подряд до сегодня — серия 30", full.length === 30, String(full.length));
+  check("и начало серии — 29 дней назад", full.startedOn === addDays(today, -29), String(full.startedOn));
+
+  const noToday = currentStreak(run(30, addDays(today, -1)), today);
+  check("без тренировки сегодня серии нет", noToday.length === 0);
+
+  const gap = [...run(10), ...run(25, addDays(today, -11))];
+  const broken = currentStreak(gap, today);
+  check("пропуск дня рвёт серию", broken.length === 10, String(broken.length));
+
+  const twice = currentStreak([...run(5), ...run(5)], today);
+  check("две тренировки в день — один день", twice.length === 5, String(twice.length));
+
+  check(
+    "день считается по Москве: 22:30 UTC — уже следующий день",
+    completionDay("2026-10-24T22:30:00Z") === "2026-10-25",
+    completionDay("2026-10-24T22:30:00Z"),
+  );
 }
 
 console.log(failed === 0 ? "\nВсё сошлось." : `\nНе сошлось: ${failed}.`);
