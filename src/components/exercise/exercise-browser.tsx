@@ -229,7 +229,7 @@ export function ExerciseBrowser({
                 >
                   <CatalogThumb exercise={e} />
                   <span className="flex-1">
-                    <span className="flex items-center gap-1.5 font-medium">
+                    <span className="flex items-center gap-1.5 text-lg font-medium">
                       {e.warning ? (
                         <TriangleAlertIcon className="size-4 shrink-0 text-accent" aria-label="Есть противопоказание" />
                       ) : null}
@@ -292,8 +292,8 @@ export function ExerciseBrowser({
               {isOpen ? (
                 <div className="space-y-2 border-t border-border p-3 text-sm">
                   <ExerciseMedia key={e.slug} exercise={e} />
-                  <p className="text-muted-foreground">{e.description}</p>
-                  <p className="leading-relaxed whitespace-pre-line">{e.technique}</p>
+                  <p className="text-lg text-muted-foreground">{e.description}</p>
+                  <p className="text-[20px] leading-relaxed whitespace-pre-line">{e.technique}</p>
                   {e.warning && !isConfirming ? <ContraindicationNote warning={e.warning} /> : null}
                 </div>
               ) : null}

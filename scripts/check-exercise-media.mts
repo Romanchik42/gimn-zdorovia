@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import installed from "../src/lib/exercise-media/installed.json" with { type: "json" };
-import { exerciseMediaFiles, exerciseThumbUrl } from "@/lib/exercise-media";
+import { exerciseMediaFiles, exerciseReadableGuide, exerciseThumbUrl } from "@/lib/exercise-media";
 
 let count = 0;
 assert.equal(Object.keys(installed).length, 76);
@@ -17,6 +17,7 @@ for (const [slug, entry] of Object.entries(installed)) {
     assert.equal(gif.readUInt16LE(6), 640); assert.equal(gif.readUInt16LE(8), 480);
     assert.ok(fs.statSync(path.join("public", file.thumb.split("?")[0])).size > 0);
     assert.equal(exerciseThumbUrl(file.src), file.thumb, "thumbnail keeps cache version");
+    assert.ok(exerciseReadableGuide(file.src)?.phases.length, "every installed GIF has readable captions");
     count++;
   }
 }

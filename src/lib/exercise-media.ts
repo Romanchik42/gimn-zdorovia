@@ -1,4 +1,5 @@
 import installed from "@/lib/exercise-media/installed.json" with { type: "json" };
+import readable from "@/lib/exercise-media/readable-guides.json" with { type: "json" };
 import type { ExerciseType } from "@/lib/supabase/types";
 
 export type ExerciseMediaInput = {
@@ -12,6 +13,12 @@ export type ExerciseMediaInput = {
 
 type MediaFile = { src: string; thumb: string; sha256?: string };
 const catalog: Record<string, { title: string; files: MediaFile[] }> = installed;
+const guides: Record<string, { tip: string; phases: string[] }> = readable;
+
+export function exerciseReadableGuide(src: string) {
+  const filename = src.split("?")[0].split("/").at(-1) ?? "";
+  return guides[filename];
+}
 
 export function hasInstalledExerciseMedia(slug: string): boolean {
   return Object.hasOwn(catalog, slug);

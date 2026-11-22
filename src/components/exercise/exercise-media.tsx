@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExercisePlaceholder } from "@/components/exercise/exercise-placeholder";
 import { ExerciseSchemeCard, hasScheme } from "@/components/exercise/exercise-scheme";
-import { exerciseMediaFiles, hasInstalledExerciseMedia, type ExerciseMediaInput } from "@/lib/exercise-media";
+import { exerciseMediaFiles, exerciseReadableGuide, hasInstalledExerciseMedia, type ExerciseMediaInput } from "@/lib/exercise-media";
 import { cn } from "cn";
 
 /** One media view for the catalog and workouts, including saved snapshots. */
@@ -14,6 +14,7 @@ export function ExerciseMedia({ exercise }: { exercise: ExerciseMediaInput }) {
   const [side, setSide] = useState(0);
   const current = files[side] ?? files[0];
   const installed = hasInstalledExerciseMedia(exercise.slug);
+  const guide = current ? exerciseReadableGuide(current.src) : undefined;
 
   if (!current) return hasScheme(exercise.slug)
     ? <ExerciseSchemeCard slug={exercise.slug} />
@@ -26,7 +27,7 @@ export function ExerciseMedia({ exercise }: { exercise: ExerciseMediaInput }) {
           {files.map((file, index) => (
             <button key={file.src} type="button" aria-pressed={side === index}
               onClick={() => setSide(index)}
-              className={cn("min-h-11 flex-1 rounded-lg border px-3 text-sm", side === index
+              className={cn("min-h-12 flex-1 rounded-lg border px-3 text-lg", side === index
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-card text-foreground")}>
               Сторона {index + 1}
@@ -35,6 +36,14 @@ export function ExerciseMedia({ exercise }: { exercise: ExerciseMediaInput }) {
         </div>
       ) : null}
       <MediaImage key={current.src} src={current.src} thumb={current.thumb} name={exercise.name} />
+      {guide ? (
+        <figcaption className="space-y-3 rounded-xl bg-primary/5 p-4 text-[22px] leading-[1.45]" aria-label="Крупные подписи к движению">
+          {guide.tip ? <p className="font-semibold">{guide.tip}</p> : null}
+          <ol className="list-decimal space-y-2 pl-6">
+            {guide.phases.map((phase, index) => <li key={index}>{phase}</li>)}
+          </ol>
+        </figcaption>
+      ) : null}
       {!installed && exercise.image_credit && !exercise.gif_url ? (
         <figcaption className="text-right text-[11px] text-muted-foreground">изображение: {exercise.image_credit}</figcaption>
       ) : null}

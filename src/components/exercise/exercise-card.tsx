@@ -26,14 +26,14 @@ export function ExerciseCard({
 }) {
   return (
     <article className="space-y-5" data-tour="exercise-card">
-      <ExerciseMedia key={exercise.slug} exercise={exercise} />
-
       <header className="space-y-1">
-        <h2 className="text-[22px] leading-tight font-semibold tracking-tight">{exercise.name}</h2>
+        <h2 className="text-[26px] leading-tight font-semibold tracking-tight">{exercise.name}</h2>
         <p className="text-sm text-muted-foreground">{exerciseMeta(exercise)}</p>
       </header>
 
-      <p className="text-base leading-relaxed whitespace-pre-line text-foreground">
+      <ExerciseMedia key={exercise.slug} exercise={exercise} />
+
+      <p className="text-[20px] leading-relaxed whitespace-pre-line text-foreground">
         {exercise.technique}
       </p>
 
