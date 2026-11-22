@@ -1,0 +1,842 @@
+{
+  "breath-diaphragm": {
+    "title": "Диафрагмальное дыхание",
+    "files": [
+      {
+        "src": "/exercises/breath-diaphragm.gif?v=cd96fca8557a",
+        "thumb": "/exercises/breath-diaphragm-thumb.webp?v=cd96fca8557a",
+        "sha256": "cd96fca8557a08ecc12f1878efd814e46184112fcf3913815e60612b07acdbc5"
+      }
+    ]
+  },
+  "breath-chest-expand": {
+    "title": "Дыхание с раскрытием рёбер",
+    "files": [
+      {
+        "src": "/exercises/breath-chest-expand.gif?v=b79c9429cfda",
+        "thumb": "/exercises/breath-chest-expand-thumb.webp?v=b79c9429cfda",
+        "sha256": "b79c9429cfda33bca1956762580226072c2c7f41cf1f98411153a55a34f4ae43"
+      }
+    ]
+  },
+  "breath-square": {
+    "title": "Дыхание по квадрату",
+    "files": [
+      {
+        "src": "/exercises/breath-square.gif?v=b62b5d219da1",
+        "thumb": "/exercises/breath-square-thumb.webp?v=b62b5d219da1",
+        "sha256": "b62b5d219da17cd4287de977ea3eec77303c3ebe572f85c3188be23c844f46b1"
+      }
+    ]
+  },
+  "breath-cooldown": {
+    "title": "Дыхание на расслабление",
+    "files": [
+      {
+        "src": "/exercises/breath-cooldown.gif?v=705469cf46e4",
+        "thumb": "/exercises/breath-cooldown-thumb.webp?v=705469cf46e4",
+        "sha256": "705469cf46e4a82121cf5f9f33eee18a2ecc7bf08402c00b507c4fbff211f90f"
+      }
+    ]
+  },
+  "warmup-neck-turns": {
+    "title": "Повороты головы",
+    "files": [
+      {
+        "src": "/exercises/warmup-neck-turns.gif?v=e9fde94de46f",
+        "thumb": "/exercises/warmup-neck-turns-thumb.webp?v=e9fde94de46f",
+        "sha256": "e9fde94de46fe0d2e914459a95105b7675bdf9fd64bc4d4a2c4214f090a2ba9a"
+      }
+    ]
+  },
+  "warmup-neck-tilts": {
+    "title": "Наклоны головы к плечу",
+    "files": [
+      {
+        "src": "/exercises/warmup-neck-tilts.gif?v=e81ea44e82af",
+        "thumb": "/exercises/warmup-neck-tilts-thumb.webp?v=e81ea44e82af",
+        "sha256": "e81ea44e82af5e8459aa8e2bb6bb9866e29c301021c44131a9d3715492275eb0"
+      }
+    ]
+  },
+  "warmup-shoulder-rolls": {
+    "title": "Круги плечами",
+    "files": [
+      {
+        "src": "/exercises/warmup-shoulder-rolls.gif?v=ec79935f7eed",
+        "thumb": "/exercises/warmup-shoulder-rolls-thumb.webp?v=ec79935f7eed",
+        "sha256": "ec79935f7eedaff1f0743e8029aed4f5cc4ce3bcf9422e105e5d2bfcd291f84d"
+      }
+    ]
+  },
+  "warmup-pelvic-tilt": {
+    "title": "Наклоны таза лёжа",
+    "files": [
+      {
+        "src": "/exercises/warmup-pelvic-tilt.gif?v=16b1bb890c02",
+        "thumb": "/exercises/warmup-pelvic-tilt-thumb.webp?v=16b1bb890c02",
+        "sha256": "16b1bb890c02ab4fb3efbb9ab729bb6539ad8cd817dcf9cb4db2152bd24d6f01"
+      }
+    ]
+  },
+  "massage-suboccipital": {
+    "title": "Самомассаж основания черепа",
+    "files": [
+      {
+        "src": "/exercises/massage-suboccipital.gif?v=5478e13a8844",
+        "thumb": "/exercises/massage-suboccipital-thumb.webp?v=5478e13a8844",
+        "sha256": "5478e13a884429f7c80971f2e61ab308bb7893d47029c0eb246556012adc82bc"
+      }
+    ]
+  },
+  "massage-paravertebral": {
+    "title": "Самомассаж мышц вдоль позвоночника",
+    "files": [
+      {
+        "src": "/exercises/massage-paravertebral.gif?v=92d35c87f836",
+        "thumb": "/exercises/massage-paravertebral-thumb.webp?v=92d35c87f836",
+        "sha256": "92d35c87f83670e9da7a8cd4eeb481662273d05e621ffb6b7a2c204b08459cc5"
+      }
+    ]
+  },
+  "massage-glutes-ball": {
+    "title": "Самомассаж ягодичных мячом",
+    "files": [
+      {
+        "src": "/exercises/massage-glutes-ball.gif?v=5cbe3121e38a",
+        "thumb": "/exercises/massage-glutes-ball-thumb.webp?v=5cbe3121e38a",
+        "sha256": "5cbe3121e38ae9daa6892ee24265f6cfee31eb2a11288bde11c3323770d58e7a"
+      },
+      {
+        "src": "/exercises/massage-glutes-ball-other-side.gif?v=6677e255f81e",
+        "thumb": "/exercises/massage-glutes-ball-other-side-thumb.webp?v=6677e255f81e",
+        "sha256": "6677e255f81ee3c4b0d2a7d83862edff5f7ce106d992ac2e0a95a66bcbb660cb"
+      }
+    ]
+  },
+  "main-cat-cow": {
+    "title": "Кошка-корова",
+    "files": [
+      {
+        "src": "/exercises/main-cat-cow.gif?v=66590a608fd0",
+        "thumb": "/exercises/main-cat-cow-thumb.webp?v=66590a608fd0",
+        "sha256": "66590a608fd0ddfd2fb7df1bf3ed3e904560dbecb7cfa4ce639c9b24bbdeb1e5"
+      }
+    ]
+  },
+  "main-thoracic-rotation": {
+    "title": "Ротация грудного отдела",
+    "files": [
+      {
+        "src": "/exercises/main-thoracic-rotation.gif?v=3d4a166db94e",
+        "thumb": "/exercises/main-thoracic-rotation-thumb.webp?v=3d4a166db94e",
+        "sha256": "3d4a166db94e893965121665e4225e5a715c2f721d0be1540e366e459ce16021"
+      },
+      {
+        "src": "/exercises/main-thoracic-rotation-other-side.gif?v=8a813d412ead",
+        "thumb": "/exercises/main-thoracic-rotation-other-side-thumb.webp?v=8a813d412ead",
+        "sha256": "8a813d412eadda3c35aae88afd23771e1dc54d754adc19f6e65abdc5a998eb9c"
+      }
+    ]
+  },
+  "main-side-bend-standing": {
+    "title": "Боковые наклоны стоя",
+    "files": [
+      {
+        "src": "/exercises/main-side-bend-standing.gif?v=2ac160df08c1",
+        "thumb": "/exercises/main-side-bend-standing-thumb.webp?v=2ac160df08c1",
+        "sha256": "2ac160df08c139b159ed7b588ad09f64df0d620b02384d3af30ca79ba6e1451b"
+      },
+      {
+        "src": "/exercises/main-side-bend-standing-left.gif?v=d4af176efcf4",
+        "thumb": "/exercises/main-side-bend-standing-left-thumb.webp?v=d4af176efcf4",
+        "sha256": "d4af176efcf41543eddcd6761a8a56758e86cb2bf5c5612bf432af51fed75ff9"
+      }
+    ]
+  },
+  "main-wall-posture": {
+    "title": "Выравнивание у стены",
+    "files": [
+      {
+        "src": "/exercises/main-wall-posture.gif?v=f3e818a6d992",
+        "thumb": "/exercises/main-wall-posture-thumb.webp?v=f3e818a6d992",
+        "sha256": "f3e818a6d9920069ba9065608005e6cfffa0f9d3a2c5686770853936316d99e3"
+      }
+    ]
+  },
+  "main-prone-extension": {
+    "title": "Разгибание лёжа на животе",
+    "files": [
+      {
+        "src": "/exercises/main-prone-extension.gif?v=01278bd984ba",
+        "thumb": "/exercises/main-prone-extension-thumb.webp?v=01278bd984ba",
+        "sha256": "01278bd984bae3f8c4c22b52019e1171b7a9cb033d16cc25641e46cdeeb4df87"
+      }
+    ]
+  },
+  "main-swimmer": {
+    "title": "Пловец лёжа",
+    "files": [
+      {
+        "src": "/exercises/main-swimmer.gif?v=e4ee650f0866",
+        "thumb": "/exercises/main-swimmer-thumb.webp?v=e4ee650f0866",
+        "sha256": "e4ee650f086638f0591db7bc106281f7853949e1d63cfcfa4924eefe72e95109"
+      }
+    ]
+  },
+  "main-bridge": {
+    "title": "Ягодичный мостик",
+    "files": [
+      {
+        "src": "/exercises/main-bridge.gif?v=8b55bdf0fd2e",
+        "thumb": "/exercises/main-bridge-thumb.webp?v=8b55bdf0fd2e",
+        "sha256": "8b55bdf0fd2e65a16b0bd57e34426497b6e870a7083984c57c56ebbb4c6ea233"
+      }
+    ]
+  },
+  "main-dead-bug": {
+    "title": "Жук",
+    "files": [
+      {
+        "src": "/exercises/main-dead-bug.gif?v=5eff168aea2b",
+        "thumb": "/exercises/main-dead-bug-thumb.webp?v=5eff168aea2b",
+        "sha256": "5eff168aea2b7c7cf1d7b0a6657015d7571b1fc69816a31b3685d9651f687b23"
+      },
+      {
+        "src": "/exercises/main-dead-bug-other-side.gif?v=85fe9ed5d8bb",
+        "thumb": "/exercises/main-dead-bug-other-side-thumb.webp?v=85fe9ed5d8bb",
+        "sha256": "85fe9ed5d8bb537b3b5ac99f7646d516ba0497a52dc22643520cbbd59f049278"
+      }
+    ]
+  },
+  "main-bird-dog": {
+    "title": "Птица-собака",
+    "files": [
+      {
+        "src": "/exercises/main-bird-dog.gif?v=62ddb4415968",
+        "thumb": "/exercises/main-bird-dog-thumb.webp?v=62ddb4415968",
+        "sha256": "62ddb4415968be1419b694abd910165bc0c24433cd8d9a9e47e0e1058d93ac64"
+      },
+      {
+        "src": "/exercises/main-bird-dog-other-side.gif?v=6c7c5d1d3416",
+        "thumb": "/exercises/main-bird-dog-other-side-thumb.webp?v=6c7c5d1d3416",
+        "sha256": "6c7c5d1d341616e1bd5ba02c8cffc6057895a30ab92c6e84cd3272e9767006c3"
+      }
+    ]
+  },
+  "main-knee-to-chest": {
+    "title": "Колени к груди",
+    "files": [
+      {
+        "src": "/exercises/main-knee-to-chest.gif?v=1518ab76593a",
+        "thumb": "/exercises/main-knee-to-chest-thumb.webp?v=1518ab76593a",
+        "sha256": "1518ab76593a515e3ad43a4a8cc0bc6a4cf8385c6a8a62b805c45a555d589dc3"
+      }
+    ]
+  },
+  "main-shoulder-wall-slide": {
+    "title": "Скольжение руками по стене",
+    "files": [
+      {
+        "src": "/exercises/main-shoulder-wall-slide.gif?v=597475bfcf39",
+        "thumb": "/exercises/main-shoulder-wall-slide-thumb.webp?v=597475bfcf39",
+        "sha256": "597475bfcf398cae646e0ff26a2d8a1395310868fa253ee961d3be89dea679c6"
+      }
+    ]
+  },
+  "main-shoulder-external": {
+    "title": "Наружная ротация плеча",
+    "files": [
+      {
+        "src": "/exercises/main-shoulder-external.gif?v=9ee6e5dd58b7",
+        "thumb": "/exercises/main-shoulder-external-thumb.webp?v=9ee6e5dd58b7",
+        "sha256": "9ee6e5dd58b76dd0d94273b56ada83ef5d7807387783db9a4c4eca44a7d858b5"
+      }
+    ]
+  },
+  "main-scapula-squeeze": {
+    "title": "Сведение лопаток",
+    "files": [
+      {
+        "src": "/exercises/main-scapula-squeeze.gif?v=18b52c7496bc",
+        "thumb": "/exercises/main-scapula-squeeze-thumb.webp?v=18b52c7496bc",
+        "sha256": "18b52c7496bc6aca497ad7e11a9ec079ed05cd9d0ca5411568b28489d14777b8"
+      }
+    ]
+  },
+  "main-arm-circles": {
+    "title": "Круги прямыми руками",
+    "files": [
+      {
+        "src": "/exercises/main-arm-circles.gif?v=39490d26457d",
+        "thumb": "/exercises/main-arm-circles-thumb.webp?v=39490d26457d",
+        "sha256": "39490d26457db59271a26a2198be7c601680136df1b0547c50c2d511f1689734"
+      }
+    ]
+  },
+  "main-chest-opener-doorway": {
+    "title": "Раскрытие груди в дверном проёме",
+    "files": [
+      {
+        "src": "/exercises/main-chest-opener-doorway.gif?v=aef0ce9abfcc",
+        "thumb": "/exercises/main-chest-opener-doorway-thumb.webp?v=aef0ce9abfcc",
+        "sha256": "aef0ce9abfcc701db8190f63a49bc38e958ce964631ee0c5b132c6c57e2a79bb"
+      }
+    ]
+  },
+  "main-hip-flexor-stretch": {
+    "title": "Растяжка подвздошно-поясничной",
+    "files": [
+      {
+        "src": "/exercises/main-hip-flexor-stretch.gif?v=36bc01dcbc91",
+        "thumb": "/exercises/main-hip-flexor-stretch-thumb.webp?v=36bc01dcbc91",
+        "sha256": "36bc01dcbc91767f4793b599ebbf890544e38217de70e84627c1203f28e58da7"
+      },
+      {
+        "src": "/exercises/main-hip-flexor-stretch-right.gif?v=08cdb5eb31bf",
+        "thumb": "/exercises/main-hip-flexor-stretch-right-thumb.webp?v=08cdb5eb31bf",
+        "sha256": "08cdb5eb31bfde5f216e79029c295693c52bb36aa005ef05b5ae8318a3a6c1fa"
+      }
+    ]
+  },
+  "main-hip-abduction": {
+    "title": "Отведение ноги лёжа на боку",
+    "files": [
+      {
+        "src": "/exercises/main-hip-abduction.gif?v=42bf67f199ae",
+        "thumb": "/exercises/main-hip-abduction-thumb.webp?v=42bf67f199ae",
+        "sha256": "42bf67f199aee66cd450498c831f8aec395d15bef19c7a06611191cba338742c"
+      },
+      {
+        "src": "/exercises/main-hip-abduction-other-side.gif?v=064da9bbbbfd",
+        "thumb": "/exercises/main-hip-abduction-other-side-thumb.webp?v=064da9bbbbfd",
+        "sha256": "064da9bbbbfd9971585d6454fd5bc0f10d9508bfc8ca01901e1706c31d0aada0"
+      }
+    ]
+  },
+  "main-mini-squat": {
+    "title": "Неглубокий присед у опоры",
+    "files": [
+      {
+        "src": "/exercises/main-mini-squat.gif?v=27e033d806d6",
+        "thumb": "/exercises/main-mini-squat-thumb.webp?v=27e033d806d6",
+        "sha256": "27e033d806d642fff9b29f43964882684c19517a3c68f02356c53c1ca2fc2c30"
+      }
+    ]
+  },
+  "main-heel-raises": {
+    "title": "Подъёмы на носки",
+    "files": [
+      {
+        "src": "/exercises/main-heel-raises.gif?v=9b64d80de198",
+        "thumb": "/exercises/main-heel-raises-thumb.webp?v=9b64d80de198",
+        "sha256": "9b64d80de1980a6ab18a2a8047bb60521d6a3c57fcf54c6b85e34b69610d9dcf"
+      }
+    ]
+  },
+  "main-hamstring-stretch": {
+    "title": "Растяжка задней поверхности бедра",
+    "files": [
+      {
+        "src": "/exercises/main-hamstring-stretch.gif?v=046cbd8aa570",
+        "thumb": "/exercises/main-hamstring-stretch-thumb.webp?v=046cbd8aa570",
+        "sha256": "046cbd8aa570805da9f75e49e6381bff2f6bfe4bdd853b3ac2d60462b0b3afa2"
+      },
+      {
+        "src": "/exercises/main-hamstring-stretch-left.gif?v=2433e0770618",
+        "thumb": "/exercises/main-hamstring-stretch-left-thumb.webp?v=2433e0770618",
+        "sha256": "2433e0770618eae77dd45810458c43e892922c1eea826d2456c3a022cb33d837"
+      }
+    ]
+  },
+  "stretch-child-pose": {
+    "title": "Поза ребёнка",
+    "files": [
+      {
+        "src": "/exercises/stretch-child-pose.gif?v=8c32ef139a9f",
+        "thumb": "/exercises/stretch-child-pose-thumb.webp?v=8c32ef139a9f",
+        "sha256": "8c32ef139a9f461b8bf939781dd64846652888d51122dc49ccdb630aa712c543"
+      }
+    ]
+  },
+  "stretch-supine-twist": {
+    "title": "Скручивание лёжа",
+    "files": [
+      {
+        "src": "/exercises/stretch-supine-twist.gif?v=0a2a30b8bf70",
+        "thumb": "/exercises/stretch-supine-twist-thumb.webp?v=0a2a30b8bf70",
+        "sha256": "0a2a30b8bf70b21f51402ddcae7f53e7d9d43e08a7dc14a73e56828f73e4aeaf"
+      }
+    ]
+  },
+  "stretch-piriformis": {
+    "title": "Растяжка грушевидной мышцы",
+    "files": [
+      {
+        "src": "/exercises/stretch-piriformis.gif?v=b0af3901323c",
+        "thumb": "/exercises/stretch-piriformis-thumb.webp?v=b0af3901323c",
+        "sha256": "b0af3901323c69e5fd1551692124d29cf1e5040d7f23a2c96ccfb5a3b0395146"
+      },
+      {
+        "src": "/exercises/stretch-piriformis-other-side.gif?v=6e3044fa5574",
+        "thumb": "/exercises/stretch-piriformis-other-side-thumb.webp?v=6e3044fa5574",
+        "sha256": "6e3044fa557468b9525cc84657fe9ae0176c2ff80fb179215313539c550d2d2b"
+      }
+    ]
+  },
+  "stretch-full-body": {
+    "title": "Вытяжение всего тела",
+    "files": [
+      {
+        "src": "/exercises/stretch-full-body.gif?v=5b81b2fe0db4",
+        "thumb": "/exercises/stretch-full-body-thumb.webp?v=5b81b2fe0db4",
+        "sha256": "5b81b2fe0db499d747fc7c3dc9f4adced033c8c542212b8b20a780dba962266e"
+      }
+    ]
+  },
+  "gen-jumping-jacks": {
+    "title": "Прыжки со сменой рук и ног",
+    "files": [
+      {
+        "src": "/exercises/gen-jumping-jacks.gif?v=08c8ddf58af5",
+        "thumb": "/exercises/gen-jumping-jacks-thumb.webp?v=08c8ddf58af5",
+        "sha256": "08c8ddf58af52e6177fe9fe1c513ae10a513afd5ff8d381b2b47121fb944ecd9"
+      }
+    ]
+  },
+  "gen-arm-swings": {
+    "title": "Махи руками",
+    "files": [
+      {
+        "src": "/exercises/gen-arm-swings.gif?v=2a5b593be29a",
+        "thumb": "/exercises/gen-arm-swings-thumb.webp?v=2a5b593be29a",
+        "sha256": "2a5b593be29a8bf9608f5d4fddfe43ec602e0ad91a55aa0e0f13dad77bdc3519"
+      }
+    ]
+  },
+  "gen-squat": {
+    "title": "Приседания",
+    "files": [
+      {
+        "src": "/exercises/gen-squat.gif?v=75a3506968a1",
+        "thumb": "/exercises/gen-squat-thumb.webp?v=75a3506968a1",
+        "sha256": "75a3506968a13dd07af158e39bedf7dde2238c2d4376da43618a5af89a2afd13"
+      }
+    ]
+  },
+  "gen-lunges": {
+    "title": "Выпады",
+    "files": [
+      {
+        "src": "/exercises/gen-lunges.gif?v=3ab46d1ca911",
+        "thumb": "/exercises/gen-lunges-thumb.webp?v=3ab46d1ca911",
+        "sha256": "3ab46d1ca911187a241c3d6e2cda9e0b5238c9f6476db2776d8949548b60819b"
+      },
+      {
+        "src": "/exercises/gen-lunges-other-side.gif?v=c2b3c0b9f34b",
+        "thumb": "/exercises/gen-lunges-other-side-thumb.webp?v=c2b3c0b9f34b",
+        "sha256": "c2b3c0b9f34b7f63525aae356e26ed9310356f009291bf72d51d652092276a7a"
+      }
+    ]
+  },
+  "gen-pushup": {
+    "title": "Отжимания",
+    "files": [
+      {
+        "src": "/exercises/gen-pushup.gif?v=d3d9d69f7dbe",
+        "thumb": "/exercises/gen-pushup-thumb.webp?v=d3d9d69f7dbe",
+        "sha256": "d3d9d69f7dbedb5a3977689fbcd08e0a4f80755036cbdfdefa17c5682e0e803c"
+      }
+    ]
+  },
+  "gen-plank": {
+    "title": "Планка",
+    "files": [
+      {
+        "src": "/exercises/gen-plank.gif?v=235921255970",
+        "thumb": "/exercises/gen-plank-thumb.webp?v=235921255970",
+        "sha256": "235921255970142c6dfd57cac85d92f162b8e46e6f09671b3460245dbe89608a"
+      }
+    ]
+  },
+  "gen-side-plank": {
+    "title": "Боковая планка",
+    "files": [
+      {
+        "src": "/exercises/gen-side-plank.gif?v=062f8d799199",
+        "thumb": "/exercises/gen-side-plank-thumb.webp?v=062f8d799199",
+        "sha256": "062f8d799199ef50273c02bfbcf6cfc635a4a7cae7d2c7f479373c34b86c0246"
+      },
+      {
+        "src": "/exercises/gen-side-plank-right.gif?v=71566bd3ce35",
+        "thumb": "/exercises/gen-side-plank-right-thumb.webp?v=71566bd3ce35",
+        "sha256": "71566bd3ce35cf6bec00a0a87d4c64aad21bc788e2fe793b910a09f82c0478b5"
+      }
+    ]
+  },
+  "gen-crunch": {
+    "title": "Скручивания на пресс",
+    "files": [
+      {
+        "src": "/exercises/gen-crunch.gif?v=692a5688aec7",
+        "thumb": "/exercises/gen-crunch-thumb.webp?v=692a5688aec7",
+        "sha256": "692a5688aec796c426e05f150d753afe7d274fc7726d8d385285edbbf1e72949"
+      }
+    ]
+  },
+  "gen-superman": {
+    "title": "Лодочка",
+    "files": [
+      {
+        "src": "/exercises/gen-superman.gif?v=5d9e3811bdce",
+        "thumb": "/exercises/gen-superman-thumb.webp?v=5d9e3811bdce",
+        "sha256": "5d9e3811bdcef23ca9e06b46629e82c0bcb84199bf603c9f180ad4422ad7289b"
+      }
+    ]
+  },
+  "gen-glute-bridge": {
+    "title": "Ягодичный мостик (общий)",
+    "files": [
+      {
+        "src": "/exercises/gen-glute-bridge.gif?v=9831dc7d2df0",
+        "thumb": "/exercises/gen-glute-bridge-thumb.webp?v=9831dc7d2df0",
+        "sha256": "9831dc7d2df0e429ca4856185554a1164abdfdc567db234a378b78ddd2f6f502"
+      }
+    ]
+  },
+  "gen-row-band": {
+    "title": "Тяга резинки к поясу",
+    "files": [
+      {
+        "src": "/exercises/gen-row-band.gif?v=a04f64e26094",
+        "thumb": "/exercises/gen-row-band-thumb.webp?v=a04f64e26094",
+        "sha256": "a04f64e260949b66a7801090255e42ac83128ae19ecc677c45c5688837e911cc"
+      }
+    ]
+  },
+  "gen-mountain-climbers": {
+    "title": "Скалолаз",
+    "files": [
+      {
+        "src": "/exercises/gen-mountain-climbers.gif?v=a619ab1fb58c",
+        "thumb": "/exercises/gen-mountain-climbers-thumb.webp?v=a619ab1fb58c",
+        "sha256": "a619ab1fb58c780291a99a27d2eac1338db59c857956ce3940977d6945095f44"
+      }
+    ]
+  },
+  "gen-step-touch": {
+    "title": "Приставные шаги",
+    "files": [
+      {
+        "src": "/exercises/gen-step-touch.gif?v=080132c448eb",
+        "thumb": "/exercises/gen-step-touch-thumb.webp?v=080132c448eb",
+        "sha256": "080132c448eb46201892eb445db72acc3a4f78fe00f028bd36b5cdfa211dc5d2"
+      }
+    ]
+  },
+  "gen-stretch-quads": {
+    "title": "Растяжка передней поверхности бедра",
+    "files": [
+      {
+        "src": "/exercises/gen-stretch-quads.gif?v=f8e60cdd934c",
+        "thumb": "/exercises/gen-stretch-quads-thumb.webp?v=f8e60cdd934c",
+        "sha256": "f8e60cdd934ceb1260058d2cfaf6638a827e5dce612da3bba2eaedf86ce45e0b"
+      },
+      {
+        "src": "/exercises/gen-stretch-quads-left.gif?v=da719cf7f3d2",
+        "thumb": "/exercises/gen-stretch-quads-left-thumb.webp?v=da719cf7f3d2",
+        "sha256": "da719cf7f3d2e566d279ef443ba45215f0c2a8ab156f3d04e7407ad9cf351ded"
+      }
+    ]
+  },
+  "gen-stretch-full": {
+    "title": "Общая растяжка",
+    "files": [
+      {
+        "src": "/exercises/gen-stretch-full.gif?v=5bc9f221ccfe",
+        "thumb": "/exercises/gen-stretch-full-thumb.webp?v=5bc9f221ccfe",
+        "sha256": "5bc9f221ccfeac57b4aa34731a4b319dcdee4f0d65852ae5ecf83eb92d56fe8a"
+      }
+    ]
+  },
+  "neck-micro-turns": {
+    "title": "Микроповороты головы",
+    "files": [
+      {
+        "src": "/exercises/neck-micro-turns.gif?v=e683dea32f4f",
+        "thumb": "/exercises/neck-micro-turns-thumb.webp?v=e683dea32f4f",
+        "sha256": "e683dea32f4f19c4b80cd3c049898f358950500b8c80219cc9734e4f7bc0ac0a"
+      }
+    ]
+  },
+  "neck-micro-nods": {
+    "title": "Микрокивки",
+    "files": [
+      {
+        "src": "/exercises/neck-micro-nods.gif?v=60537e06a1cf",
+        "thumb": "/exercises/neck-micro-nods-thumb.webp?v=60537e06a1cf",
+        "sha256": "60537e06a1cf9d683decfe1ffe0714d1abb770f8add02ea408ce5e0011dd120d"
+      }
+    ]
+  },
+  "neck-chin-tuck": {
+    "title": "Втягивание подбородка",
+    "files": [
+      {
+        "src": "/exercises/neck-chin-tuck.gif?v=751a9876a746",
+        "thumb": "/exercises/neck-chin-tuck-thumb.webp?v=751a9876a746",
+        "sha256": "751a9876a746faac056bf62a8a0b2efa0ea03be5ec5ebfb8267ea62a0079dff8"
+      }
+    ]
+  },
+  "neck-iso-front": {
+    "title": "Изометрия шеи вперёд",
+    "files": [
+      {
+        "src": "/exercises/neck-iso-front.gif?v=3a10be9883a0",
+        "thumb": "/exercises/neck-iso-front-thumb.webp?v=3a10be9883a0",
+        "sha256": "3a10be9883a0f38f25a7b6380c7c2ecca8545ac05e86a2d0fac47cd40033aca3"
+      }
+    ]
+  },
+  "neck-iso-side": {
+    "title": "Изометрия шеи вбок",
+    "files": [
+      {
+        "src": "/exercises/neck-iso-side.gif?v=0458817c23ad",
+        "thumb": "/exercises/neck-iso-side-thumb.webp?v=0458817c23ad",
+        "sha256": "0458817c23adc85acff607a670f8ca466b2cbf65f1719a9d0079b21cb0376592"
+      },
+      {
+        "src": "/exercises/neck-iso-side-left.gif?v=705a1a19b756",
+        "thumb": "/exercises/neck-iso-side-left-thumb.webp?v=705a1a19b756",
+        "sha256": "705a1a19b756f46953e2ffe2d937081ec600740797e7eac3221a3c1b065ceef0"
+      }
+    ]
+  },
+  "neck-iso-rotation": {
+    "title": "Изометрия шеи на поворот",
+    "files": [
+      {
+        "src": "/exercises/neck-iso-rotation.gif?v=8f2fb3e810b6",
+        "thumb": "/exercises/neck-iso-rotation-thumb.webp?v=8f2fb3e810b6",
+        "sha256": "8f2fb3e810b6678878d3f3bb8922c0a89c4f3a5595739fea5f20dd912f73fc86"
+      },
+      {
+        "src": "/exercises/neck-iso-rotation-left.gif?v=b393d061db67",
+        "thumb": "/exercises/neck-iso-rotation-left-thumb.webp?v=b393d061db67",
+        "sha256": "b393d061db67188f01ac6cc133395b25c6bfb606b3ce87f14783ddb098352c81"
+      }
+    ]
+  },
+  "shoulder-iso-wall": {
+    "title": "Изометрия плеча у стены",
+    "files": [
+      {
+        "src": "/exercises/shoulder-iso-wall.gif?v=78509860b8ec",
+        "thumb": "/exercises/shoulder-iso-wall-thumb.webp?v=78509860b8ec",
+        "sha256": "78509860b8eccf9812b09a6bba764e6e64e0483cbe4a78c274428b0271a255ab"
+      },
+      {
+        "src": "/exercises/shoulder-iso-wall-other-side.gif?v=830a1531ed8e",
+        "thumb": "/exercises/shoulder-iso-wall-other-side-thumb.webp?v=830a1531ed8e",
+        "sha256": "830a1531ed8e2c18065b8f839b0b1fb6438e99b84c2217d23079b7c02396d924"
+      }
+    ]
+  },
+  "spine-iso-chair": {
+    "title": "Прижатие спины к стулу",
+    "files": [
+      {
+        "src": "/exercises/spine-iso-chair.gif?v=196b4e96ac46",
+        "thumb": "/exercises/spine-iso-chair-thumb.webp?v=196b4e96ac46",
+        "sha256": "196b4e96ac468d7b999158f48a9a195711424516485b967ed0231f281a85ce83"
+      }
+    ]
+  },
+  "spine-micro-rotation": {
+    "title": "Микроповороты корпуса сидя",
+    "files": [
+      {
+        "src": "/exercises/spine-micro-rotation.gif?v=f1828a6d6a98",
+        "thumb": "/exercises/spine-micro-rotation-thumb.webp?v=f1828a6d6a98",
+        "sha256": "f1828a6d6a9806fb35facb99d8b229b41594ac5ec3a4bb6f0b8ea5a1c6070551"
+      }
+    ]
+  },
+  "legs-quad-set": {
+    "title": "Напряжение бедра сидя",
+    "files": [
+      {
+        "src": "/exercises/legs-quad-set.gif?v=66a579bc11d0",
+        "thumb": "/exercises/legs-quad-set-thumb.webp?v=66a579bc11d0",
+        "sha256": "66a579bc11d004ffc77d685d111cbbcf525d62d19b41144c3d0024762b239ccf"
+      },
+      {
+        "src": "/exercises/legs-quad-set-left.gif?v=0f7726d6bae8",
+        "thumb": "/exercises/legs-quad-set-left-thumb.webp?v=0f7726d6bae8",
+        "sha256": "0f7726d6bae8f3db0805a58141a6a146e7847b849f8055cde57a942feefd72d0"
+      }
+    ]
+  },
+  "hips-iso-squeeze": {
+    "title": "Сжатие полотенца коленями",
+    "files": [
+      {
+        "src": "/exercises/hips-iso-squeeze.gif?v=ed2992985a39",
+        "thumb": "/exercises/hips-iso-squeeze-thumb.webp?v=ed2992985a39",
+        "sha256": "ed2992985a398f86b005393d5c96add8f4bccd202c09bfc3b70ad69d1c235f3b"
+      }
+    ]
+  },
+  "bar-dead-hang": {
+    "title": "Мёртвый вис",
+    "files": [
+      {
+        "src": "/exercises/bar-dead-hang.gif?v=ad9c4e4829ba",
+        "thumb": "/exercises/bar-dead-hang-thumb.webp?v=ad9c4e4829ba",
+        "sha256": "ad9c4e4829baed18c896923a5b8d8b00e48e8bd92a2584e7c4b4e46a7f43cd72"
+      }
+    ]
+  },
+  "bar-hang-posture": {
+    "title": "Вис для осанки",
+    "files": [
+      {
+        "src": "/exercises/bar-hang-posture.gif?v=53ed7ca32c77",
+        "thumb": "/exercises/bar-hang-posture-thumb.webp?v=53ed7ca32c77",
+        "sha256": "53ed7ca32c77b5b71679d7d96b57e4457401cb0af9a482edb81da42b637a677c"
+      }
+    ]
+  },
+  "bar-active-hang": {
+    "title": "Активный вис",
+    "files": [
+      {
+        "src": "/exercises/bar-active-hang.gif?v=f044903ad20c",
+        "thumb": "/exercises/bar-active-hang-thumb.webp?v=f044903ad20c",
+        "sha256": "f044903ad20c64fd40b2c92be07f18d2812820eb87cfb1f75cd7b199abcc9b23"
+      }
+    ]
+  },
+  "bar-shrug": {
+    "title": "Шраги на турнике",
+    "files": [
+      {
+        "src": "/exercises/bar-shrug.gif?v=854e60b05f67",
+        "thumb": "/exercises/bar-shrug-thumb.webp?v=854e60b05f67",
+        "sha256": "854e60b05f674e187afa97b7719dd3108469ac0f41f36d1c328ca1be18eece02"
+      }
+    ]
+  },
+  "bar-australian-row": {
+    "title": "Австралийские подтягивания",
+    "files": [
+      {
+        "src": "/exercises/bar-australian-row.gif?v=4d99c076add4",
+        "thumb": "/exercises/bar-australian-row-thumb.webp?v=4d99c076add4",
+        "sha256": "4d99c076add4d167306773cf7dd208004040709e2eb0034b0cb923c993fa4482"
+      }
+    ]
+  },
+  "bar-negative-pullup": {
+    "title": "Негативные подтягивания",
+    "files": [
+      {
+        "src": "/exercises/bar-negative-pullup.gif?v=de591ec7724b",
+        "thumb": "/exercises/bar-negative-pullup-thumb.webp?v=de591ec7724b",
+        "sha256": "de591ec7724b36db58183cd1ab9ebf279385be6259a4909be54f16a092fab488"
+      }
+    ]
+  },
+  "bar-pullup-overhand": {
+    "title": "Подтягивание прямым хватом",
+    "files": [
+      {
+        "src": "/exercises/bar-pullup-overhand.gif?v=c07a8bb9cbfc",
+        "thumb": "/exercises/bar-pullup-overhand-thumb.webp?v=c07a8bb9cbfc",
+        "sha256": "c07a8bb9cbfcdc9163567eb23d194f40e019905b07821cb6154876908ca8cb59"
+      }
+    ]
+  },
+  "bar-pullup-underhand": {
+    "title": "Подтягивание обратным хватом",
+    "files": [
+      {
+        "src": "/exercises/bar-pullup-underhand.gif?v=8fb0ffcf9b2a",
+        "thumb": "/exercises/bar-pullup-underhand-thumb.webp?v=8fb0ffcf9b2a",
+        "sha256": "8fb0ffcf9b2a38898df11b0bb6065707f1e4e5fa5aa0387d9db573eab6d1b063"
+      }
+    ]
+  },
+  "bar-pullup-wide": {
+    "title": "Подтягивание широким хватом",
+    "files": [
+      {
+        "src": "/exercises/bar-pullup-wide.gif?v=be767f690dc9",
+        "thumb": "/exercises/bar-pullup-wide-thumb.webp?v=be767f690dc9",
+        "sha256": "be767f690dc9ff41828b6f1dc1d905db4163a2808ab8304d427b8c742ff75890"
+      }
+    ]
+  },
+  "bar-knee-raise": {
+    "title": "Подъём коленей в висе",
+    "files": [
+      {
+        "src": "/exercises/bar-knee-raise.gif?v=0fd053b96605",
+        "thumb": "/exercises/bar-knee-raise-thumb.webp?v=0fd053b96605",
+        "sha256": "0fd053b96605a4abb2df101917820fc425f22678a3ff47f10a07548a6861cdf1"
+      }
+    ]
+  },
+  "bar-leg-raise": {
+    "title": "Подъём ног к груди в висе",
+    "files": [
+      {
+        "src": "/exercises/bar-leg-raise.gif?v=59df77e8e45f",
+        "thumb": "/exercises/bar-leg-raise-thumb.webp?v=59df77e8e45f",
+        "sha256": "59df77e8e45f379d9e25476564b5e2212536984e354eb6448ae83638fb9068d0"
+      }
+    ]
+  },
+  "bar-l-hang": {
+    "title": "Вис в L-сидении",
+    "files": [
+      {
+        "src": "/exercises/bar-l-hang.gif?v=f63571a08f9a",
+        "thumb": "/exercises/bar-l-hang-thumb.webp?v=f63571a08f9a",
+        "sha256": "f63571a08f9a6d579b414a51ea81c2ba6a600a1afb2130a4d8173661a5c7afa6"
+      }
+    ]
+  },
+  "bar-hang-twist": {
+    "title": "Маятник в висе",
+    "files": [
+      {
+        "src": "/exercises/bar-hang-twist.gif?v=9684b0d82222",
+        "thumb": "/exercises/bar-hang-twist-thumb.webp?v=9684b0d82222",
+        "sha256": "9684b0d8222280a950982004b83f0e725baa7e4c61b5a4fe2450a15f65274710"
+      }
+    ]
+  },
+  "dip-support-hold": {
+    "title": "Удержание в упоре на брусьях",
+    "files": [
+      {
+        "src": "/exercises/dip-support-hold.gif?v=f5dbc6639768",
+        "thumb": "/exercises/dip-support-hold-thumb.webp?v=f5dbc6639768",
+        "sha256": "f5dbc6639768996e588ee3ff95e3daea67b25d4aad010233aa2b39b867a62f09"
+      }
+    ]
+  },
+  "dip-pushup": {
+    "title": "Отжимания на брусьях",
+    "files": [
+      {
+        "src": "/exercises/dip-pushup.gif?v=d5434e1253de",
+        "thumb": "/exercises/dip-pushup-thumb.webp?v=d5434e1253de",
+        "sha256": "d5434e1253de5d79342810d22c2a8eecb870f223fff2b5a2d58c87df048284c5"
+      }
+    ]
+  }
+}

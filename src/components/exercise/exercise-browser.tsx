@@ -15,6 +15,8 @@ import {
   exerciseMeta,
 } from "@/lib/exercise-labels";
 import { ExerciseScheme, hasScheme } from "@/components/exercise/exercise-scheme";
+import { ExerciseMedia } from "@/components/exercise/exercise-media";
+import { exerciseMediaFiles, hasInstalledExerciseMedia } from "@/lib/exercise-media";
 import { ContraindicationNote } from "@/components/exercise/contraindication-note";
 import type { Equipment, ExerciseType, TargetJoint } from "@/lib/supabase/types";
 import { MODE_SHORT_LABELS, type Mode } from "@/lib/modes";
@@ -52,15 +54,15 @@ export type CatalogExercise = {
  */
 function CatalogThumb({ exercise }: { exercise: CatalogExercise }) {
   const [errored, setErrored] = useState(false);
-  const src = exercise.gif_url ?? exercise.image_url ?? null;
+  const media = exerciseMediaFiles(exercise)[0];
 
-  if (src && !errored) {
+  if (media && !errored) {
     // Превью вместо оригинала: анимация дыхания весит 417 КБ, а значку
     // хватает полутора. Полная картинка открывается в самой тренировке.
     // Файлы делает scripts/build-exercise-thumbs.mjs. Если превью не собрали/
     // не загрузилось — onError роняет нас на схему или пустой значок, а не на
     // иконку «битое изображение» (аудит).
-    const thumb = src.replace(/\.(gif|webp|png|jpg)$/i, "-thumb.webp");
+    const thumb = media.thumb;
     return (
       <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-primary/8">
         <Image
@@ -76,7 +78,7 @@ function CatalogThumb({ exercise }: { exercise: CatalogExercise }) {
       </span>
     );
   }
-  if (hasScheme(exercise.slug)) {
+  if (!hasInstalledExerciseMedia(exercise.slug) && hasScheme(exercise.slug)) {
     return (
       <span className="size-12 shrink-0 rounded-lg bg-primary/8">
         <ExerciseScheme slug={exercise.slug} className="size-full" compact animated={false} />
@@ -289,14 +291,7 @@ export function ExerciseBrowser({
 
               {isOpen ? (
                 <div className="space-y-2 border-t border-border p-3 text-sm">
-                  {!e.gif_url && !e.image_url && hasScheme(e.slug) ? (
-                    <ExerciseScheme slug={e.slug} className="mx-auto aspect-[4/3] w-full max-w-56" />
-                  ) : null}
-                  {e.image_credit && !e.gif_url ? (
-                    <p className="text-right text-[11px] text-muted-foreground">
-                      изображение: {e.image_credit}
-                    </p>
-                  ) : null}
+                  <ExerciseMedia key={e.slug} exercise={e} />
                   <p className="text-muted-foreground">{e.description}</p>
                   <p className="leading-relaxed whitespace-pre-line">{e.technique}</p>
                   {e.warning && !isConfirming ? <ContraindicationNote warning={e.warning} /> : null}

@@ -11,7 +11,7 @@
  * Смена VERSION сбрасывает старые кеши при следующей активации.
  */
 
-const VERSION = "v1";
+const VERSION = "v2-exercises-20261122";
 const STATIC_CACHE = `gz-static-${VERSION}`;
 const PAGES_CACHE = `gz-pages-${VERSION}`;
 const PRECACHE = ["/offline.html", "/manifest.json", "/icons/icon-192.png"];
